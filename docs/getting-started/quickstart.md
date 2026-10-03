@@ -23,6 +23,12 @@ Open **Settings → AI layer**, pick a provider and press **Test connection**.
     Paste an API key from the [Anthropic Console](https://console.anthropic.com),
     or set `ANTHROPIC_API_KEY` in the environment and leave the field blank.
 
+=== "Local Claude Code"
+
+    If the `claude` CLI is installed and signed in, pick this and press **Test
+    connection** — there is nothing to configure. Calls use your existing
+    subscription rather than an API key.
+
 === "LLM endpoint"
 
     Any OpenAI-compatible server. For Ollama:

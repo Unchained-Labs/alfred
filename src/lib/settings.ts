@@ -1,7 +1,10 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { settings } from "@/db/schema";
-import { DEFAULT_ANTHROPIC_MODEL } from "@/lib/ai/providers/anthropic";
+import {
+  DEFAULT_ANTHROPIC_MODEL,
+  DEFAULT_CLAUDE_CODE_BINARY,
+} from "@/lib/ai/catalog";
 import type { ProviderKind } from "@/lib/ai/types";
 
 /** What Alfred knows about the user. Fuels every AI call. */
@@ -24,6 +27,12 @@ export type AiSettings = {
     apiKey: string;
     model: string;
     effort: "low" | "medium" | "high" | "xhigh" | "max";
+  };
+  claudeCode: {
+    binary: string;
+    model: string;
+    effort: "low" | "medium" | "high" | "xhigh" | "max";
+    timeoutMs: number;
   };
   openaiCompat: {
     baseUrl: string;
@@ -75,6 +84,12 @@ export const DEFAULT_SETTINGS: AlfredSettings = {
   ai: {
     provider: "anthropic",
     anthropic: { apiKey: "", model: DEFAULT_ANTHROPIC_MODEL, effort: "high" },
+    claudeCode: {
+      binary: DEFAULT_CLAUDE_CODE_BINARY,
+      model: "opus",
+      effort: "high",
+      timeoutMs: 300_000,
+    },
     openaiCompat: {
       baseUrl: "",
       apiKey: "",

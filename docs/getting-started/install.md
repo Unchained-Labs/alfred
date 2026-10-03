@@ -9,6 +9,11 @@ Alfred is a Next.js app that runs on your machine against a local SQLite file.
   yours isn't covered, npm compiles from source and you'll need `build-essential`
   (Debian/Ubuntu) or the Xcode command line tools (macOS).
 
+## Optional
+
+- The [Claude Code](https://claude.com/claude-code) CLI. If it is installed and
+  signed in, Alfred can use it as a provider with no API key at all.
+
 ## Install
 
 ```sh

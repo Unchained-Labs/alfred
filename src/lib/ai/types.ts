@@ -1,6 +1,11 @@
 import type { z } from "zod";
 
-export const PROVIDER_KINDS = ["anthropic", "openai-compat", "agent"] as const;
+export const PROVIDER_KINDS = [
+  "anthropic",
+  "claude-code",
+  "openai-compat",
+  "agent",
+] as const;
 export type ProviderKind = (typeof PROVIDER_KINDS)[number];
 
 export type AnthropicConfig = {
@@ -9,6 +14,21 @@ export type AnthropicConfig = {
   model: string;
   /** low | medium | high | xhigh | max — maps to output_config.effort */
   effort?: "low" | "medium" | "high" | "xhigh" | "max";
+};
+
+/**
+ * A locally installed Claude Code CLI, driven in non-interactive mode. Uses the
+ * credentials you already signed in with, so it needs no API key.
+ */
+export type ClaudeCodeConfig = {
+  kind: "claude-code";
+  /** Binary name or absolute path. Defaults to `claude` on PATH. */
+  binary?: string;
+  /** An alias (opus, sonnet, haiku, fable) or a full model id. */
+  model?: string;
+  effort?: "low" | "medium" | "high" | "xhigh" | "max";
+  /** How long a single invocation may run before it is killed. */
+  timeoutMs?: number;
 };
 
 /**
@@ -39,7 +59,8 @@ export type AgentConfig = {
   agentName?: string;
 };
 
-export type ProviderConfig = AnthropicConfig | OpenAiCompatConfig | AgentConfig;
+export type ProviderConfig =
+  AnthropicConfig | ClaudeCodeConfig | OpenAiCompatConfig | AgentConfig;
 
 export type GenerateRequest = {
   system: string;

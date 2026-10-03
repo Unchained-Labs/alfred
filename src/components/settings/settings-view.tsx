@@ -3,6 +3,7 @@
 import {
   Bot,
   Check,
+  TerminalSquare,
   CircleAlert,
   Cpu,
   Mail,
@@ -21,7 +22,7 @@ import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, Input, Select, Switch, Textarea } from "@/components/ui/field";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/toast";
-import { ANTHROPIC_MODELS } from "@/lib/ai/providers/anthropic";
+import { ANTHROPIC_MODELS, CLAUDE_CODE_MODELS } from "@/lib/ai/catalog";
 import type { ProviderKind } from "@/lib/ai/types";
 import type { RedactedSettings } from "@/lib/settings";
 import { cn, parseList } from "@/lib/utils";
@@ -45,6 +46,13 @@ const PROVIDERS: {
     label: "Claude",
     blurb: "Anthropic's API. Best results, structured output guaranteed.",
     Icon: Sparkles,
+  },
+  {
+    id: "claude-code",
+    label: "Local Claude Code",
+    blurb:
+      "The Claude Code CLI already installed on this machine. No API key — it uses your existing sign-in.",
+    Icon: TerminalSquare,
   },
   {
     id: "openai-compat",
@@ -163,9 +171,11 @@ export function SettingsView({ initial }: { initial: RedactedSettings }) {
       const config =
         ai.provider === "anthropic"
           ? ai.anthropic
-          : ai.provider === "openai-compat"
-            ? ai.openaiCompat
-            : ai.agent;
+          : ai.provider === "claude-code"
+            ? ai.claudeCode
+            : ai.provider === "openai-compat"
+              ? ai.openaiCompat
+              : ai.agent;
 
       const response = await fetch("/api/ai/test", {
         method: "POST",
@@ -487,6 +497,73 @@ export function SettingsView({ initial }: { initial: RedactedSettings }) {
                       />
                     </Field>
                   </div>
+                </>
+              ) : ai.provider === "claude-code" ? (
+                <>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Field
+                      label="Model"
+                      hint="An alias, or a full model id the CLI accepts."
+                    >
+                      <Select
+                        value={ai.claudeCode.model}
+                        onValueChange={(model) =>
+                          setAi({ ...ai, claudeCode: { ...ai.claudeCode, model } })
+                        }
+                        options={CLAUDE_CODE_MODELS.map((model) => ({
+                          value: model.id,
+                          label: model.label,
+                          hint: model.hint,
+                        }))}
+                        ariaLabel="Claude Code model"
+                      />
+                    </Field>
+                    <Field
+                      label="Reasoning effort"
+                      hint="Higher means more thinking and better analysis, at more cost."
+                    >
+                      <Select
+                        value={ai.claudeCode.effort}
+                        onValueChange={(effort) =>
+                          setAi({
+                            ...ai,
+                            claudeCode: {
+                              ...ai.claudeCode,
+                              effort: effort as never,
+                            },
+                          })
+                        }
+                        options={EFFORTS}
+                        ariaLabel="Reasoning effort"
+                      />
+                    </Field>
+                  </div>
+                  <Field
+                    label="CLI path"
+                    hint="Leave as `claude` to use whatever is on your PATH, or give an absolute path."
+                  >
+                    <Input
+                      value={ai.claudeCode.binary}
+                      onChange={(event) =>
+                        setAi({
+                          ...ai,
+                          claudeCode: {
+                            ...ai.claudeCode,
+                            binary: event.target.value,
+                          },
+                        })
+                      }
+                      placeholder="claude"
+                      spellCheck={false}
+                    />
+                  </Field>
+                  <p className="border-line bg-surface-2 text-ink-2 rounded-lg border p-3 text-[11px] leading-relaxed">
+                    Alfred runs the CLI non-interactively with every tool denied, so
+                    a job description can never talk it into touching your files.
+                    Calls bill against the subscription you signed in with rather
+                    than per token — but each one also carries Claude Code&apos;s
+                    own system context, so it is not free.
+                  </p>
                 </>
               ) : ai.provider === "openai-compat" ? (
                 <>
