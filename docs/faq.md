@@ -16,6 +16,14 @@ in it. To avoid storing them, set `ANTHROPIC_API_KEY`, `ALFRED_LLM_API_KEY` or
 the environment takes precedence. The browser never receives a stored
 credential.
 
+### Can I use my Claude subscription instead of an API key?
+
+Yes — pick **Local Claude Code** in Settings. It drives the `claude` CLI already
+installed on your machine, using the credentials you signed in with, so calls go
+against your subscription rather than per-token API billing. Structured output is
+prompt-constrained rather than native there, and every call carries the CLI's own
+system context, so it is slower and not free — but it needs no key at all.
+
 ### Can I use Alfred without an AI provider?
 
 Yes, as a tracker. The board, timeline, follow-ups, notes and dashboard all work

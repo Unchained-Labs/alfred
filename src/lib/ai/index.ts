@@ -10,6 +10,7 @@ import {
 } from "./prompts";
 import { AgentProvider } from "./providers/agent";
 import { AnthropicProvider } from "./providers/anthropic";
+import { ClaudeCodeProvider } from "./providers/claude-code";
 import { OpenAiCompatProvider } from "./providers/openai-compat";
 import {
   type ActionablePlan,
@@ -34,6 +35,8 @@ export function createProvider(config: ProviderConfig): AiProvider {
   switch (config.kind) {
     case "anthropic":
       return new AnthropicProvider(config);
+    case "claude-code":
+      return new ClaudeCodeProvider(config);
     case "openai-compat":
       return new OpenAiCompatProvider(config);
     case "agent":
@@ -47,6 +50,8 @@ export function resolveProvider(): AiProvider {
   switch (ai.provider) {
     case "anthropic":
       return createProvider({ kind: "anthropic", ...ai.anthropic });
+    case "claude-code":
+      return createProvider({ kind: "claude-code", ...ai.claudeCode });
     case "openai-compat":
       return createProvider({ kind: "openai-compat", ...ai.openaiCompat });
     case "agent":

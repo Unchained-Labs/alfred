@@ -28,6 +28,10 @@ export async function POST(request: Request) {
           apiKey: (overrides.apiKey as string)?.trim() || stored.anthropic.apiKey,
         };
         break;
+      case "claude-code":
+        // No credential of its own — the CLI resolves its own sign-in.
+        config = { kind: "claude-code", ...stored.claudeCode, ...overrides };
+        break;
       case "openai-compat":
         config = {
           kind: "openai-compat",

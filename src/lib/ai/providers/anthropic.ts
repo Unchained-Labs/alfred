@@ -13,15 +13,9 @@ import {
   type Usage,
 } from "../types";
 
-export const DEFAULT_ANTHROPIC_MODEL = "claude-opus-5";
+import { DEFAULT_ANTHROPIC_MODEL } from "../catalog";
 
-/** Models the settings UI offers. Newest/most capable first. */
-export const ANTHROPIC_MODELS = [
-  { id: "claude-opus-5", label: "Claude Opus 5", hint: "Best reasoning (default)" },
-  { id: "claude-opus-4-8", label: "Claude Opus 4.8", hint: "Previous Opus" },
-  { id: "claude-sonnet-5", label: "Claude Sonnet 5", hint: "Faster, cheaper" },
-  { id: "claude-haiku-4-5", label: "Claude Haiku 4.5", hint: "Fastest" },
-] as const;
+export { ANTHROPIC_MODELS, DEFAULT_ANTHROPIC_MODEL } from "../catalog";
 
 function usageOf(u: {
   input_tokens?: number;

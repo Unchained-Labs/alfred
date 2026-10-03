@@ -73,7 +73,7 @@ npm run seed    # six applications, a prep plan, a questionnaire, and some mail
 
 ## The AI layer
 
-Alfred talks to all three provider types through one interface
+Alfred talks to all four provider types through one interface
 (`src/lib/ai/types.ts`), so switching is a dropdown and nothing else changes.
 Structured operations are schema-constrained in every case — the schemas in
 `src/lib/ai/schemas.ts` are the single source of truth, compiled to the
@@ -84,6 +84,19 @@ Anthropic SDK's format for Claude and to strict JSON Schema for the others.
 An API key from the Anthropic Console, or `ANTHROPIC_API_KEY` in the
 environment. Model and reasoning effort are configurable; the default is
 `claude-opus-5` at `high` effort with adaptive thinking.
+
+### Local Claude Code
+
+The `claude` CLI already installed on your machine, driven non-interactively.
+**No API key** — it uses the credentials you signed in with, so calls bill
+against that subscription rather than per token. Pick it and press _Test
+connection_; if `claude` is on your `PATH` there is nothing else to configure.
+
+Alfred passes arguments as an array rather than through a shell, sends the prompt
+on stdin, and denies every tool — a job description is untrusted input, and
+Alfred only ever wants text back. Structured output is prompt-constrained rather
+than native here, and each call carries the CLI's own system context, so it is
+slower than the API path and not free.
 
 ### Any OpenAI-compatible endpoint
 
