@@ -35,7 +35,7 @@ jobs:
             inside { print }
           ' CHANGELOG.md > notes.md
           test -s notes.md || echo "See the changelog for details." > notes.md
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         with:
           body_path: notes.md
           generate_release_notes: true
