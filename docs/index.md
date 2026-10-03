@@ -12,46 +12,47 @@ configure to an AI provider and, optionally, a read-only IMAP connection.
 
 - :material-view-column: **Track**
 
-  A nine-stage drag-and-drop pipeline, with a timeline recording every move,
-  note and email. Add applications by hand, or paste a posting and let Alfred
-  extract the fields.
+    A nine-stage drag-and-drop pipeline, with a timeline recording every move,
+    note and email. Add applications by hand, or paste a posting and let Alfred
+    extract the fields.
 
-  [Tracking applications →](guide/tracking.md)
+    [Tracking applications →](guide/tracking.md)
 
 - :material-target: **Analyze**
 
-  A fit score calibrated like a hiring manager rather than a cheerleader, with
-  skill-by-skill coverage, the gaps worth closing, and a positioning angle for
-  your résumé.
+    A fit score calibrated like a hiring manager rather than a cheerleader, with
+    skill-by-skill coverage, the gaps worth closing, and a positioning angle for
+    your résumé.
 
-  [Fit analysis →](guide/analysis.md)
+    [Fit analysis →](guide/analysis.md)
 
 - :material-code-braces: **Prepare**
 
-  A prep plan built for _that_ role, plus a questionnaire with draft answers
-  grounded in your real background.
+    A prep plan built for _that_ role, plus a questionnaire with draft answers
+    grounded in your real background.
 
-  [Prep plans →](guide/prep.md)
+    [Prep plans →](guide/prep.md)
 
 - :material-email-outline: **Ingest**
 
-  Connect an IMAP mailbox and Alfred pulls in recruiter mail, classifies it,
-  and matches it to your pipeline.
+    Connect an IMAP mailbox and Alfred pulls in recruiter mail, classifies it,
+    and matches it to your pipeline.
 
-  [Mailbox →](guide/mailbox.md)
+    [Mailbox →](guide/mailbox.md)
 
 </div>
 
 ## Bring your own AI
 
-Alfred talks to three kinds of provider through one interface, so switching is a
+Alfred talks to four kinds of provider through one interface, so switching is a
 dropdown and nothing else changes.
 
-| Provider         | What it is                                                         |
-| ---------------- | ------------------------------------------------------------------ |
-| **Claude**       | The Anthropic API, with structured outputs and adaptive thinking   |
+| Provider | What it is |
+| --- | --- |
+| **Claude** | The Anthropic API, with structured outputs and adaptive thinking |
+| **Local Claude Code** | The `claude` CLI already on your machine — no API key, it uses your existing sign-in |
 | **LLM endpoint** | Any OpenAI-compatible server — Ollama, vLLM, LM Studio, OpenRouter |
-| **Custom agent** | Your own agent over HTTP, given a documented task envelope         |
+| **Custom agent** | Your own agent over HTTP, given a documented task envelope |
 
 A local endpoint keeps your résumé, the job descriptions and your mail entirely
 on your machine.

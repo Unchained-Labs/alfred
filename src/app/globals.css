@@ -8,7 +8,7 @@
  *
  * Series, ordinal, and status values come from the validated data-viz
  * palette — do not eyeball new ones. Both modes were re-validated
- * against Alfred's own surfaces (light #fdfdfc / dark #15151a):
+ * against Alfred's own surfaces (light #ffffff / dark #141a24):
  *   categorical 8  → all checks pass in both modes
  *   stage ramp 5   → ordinal checks pass in both modes
  * Light mode's aqua / yellow / magenta sit below 3:1, so every use of
@@ -19,26 +19,34 @@
   color-scheme: light;
 
   /* Surfaces */
-  --page: #f9f9f7;
-  --surface: #fdfdfc;
-  --surface-2: #f3f3ef;
-  --surface-3: #e9e9e3;
+  --page: #f4f7fa;
+  --surface: #ffffff;
+  --surface-2: #f1f4f8;
+  --surface-3: #e3e9f1;
 
   /* Ink */
-  --ink: #0b0b0b;
-  --ink-2: #52514e;
-  --ink-muted: #898781;
+  --ink: #0f1b2d;
+  --ink-2: #44546b;
+  --ink-muted: #6b7a8d;
 
   /* Chrome lines */
-  --grid: #e1e0d9;
-  --axis: #c3c2b7;
-  --border: rgb(11 11 11 / 0.1);
-  --border-strong: rgb(11 11 11 / 0.18);
+  --grid: #e3e9f1;
+  --axis: #c3cedd;
+  --border: rgb(15 27 45 / 0.1);
+  --border-strong: rgb(15 27 45 / 0.18);
 
-  /* Brand — UI chrome ONLY. Never a series color, never inside a plot. */
-  --brand: #a9741a;
-  --brand-hot: #8c5f12;
-  --brand-wash: rgb(169 116 26 / 0.12);
+  /*
+   * Brand — UI chrome ONLY. Never a series color, never inside a plot.
+   *
+   * Deep slate navy rather than a saturated blue: in dark mode the whole
+   * saturated-blue band is already spoken for by the ordinal stage ramp, and
+   * measurement put every light-blue candidate at OKLab dE 1.7-8.2 from a ramp
+   * step (the floor for "easy to tell apart" is 15). Chrome therefore sits
+   * either much darker or near-neutral, so a button can never read as a stage.
+   */
+  --brand: #1e3a5f;
+  --brand-hot: #2b4a6f;
+  --brand-wash: rgb(30 58 95 / 0.1);
   --brand-ink: #ffffff;
 
   /* Categorical series — fixed order, assigned in sequence, never cycled */
@@ -74,30 +82,35 @@
   --radius: 0.75rem;
   --shadow-card:
     0 1px 2px rgb(11 11 11 / 0.04), 0 8px 24px -12px rgb(11 11 11 / 0.1);
-  --shadow-pop: 0 12px 48px -12px rgb(11 11 11 / 0.22);
+  --shadow-pop: 0 12px 48px -12px rgb(15 27 45 / 0.24);
 }
 
 .dark {
   color-scheme: dark;
 
-  --page: #0b0b0e;
-  --surface: #15151a;
-  --surface-2: #1c1c22;
-  --surface-3: #25252c;
+  --page: #0b0f17;
+  --surface: #141a24;
+  --surface-2: #1b2230;
+  --surface-3: #253040;
 
-  --ink: #ffffff;
-  --ink-2: #c3c2b7;
-  --ink-muted: #898781;
+  --ink: #e9eef6;
+  --ink-2: #c2cbd8;
+  --ink-muted: #8d99a9;
 
-  --grid: #2c2c2a;
-  --axis: #383835;
-  --border: rgb(255 255 255 / 0.1);
-  --border-strong: rgb(255 255 255 / 0.18);
+  --grid: #253040;
+  --axis: #3a4454;
+  --border: rgb(233 238 246 / 0.1);
+  --border-strong: rgb(233 238 246 / 0.18);
 
-  --brand: #e3b23c;
-  --brand-hot: #f3c65a;
-  --brand-wash: rgb(227 178 60 / 0.14);
-  --brand-ink: #15151a;
+  /*
+   * Near-neutral on dark, for the reason above: #eef2f8 is the lightest
+   * candidate that clears dE 15 against every step of the stage ramp
+   * (16.4 vs stage-offer). A saturated blue here would impersonate the board.
+   */
+  --brand: #eef2f8;
+  --brand-hot: #ffffff;
+  --brand-wash: rgb(238 242 248 / 0.12);
+  --brand-ink: #0f1b2d;
 
   /* Same eight hues, stepped for the dark surface — not an automatic flip */
   --series-1: #3987e5;

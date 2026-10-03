@@ -4,12 +4,19 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Changed
+
+- **Rebranded from amber to slate blue.** The old ochre failed four of six WCAG contrast checks — worst was dark-mode header text at 1.96:1, which is effectively unreadable. The replacement clears 4.5:1 on every surface in both modes. Chart colours are untouched: those are validated encodings, not branding.
+
 ### Added
 
 - Project scaffolding: CI across Node 20/22/24, a documentation site on GitHub Pages, issue and PR templates, Dependabot, `SECURITY.md`, `CONTRIBUTING.md`, a Code of Conduct, and a `Makefile` wrapping the common tasks.
 - ESLint (flat config) and Prettier, wired into CI.
 
 ### Fixed
+
+- The documentation site's feature cards rendered with their text spilling outside the card borders. Prettier had collapsed the four-space list indentation that Material for MkDocs needs, so the continuation paragraphs were never nested inside the list item. `docs/` is now excluded from Prettier, which does not understand Material's markdown extensions.
+- The docs home page still advertised three AI providers and omitted Local Claude Code.
 
 - The dashboard claimed "Alfred isn't connected yet" whenever Local Claude Code was the selected provider: the readiness check only knew about the other three. The check moved to `providerIsConfigured` in `settings.ts`, where an exhaustive switch makes omitting a new provider a type error rather than a silent wrong answer.
 
