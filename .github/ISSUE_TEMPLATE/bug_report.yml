@@ -1,0 +1,72 @@
+name: Bug report
+description: Something in Alfred doesn't work as expected
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report this.
+
+        **Please redact anything private** — résumés, job descriptions from a live
+        application, API keys, mailbox credentials and email addresses.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Add an application by pasting a posting
+        2. Click "Analyze this role"
+        3. …
+    validations:
+      required: true
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Where?
+      multiple: true
+      options:
+        - Dashboard
+        - Pipeline board
+        - Application detail
+        - Prep
+        - Inbox / mailbox sync
+        - Settings
+        - AI analysis or prep generation
+    validations:
+      required: true
+  - type: dropdown
+    id: provider
+    attributes:
+      label: Which AI provider?
+      options:
+        - Claude (Anthropic API)
+        - OpenAI-compatible endpoint
+        - Custom agent
+        - Not AI-related
+    validations:
+      required: true
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment
+      value: |
+        Alfred commit:
+        node --version:
+        OS:
+        Browser:
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or screenshots
+      description: Server output and the browser console, with secrets removed.
+      render: text

@@ -1,0 +1,18 @@
+# Categories for auto-generated release notes
+changelog:
+  exclude:
+    labels: [skip-changelog]
+    authors: [dependabot]
+  categories:
+    - title: New features
+      labels: [enhancement, feature]
+    - title: Bug fixes
+      labels: [bug, fix]
+    - title: AI providers
+      labels: [providers]
+    - title: Mailbox
+      labels: [mailbox]
+    - title: Docs
+      labels: [documentation]
+    - title: Other changes
+      labels: ["*"]
