@@ -1,47 +1,180 @@
-/* Alfred docs theme — the app's gold accent on its own surfaces. */
+/* ==========================================================================
+ * Alfred docs theme — slate blue.
+ *
+ * Every colour here was measured rather than chosen by eye. The previous
+ * ochre failed four of six WCAG checks; worst was dark-mode header text at
+ * 1.96:1, which is effectively unreadable. These clear 4.5:1 everywhere:
+ *
+ *            header text on primary   link on page   accent on page
+ *   light            11.50:1             6.70:1          5.17:1
+ *   dark             17.28:1             8.06:1         10.90:1
+ * ========================================================================== */
+
 :root,
 [data-md-color-scheme="default"] {
-  --md-primary-fg-color: #a9741a;
-  --md-primary-fg-color--light: #c08c2b;
-  --md-primary-fg-color--dark: #8c5f12;
-  --md-accent-fg-color: #2a78d6;
-  --al-surface: #f3f3ef;
-  --al-border: #e1e0d9;
-  --al-dim: #898781;
+  --md-primary-fg-color: #1e3a5f;
+  --md-primary-fg-color--light: #2b4a6f;
+  --md-primary-fg-color--dark: #16293f;
+  --md-primary-bg-color: #ffffff;
+  --md-primary-bg-color--light: #d8e2ef;
+
+  --md-accent-fg-color: #2563eb;
+  --md-accent-fg-color--transparent: rgb(37 99 235 / 0.1);
+
+  /* Links must not inherit the primary, or they read as muddy navy on white. */
+  --md-typeset-a-color: #1d4ed8;
+
+  /* Default footer is near-black and clashes with the navy header. */
+  --md-footer-bg-color: #16293f;
+  --md-footer-bg-color--dark: #0f1b2d;
+
+  --al-surface: #f6f8fa;
+  --al-border: #d8dee6;
+  --al-dim: #5b6775;
 }
 
 [data-md-color-scheme="slate"] {
-  --md-hue: 240;
-  --md-default-bg-color: #0b0b0e;
-  --md-default-fg-color: #ffffff;
-  --md-default-fg-color--light: #c3c2b7;
-  --md-default-fg-color--lighter: #898781;
-  --md-default-fg-color--lightest: #383835;
-  --md-code-bg-color: #15151a;
-  --md-code-fg-color: #c3c2b7;
-  --md-primary-fg-color: #e3b23c;
-  --md-primary-fg-color--light: #f3c65a;
-  --md-primary-fg-color--dark: #a9741a;
-  --md-primary-bg-color: #0b0b0e;
-  --md-accent-fg-color: #3987e5;
-  --md-typeset-a-color: #3987e5;
-  --md-footer-bg-color: #0b0b0e;
-  --md-footer-bg-color--dark: #08080a;
-  --al-surface: #15151a;
-  --al-border: rgb(255 255 255 / 0.1);
-  --al-dim: #898781;
+  --md-hue: 222;
+
+  --md-default-bg-color: #0b0f17;
+  --md-default-fg-color: #e9eef6;
+  --md-default-fg-color--light: #c2cbd8;
+  --md-default-fg-color--lighter: #8d99a9;
+  --md-default-fg-color--lightest: #3a4454;
+
+  --md-code-bg-color: #141a24;
+  --md-code-fg-color: #c2cbd8;
+
+  --md-primary-fg-color: #0f1b2d;
+  --md-primary-fg-color--light: #1e3a5f;
+  --md-primary-fg-color--dark: #0a121e;
+  --md-primary-bg-color: #ffffff;
+  --md-primary-bg-color--light: #c2cbd8;
+
+  --md-accent-fg-color: #93c5fd;
+  --md-accent-fg-color--transparent: rgb(147 197 253 / 0.1);
+
+  --md-typeset-a-color: #7aa7f0;
+
+  --md-footer-bg-color: #0a121e;
+  --md-footer-bg-color--dark: #070d16;
+
+  --al-surface: #141a24;
+  --al-border: #263142;
+  --al-dim: #8d99a9;
 }
 
-.md-typeset table:not([class]) {
-  font-size: 0.72rem;
+/* ==========================================================================
+ * Typography
+ * ========================================================================== */
+
+.md-typeset h1 {
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: var(--md-default-fg-color);
 }
 
-.md-typeset h1,
 .md-typeset h2 {
   font-weight: 600;
   letter-spacing: -0.01em;
+  margin-top: 2.2em;
+  padding-top: 0.6em;
+  border-top: 1px solid var(--al-border);
 }
+
+.md-typeset h3 {
+  font-weight: 600;
+  letter-spacing: -0.005em;
+}
+
+/* The announcement bar is chrome, not content — keep it quiet. */
+.md-banner {
+  background: var(--md-primary-fg-color--dark);
+  font-size: 0.7rem;
+}
+
+.md-banner a,
+.md-banner a:hover {
+  color: var(--md-primary-bg-color--light);
+  text-decoration: underline;
+}
+
+/* ==========================================================================
+ * Tables — the docs lean on them heavily, so make them legible
+ * ========================================================================== */
+
+.md-typeset table:not([class]) {
+  font-size: 0.74rem;
+  border: 1px solid var(--al-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.md-typeset table:not([class]) th {
+  background: var(--al-surface);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.md-typeset table:not([class]) td,
+.md-typeset table:not([class]) th {
+  border-top: 1px solid var(--al-border);
+}
+
+/* ==========================================================================
+ * Grid cards — equal height, quiet border, lift on hover
+ * ========================================================================== */
+
+.md-typeset .grid.cards > ul > li {
+  border: 1px solid var(--al-border);
+  border-radius: 10px;
+  padding: 1rem 1.1rem;
+  background: var(--al-surface);
+  transition:
+    border-color 150ms,
+    transform 150ms;
+}
+
+.md-typeset .grid.cards > ul > li:hover {
+  border-color: var(--md-accent-fg-color);
+  transform: translateY(-2px);
+  box-shadow: none;
+}
+
+.md-typeset .grid.cards > ul > li > hr {
+  display: none;
+}
+
+.md-typeset .grid.cards > ul > li .twemoji,
+.md-typeset .grid.cards > ul > li svg {
+  width: 1.1rem;
+  height: 1.1rem;
+  fill: var(--md-accent-fg-color);
+  vertical-align: -0.2em;
+}
+
+/* ==========================================================================
+ * Code
+ * ========================================================================== */
 
 .md-typeset code {
   border-radius: 4px;
+  font-size: 0.78em;
+}
+
+.md-typeset pre > code {
+  border-radius: 8px;
+}
+
+/* ==========================================================================
+ * Admonitions — thinner, less shouty than the default
+ * ========================================================================== */
+
+.md-typeset .admonition,
+.md-typeset details {
+  border-width: 0 0 0 3px;
+  border-radius: 6px;
+  box-shadow: none;
+  background: var(--al-surface);
+  font-size: 0.74rem;
 }
