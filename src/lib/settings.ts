@@ -154,6 +154,38 @@ export function saveSettings(patch: unknown): AlfredSettings {
   return next;
 }
 
+/**
+ * Whether the selected provider has everything it needs to be called.
+ *
+ * The switch is exhaustive on purpose: adding a provider to `ProviderKind`
+ * without teaching this function about it is a type error, rather than a
+ * dashboard that quietly claims Alfred is not connected.
+ */
+export function providerIsConfigured(ai: AiSettings): boolean {
+  switch (ai.provider) {
+    case "anthropic":
+      return Boolean(
+        ai.anthropic.apiKey ||
+        process.env.ANTHROPIC_API_KEY ||
+        process.env.ANTHROPIC_AUTH_TOKEN,
+      );
+    case "claude-code":
+      // The CLI supplies its own credentials, so a binary name is all we need.
+      // Whether it is installed and signed in only a real call can tell.
+      return Boolean(ai.claudeCode.binary.trim());
+    case "openai-compat":
+      return Boolean(
+        ai.openaiCompat.baseUrl.trim() && ai.openaiCompat.model.trim(),
+      );
+    case "agent":
+      return Boolean(ai.agent.endpoint.trim());
+    default: {
+      const unhandled: never = ai.provider;
+      return Boolean(unhandled);
+    }
+  }
+}
+
 /** True once the profile has enough substance for analysis to be useful. */
 export function profileIsUsable(profile: UserProfile): boolean {
   return profile.resume.trim().length > 80 || profile.skills.length >= 3;

@@ -27,7 +27,7 @@ import {
   needsAttention,
   upcomingWork,
 } from "@/lib/queries";
-import { getSettings, profileIsUsable } from "@/lib/settings";
+import { getSettings, profileIsUsable, providerIsConfigured } from "@/lib/settings";
 import { STAGE_META } from "@/lib/stages";
 import { formatDate, initials, relativeDay } from "@/lib/utils";
 
@@ -56,14 +56,7 @@ export default function DashboardPage() {
   const attention = needsAttention(5);
   const settings = getSettings();
 
-  const providerReady =
-    settings.ai.provider === "anthropic"
-      ? Boolean(settings.ai.anthropic.apiKey || process.env.ANTHROPIC_API_KEY)
-      : settings.ai.provider === "openai-compat"
-        ? Boolean(
-            settings.ai.openaiCompat.baseUrl && settings.ai.openaiCompat.model,
-          )
-        : Boolean(settings.ai.agent.endpoint);
+  const providerReady = providerIsConfigured(settings.ai);
 
   const empty = stats.active === 0 && stats.totalApplied === 0;
   const trend = sparkline(activity);
