@@ -21,7 +21,7 @@ export function Funnel({ rows }: { rows: FunnelRow[] }) {
 
   if (!top) {
     return (
-      <p className="px-1 py-6 text-center text-xs text-ink-muted">
+      <p className="text-ink-muted px-1 py-6 text-center text-xs">
         No applications sent yet — the funnel fills in once you apply.
       </p>
     );
@@ -34,19 +34,21 @@ export function Funnel({ rows }: { rows: FunnelRow[] }) {
         const widthPct = Math.max((row.count / top) * 100, row.count > 0 ? 1.5 : 0);
         const previous = index > 0 ? rows[index - 1].count : null;
         const conversion =
-          previous && previous > 0 ? Math.round((row.count / previous) * 100) : null;
+          previous && previous > 0
+            ? Math.round((row.count / previous) * 100)
+            : null;
 
         return (
           <div key={row.stage} className="group">
             <div className="mb-1 flex items-baseline justify-between gap-3">
-              <span className="text-xs font-medium text-ink-2">{meta.label}</span>
+              <span className="text-ink-2 text-xs font-medium">{meta.label}</span>
               <span className="flex items-baseline gap-2">
                 {conversion != null ? (
-                  <span className="tnum text-[11px] text-ink-muted">
+                  <span className="tnum text-ink-muted text-[11px]">
                     {conversion}% carried
                   </span>
                 ) : null}
-                <span className="tnum text-xs font-semibold text-ink">
+                <span className="tnum text-ink text-xs font-semibold">
                   {row.count}
                 </span>
               </span>
@@ -57,13 +59,15 @@ export function Funnel({ rows }: { rows: FunnelRow[] }) {
                 <span>
                   <strong className="text-ink">{row.count}</strong> reached{" "}
                   {meta.label.toLowerCase()}
-                  {conversion != null ? ` — ${conversion}% of the previous stage` : ""}
+                  {conversion != null
+                    ? ` — ${conversion}% of the previous stage`
+                    : ""}
                 </span>
               }
             >
               {/* The track is a lighter plane, not a ramp step, so the fill
                   always reads as the data. */}
-              <div className="h-2.5 w-full cursor-default overflow-hidden rounded-sm bg-surface-2">
+              <div className="bg-surface-2 h-2.5 w-full cursor-default overflow-hidden rounded-sm">
                 <div
                   className="h-full rounded-r-[4px] transition-[width] duration-500 ease-out"
                   style={{

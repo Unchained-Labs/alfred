@@ -40,28 +40,32 @@ export function StatTile({
   // Direction × whether up is good — a falling rejection count is good news.
   const higherIsBetter = delta?.higherIsBetter ?? true;
   const flat = delta?.value === 0;
-  const good = delta ? (delta.value > 0) === higherIsBetter : false;
+  const good = delta ? delta.value > 0 === higherIsBetter : false;
   const deltaColor = flat
     ? "var(--ink-muted)"
     : good
       ? "var(--good-ink)"
       : "var(--critical)";
-  const DeltaIcon = flat ? ArrowRight : delta && delta.value > 0 ? ArrowUpRight : ArrowDownRight;
+  const DeltaIcon = flat
+    ? ArrowRight
+    : delta && delta.value > 0
+      ? ArrowUpRight
+      : ArrowDownRight;
 
   return (
     <div className={cn("card card-lit flex flex-col gap-3 p-4", className)}>
       <div className="flex items-start justify-between gap-2">
         <p className="label-eyebrow">{label}</p>
-        {Icon ? <Icon className="size-3.5 shrink-0 text-ink-muted" /> : null}
+        {Icon ? <Icon className="text-ink-muted size-3.5 shrink-0" /> : null}
       </div>
 
       <div className="flex items-end gap-1.5">
         {/* Proportional figures — tabular-nums would look loose at this size. */}
-        <span className="text-[1.75rem] leading-none font-semibold tracking-tight text-ink">
+        <span className="text-ink text-[1.75rem] leading-none font-semibold tracking-tight">
           {display}
         </span>
         {unit ? (
-          <span className="pb-0.5 text-sm font-medium text-ink-muted">{unit}</span>
+          <span className="text-ink-muted pb-0.5 text-sm font-medium">{unit}</span>
         ) : null}
       </div>
 
@@ -73,10 +77,10 @@ export function StatTile({
           >
             <DeltaIcon className="size-3" />
             {Math.abs(delta.value)}
-            <span className="font-normal text-ink-muted"> {delta.period}</span>
+            <span className="text-ink-muted font-normal"> {delta.period}</span>
           </span>
         ) : hint ? (
-          <span className="text-xs text-ink-muted">{hint}</span>
+          <span className="text-ink-muted text-xs">{hint}</span>
         ) : (
           <span />
         )}
@@ -114,7 +118,10 @@ export function Sparkline({
   }));
 
   const line = coords
-    .map((coord, index) => `${index === 0 ? "M" : "L"}${coord.x.toFixed(1)} ${coord.y.toFixed(1)}`)
+    .map(
+      (coord, index) =>
+        `${index === 0 ? "M" : "L"}${coord.x.toFixed(1)} ${coord.y.toFixed(1)}`,
+    )
     .join(" ");
   const area = `${line} L${width} ${height} L0 ${height} Z`;
   const last = coords[coords.length - 1];

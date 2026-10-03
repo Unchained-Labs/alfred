@@ -116,7 +116,11 @@ export function updateApplication(
   id: string,
   patch: Partial<ApplicationInput>,
 ): Application | undefined {
-  const before = db.select().from(applications).where(eq(applications.id, id)).get();
+  const before = db
+    .select()
+    .from(applications)
+    .where(eq(applications.id, id))
+    .get();
   if (!before) return undefined;
 
   const stageChanged = patch.stage != null && patch.stage !== before.stage;
@@ -125,7 +129,9 @@ export function updateApplication(
   const appliedAt =
     patch.appliedAt !== undefined
       ? patch.appliedAt
-      : stageChanged && before.appliedAt == null && SUBMITTED_STAGES.includes(patch.stage!)
+      : stageChanged &&
+          before.appliedAt == null &&
+          SUBMITTED_STAGES.includes(patch.stage!)
         ? new Date()
         : before.appliedAt;
 
@@ -158,7 +164,11 @@ export function moveApplication(
   stage: ApplicationStage,
   boardOrder?: number,
 ): Application | undefined {
-  const before = db.select().from(applications).where(eq(applications.id, id)).get();
+  const before = db
+    .select()
+    .from(applications)
+    .where(eq(applications.id, id))
+    .get();
   if (!before) return undefined;
 
   const appliedAt =

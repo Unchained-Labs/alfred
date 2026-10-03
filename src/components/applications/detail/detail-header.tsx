@@ -32,8 +32,13 @@ export function DetailHeader({ app }: { app: Application }) {
   const [stage, setStage] = React.useState<string>(app.stage);
   const [moving, setMoving] = React.useState(false);
 
-  // Keep the picker aligned with the server after a refresh.
-  React.useEffect(() => setStage(app.stage), [app.stage]);
+  // Keep the picker aligned with the server after a refresh, adjusted during
+  // render so it never shows the previous stage for a frame.
+  const [syncedStage, setSyncedStage] = React.useState(app.stage);
+  if (app.stage !== syncedStage) {
+    setSyncedStage(app.stage);
+    setStage(app.stage);
+  }
 
   const salary = formatSalary(app.salaryMin, app.salaryMax, app.currency ?? "USD");
   const hue = hueFromString(app.company);
@@ -56,7 +61,10 @@ export function DetailHeader({ app }: { app: Application }) {
       router.refresh();
     } catch (error) {
       setStage(previous);
-      toast.error("Stage change failed", error instanceof Error ? error.message : "");
+      toast.error(
+        "Stage change failed",
+        error instanceof Error ? error.message : "",
+      );
     } finally {
       setMoving(false);
     }
@@ -79,7 +87,7 @@ export function DetailHeader({ app }: { app: Application }) {
     <>
       <Link
         href="/pipeline"
-        className="mb-4 inline-flex items-center gap-1.5 text-xs text-ink-muted transition-colors hover:text-ink"
+        className="text-ink-muted hover:text-ink mb-4 inline-flex items-center gap-1.5 text-xs transition-colors"
       >
         <ArrowLeft className="size-3.5" />
         Pipeline
@@ -100,10 +108,10 @@ export function DetailHeader({ app }: { app: Application }) {
           </span>
 
           <div className="min-w-0 flex-1">
-            <h1 className="text-lg font-semibold tracking-tight text-ink">
+            <h1 className="text-ink text-lg font-semibold tracking-tight">
               {app.title}
             </h1>
-            <p className="mt-0.5 text-sm text-ink-2">
+            <p className="text-ink-2 mt-0.5 text-sm">
               {app.company}
               {app.location ? ` · ${app.location}` : ""}
             </p>
@@ -116,7 +124,7 @@ export function DetailHeader({ app }: { app: Application }) {
                 <Badge key={tag}>{tag}</Badge>
               ))}
               {app.nextActionAt ? (
-                <span className="inline-flex items-center gap-1 text-[11px] text-ink-muted">
+                <span className="text-ink-muted inline-flex items-center gap-1 text-[11px]">
                   <CalendarClock className="size-3" />
                   {app.nextActionLabel ?? "Follow up"}{" "}
                   {relativeDay(app.nextActionAt)}
@@ -135,7 +143,12 @@ export function DetailHeader({ app }: { app: Application }) {
               ariaLabel="Pipeline stage"
             />
             {app.jobUrl ? (
-              <Button asChild variant="outline" size="icon" aria-label="Open posting">
+              <Button
+                asChild
+                variant="outline"
+                size="icon"
+                aria-label="Open posting"
+              >
                 <a href={app.jobUrl} target="_blank" rel="noreferrer noopener">
                   <ExternalLink className="size-3.5" />
                 </a>
@@ -158,11 +171,11 @@ export function DetailHeader({ app }: { app: Application }) {
               </RAlertDialog.Trigger>
               <RAlertDialog.Portal>
                 <RAlertDialog.Overlay className="fixed inset-0 z-50 bg-black/55 backdrop-blur-sm" />
-                <RAlertDialog.Content className="fixed top-1/2 left-1/2 z-50 w-[calc(100vw-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-line bg-surface p-5 shadow-[var(--shadow-pop)]">
-                  <RAlertDialog.Title className="text-sm font-semibold text-ink">
+                <RAlertDialog.Content className="border-line bg-surface fixed top-1/2 left-1/2 z-50 w-[calc(100vw-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-2xl border p-5 shadow-[var(--shadow-pop)]">
+                  <RAlertDialog.Title className="text-ink text-sm font-semibold">
                     Delete this application?
                   </RAlertDialog.Title>
-                  <RAlertDialog.Description className="mt-1.5 text-xs leading-relaxed text-ink-muted">
+                  <RAlertDialog.Description className="text-ink-muted mt-1.5 text-xs leading-relaxed">
                     {app.title} at {app.company}, along with its analysis, prep
                     plan, questionnaire, and timeline. This cannot be undone.
                   </RAlertDialog.Description>
@@ -185,11 +198,7 @@ export function DetailHeader({ app }: { app: Application }) {
         </div>
       </div>
 
-      <ApplicationForm
-        open={editing}
-        onOpenChange={setEditing}
-        application={app}
-      />
+      <ApplicationForm open={editing} onOpenChange={setEditing} application={app} />
     </>
   );
 }

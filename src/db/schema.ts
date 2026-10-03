@@ -120,9 +120,7 @@ export const events = sqliteTable(
     type: text("type", { enum: EVENT_TYPES }).notNull(),
     title: text("title").notNull(),
     body: text("body"),
-    metadata: text("metadata", { mode: "json" }).$type<
-      Record<string, unknown>
-    >(),
+    metadata: text("metadata", { mode: "json" }).$type<Record<string, unknown>>(),
     occurredAt: integer("occurred_at", { mode: "timestamp_ms" })
       .notNull()
       .default(sql`(unixepoch() * 1000)`),
@@ -178,9 +176,7 @@ export const actionables = sqliteTable(
     estMinutes: integer("est_minutes"),
     url: text("url"),
     tags: text("tags", { mode: "json" }).$type<string[]>().default([]),
-    status: text("status", { enum: ACTIONABLE_STATUSES })
-      .notNull()
-      .default("todo"),
+    status: text("status", { enum: ACTIONABLE_STATUSES }).notNull().default("todo"),
     /** 1 = low, 2 = normal, 3 = high */
     priority: integer("priority").notNull().default(2),
     dueAt: integer("due_at", { mode: "timestamp_ms" }),

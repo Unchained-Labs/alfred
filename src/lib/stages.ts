@@ -123,8 +123,18 @@ export type ActionableKindMeta = {
 };
 
 export const ACTIONABLE_META: Record<ActionableKind, ActionableKindMeta> = {
-  leetcode: { id: "leetcode", label: "Coding", icon: "Code2", token: "--kind-leetcode" },
-  concept: { id: "concept", label: "Concept", icon: "BookOpen", token: "--kind-concept" },
+  leetcode: {
+    id: "leetcode",
+    label: "Coding",
+    icon: "Code2",
+    token: "--kind-leetcode",
+  },
+  concept: {
+    id: "concept",
+    label: "Concept",
+    icon: "BookOpen",
+    token: "--kind-concept",
+  },
   system_design: {
     id: "system_design",
     label: "System design",
@@ -143,7 +153,12 @@ export const ACTIONABLE_META: Record<ActionableKind, ActionableKindMeta> = {
     icon: "ListChecks",
     token: "--kind-questionnaire",
   },
-  research: { id: "research", label: "Research", icon: "Search", token: "--kind-research" },
+  research: {
+    id: "research",
+    label: "Research",
+    icon: "Search",
+    token: "--kind-research",
+  },
   task: { id: "task", label: "Task", icon: "CheckSquare", token: "--kind-task" },
 };
 

@@ -1,4 +1,14 @@
-import { and, count, desc, eq, inArray, isNotNull, lte, ne, sql } from "drizzle-orm";
+import {
+  and,
+  count,
+  desc,
+  eq,
+  inArray,
+  isNotNull,
+  lte,
+  ne,
+  sql,
+} from "drizzle-orm";
 import { db } from "@/db";
 import {
   actionables,
@@ -32,7 +42,11 @@ export function listApplications(options?: {
     .select()
     .from(applications)
     .where(filters.length ? and(...filters) : undefined)
-    .orderBy(desc(applications.priority), applications.boardOrder, desc(applications.updatedAt))
+    .orderBy(
+      desc(applications.priority),
+      applications.boardOrder,
+      desc(applications.updatedAt),
+    )
     .all();
 }
 
@@ -198,7 +212,7 @@ export function dashboardStats(): DashboardStats {
     .all();
 
   const appliedLast7 = appliedRows.filter(
-    (row) => row.appliedAt! .getTime() > now - 7 * DAY,
+    (row) => row.appliedAt!.getTime() > now - 7 * DAY,
   ).length;
   const appliedPrev7 = appliedRows.filter((row) => {
     const at = row.appliedAt!.getTime();
@@ -206,9 +220,8 @@ export function dashboardStats(): DashboardStats {
   }).length;
 
   const totalApplied = appliedRows.length;
-  const interviewsReached = funnelDepth().find(
-    (row) => row.stage === "screening",
-  )?.count ?? 0;
+  const interviewsReached =
+    funnelDepth().find((row) => row.stage === "screening")?.count ?? 0;
 
   const openActionables =
     db
@@ -263,7 +276,9 @@ export function dashboardStats(): DashboardStats {
     offers: counts.get("offer") ?? 0,
     rejections: counts.get("rejected") ?? 0,
     responseRate:
-      totalApplied > 0 ? Math.round((interviewsReached / totalApplied) * 100) : null,
+      totalApplied > 0
+        ? Math.round((interviewsReached / totalApplied) * 100)
+        : null,
     appliedLast7,
     appliedPrev7,
     openActionables,
@@ -313,7 +328,11 @@ export function upcomingWork(limit = 8) {
     .limit(limit)
     .all();
 
-  return rows.map((row) => ({ ...row.actionable, company: row.company, role: row.title }));
+  return rows.map((row) => ({
+    ...row.actionable,
+    company: row.company,
+    role: row.title,
+  }));
 }
 
 export function needsAttention(limit = 6) {

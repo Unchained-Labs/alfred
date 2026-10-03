@@ -61,15 +61,15 @@ function MailRow({
   const lowConfidence = mail.confidence != null && mail.confidence < 0.5;
 
   return (
-    <li className="px-4 py-3.5 transition-colors hover:bg-surface-2">
+    <li className="hover:bg-surface-2 px-4 py-3.5 transition-colors">
       <div className="flex items-start gap-3">
-        <span className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-lg bg-surface-3">
-          <Mail className="size-3.5 text-ink-muted" />
+        <span className="bg-surface-3 mt-0.5 grid size-7 shrink-0 place-items-center rounded-lg">
+          <Mail className="text-ink-muted size-3.5" />
         </span>
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <p className="truncate text-xs font-medium text-ink">
+            <p className="text-ink truncate text-xs font-medium">
               {mail.subject ?? "(no subject)"}
             </p>
             {mail.classification ? (
@@ -79,16 +79,18 @@ function MailRow({
             ) : (
               <Badge>Not triaged</Badge>
             )}
-            {lowConfidence ? <Badge tint="var(--warning)">Low confidence</Badge> : null}
+            {lowConfidence ? (
+              <Badge tint="var(--warning)">Low confidence</Badge>
+            ) : null}
           </div>
 
-          <p className="mt-0.5 truncate text-[11px] text-ink-muted">
+          <p className="text-ink-muted mt-0.5 truncate text-[11px]">
             {mail.fromName ?? mail.fromAddress ?? "unknown sender"} ·{" "}
             {formatDateTime(mail.receivedAt)}
           </p>
 
           {mail.snippet ? (
-            <p className="mt-1.5 line-clamp-2 text-[11px] leading-relaxed text-ink-2">
+            <p className="text-ink-2 mt-1.5 line-clamp-2 text-[11px] leading-relaxed">
               {mail.snippet}
             </p>
           ) : null}
@@ -145,13 +147,13 @@ function MailRow({
           ) : linked ? (
             <Link
               href={`/pipeline/${linked.id}`}
-              className="mt-2 inline-flex items-center gap-1.5 text-[11px] text-ink-muted underline-offset-2 hover:text-ink hover:underline"
+              className="text-ink-muted hover:text-ink mt-2 inline-flex items-center gap-1.5 text-[11px] underline-offset-2 hover:underline"
             >
               <Link2 className="size-3" />
               {linked.company} — {linked.title}
             </Link>
           ) : (
-            <p className="mt-2 inline-flex items-center gap-1.5 text-[11px] text-ink-muted">
+            <p className="text-ink-muted mt-2 inline-flex items-center gap-1.5 text-[11px]">
               <Check className="size-3" />
               Ignored
             </p>
@@ -211,7 +213,10 @@ export function InboxView({
       }
       router.refresh();
     } catch (error) {
-      toast.error("Sync failed", error instanceof Error ? error.message : String(error));
+      toast.error(
+        "Sync failed",
+        error instanceof Error ? error.message : String(error),
+      );
     } finally {
       setSyncing(false);
     }
@@ -230,7 +235,8 @@ export function InboxView({
         body: JSON.stringify(body),
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error ?? "Could not update the email.");
+      if (!response.ok)
+        throw new Error(data.error ?? "Could not update the email.");
       router.refresh();
     } catch (error) {
       toast.error("Failed", error instanceof Error ? error.message : String(error));
@@ -264,7 +270,9 @@ export function InboxView({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Tabs value={filter} onValueChange={(value) => setFilter(value as never)}>
           <TabsList>
-            <TabsTrigger value="pending">Needs review ({counts.pending})</TabsTrigger>
+            <TabsTrigger value="pending">
+              Needs review ({counts.pending})
+            </TabsTrigger>
             <TabsTrigger value="linked">Linked ({counts.linked})</TabsTrigger>
             <TabsTrigger value="ignored">Ignored ({counts.ignored})</TabsTrigger>
           </TabsList>

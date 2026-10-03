@@ -94,7 +94,11 @@ export class AgentProvider implements AiProvider {
         body: JSON.stringify(body),
       });
     } catch (error) {
-      throw new AiError(`Could not reach the agent at ${this.endpoint}.`, error, true);
+      throw new AiError(
+        `Could not reach the agent at ${this.endpoint}.`,
+        error,
+        true,
+      );
     }
 
     if (!response.ok) {
@@ -168,9 +172,14 @@ export class AgentProvider implements AiProvider {
         .slice(0, 5)
         .map((issue) => `${issue.path.join(".") || "(root)"}: ${issue.message}`)
         .join("; ");
-      throw new AiError(`Agent output did not match the expected shape — ${issues}`);
+      throw new AiError(
+        `Agent output did not match the expected shape — ${issues}`,
+      );
     }
-    return { object: parsed.data as z.output<T>, model: payload.model ?? this.model };
+    return {
+      object: parsed.data as z.output<T>,
+      model: payload.model ?? this.model,
+    };
   }
 
   /**

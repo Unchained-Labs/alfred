@@ -13,7 +13,7 @@ const CONTROL =
 export function Label({ className, ...props }: React.ComponentProps<"label">) {
   return (
     <RLabel.Root
-      className={cn("mb-1.5 block text-xs font-medium text-ink-2", className)}
+      className={cn("text-ink-2 mb-1.5 block text-xs font-medium", className)}
       {...props}
     />
   );
@@ -41,7 +41,7 @@ export function Field({
           {error}
         </p>
       ) : hint ? (
-        <p className="mt-1.5 text-xs text-ink-muted">{hint}</p>
+        <p className="text-ink-muted mt-1.5 text-xs">{hint}</p>
       ) : null}
     </div>
   );
@@ -95,7 +95,7 @@ export function Select({
       >
         <RSelect.Value placeholder={placeholder} />
         <RSelect.Icon>
-          <ChevronDown className="size-3.5 shrink-0 text-ink-muted" />
+          <ChevronDown className="text-ink-muted size-3.5 shrink-0" />
         </RSelect.Icon>
       </RSelect.Trigger>
       <RSelect.Portal>
@@ -104,7 +104,7 @@ export function Select({
           sideOffset={6}
           className={cn(
             "z-50 max-h-72 min-w-[var(--radix-select-trigger-width)] overflow-hidden rounded-xl",
-            "border border-line bg-surface p-1 shadow-[var(--shadow-pop)]",
+            "border-line bg-surface border p-1 shadow-[var(--shadow-pop)]",
             "data-[state=open]:animate-in data-[state=open]:fade-in-0",
           )}
         >
@@ -114,8 +114,8 @@ export function Select({
                 key={option.value}
                 value={option.value}
                 className={cn(
-                  "relative flex cursor-pointer select-none items-center gap-2 rounded-lg py-1.5 pr-2 pl-7 text-sm",
-                  "text-ink-2 outline-none data-[highlighted]:bg-surface-2 data-[highlighted]:text-ink",
+                  "relative flex cursor-pointer items-center gap-2 rounded-lg py-1.5 pr-2 pl-7 text-sm select-none",
+                  "text-ink-2 data-[highlighted]:bg-surface-2 data-[highlighted]:text-ink outline-none",
                   "data-[state=checked]:text-ink data-[state=checked]:font-medium",
                 )}
               >
@@ -124,7 +124,7 @@ export function Select({
                 </RSelect.ItemIndicator>
                 <RSelect.ItemText>{option.label}</RSelect.ItemText>
                 {option.hint ? (
-                  <span className="ml-auto pl-3 text-[11px] text-ink-muted">
+                  <span className="text-ink-muted ml-auto pl-3 text-[11px]">
                     {option.hint}
                   </span>
                 ) : null}
@@ -156,19 +156,19 @@ export function Switch({
       <div className="min-w-0">
         <RLabel.Root
           htmlFor={inputId}
-          className="block cursor-pointer text-sm font-medium text-ink"
+          className="text-ink block cursor-pointer text-sm font-medium"
         >
           {label}
         </RLabel.Root>
-        {hint ? <p className="mt-0.5 text-xs text-ink-muted">{hint}</p> : null}
+        {hint ? <p className="text-ink-muted mt-0.5 text-xs">{hint}</p> : null}
       </div>
       <RSwitch.Root
         id={inputId}
         checked={checked}
         onCheckedChange={onCheckedChange}
         className={cn(
-          "relative mt-0.5 h-5.5 w-9.5 shrink-0 cursor-pointer rounded-full border border-line transition-colors",
-          "data-[state=checked]:border-transparent data-[state=unchecked]:bg-surface-3",
+          "border-line relative mt-0.5 h-5.5 w-9.5 shrink-0 cursor-pointer rounded-full border transition-colors",
+          "data-[state=unchecked]:bg-surface-3 data-[state=checked]:border-transparent",
         )}
         style={checked ? { backgroundColor: "var(--brand)" } : undefined}
       >

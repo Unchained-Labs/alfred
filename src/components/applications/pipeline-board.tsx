@@ -66,8 +66,8 @@ function Column({
           style={{ background: `var(${meta.token})` }}
           aria-hidden
         />
-        <h2 className="text-xs font-semibold text-ink">{meta.label}</h2>
-        <span className="tnum rounded-full bg-surface-2 px-1.5 py-0.5 text-[10px] font-medium text-ink-muted">
+        <h2 className="text-ink text-xs font-semibold">{meta.label}</h2>
+        <span className="tnum bg-surface-2 text-ink-muted rounded-full px-1.5 py-0.5 text-[10px] font-medium">
           {apps.length}
         </span>
       </div>
@@ -77,14 +77,14 @@ function Column({
         className={cn(
           "min-h-32 flex-1 space-y-2 rounded-xl border border-dashed p-2 transition-colors",
           isOver
-            ? "border-[var(--brand)] bg-brand-wash"
+            ? "bg-brand-wash border-[var(--brand)]"
             : candidate
               ? "border-line-strong bg-surface-2/40"
               : "border-line bg-surface-2/20",
         )}
       >
         {apps.length === 0 ? (
-          <p className="px-2 py-6 text-center text-[11px] leading-relaxed text-ink-muted">
+          <p className="text-ink-muted px-2 py-6 text-center text-[11px] leading-relaxed">
             {meta.hint}
           </p>
         ) : (
@@ -95,11 +95,7 @@ function Column({
   );
 }
 
-export function PipelineBoard({
-  applications,
-}: {
-  applications: BoardCardData[];
-}) {
+export function PipelineBoard({ applications }: { applications: BoardCardData[] }) {
   const router = useRouter();
   const toast = useToast();
   const [view, setView] = React.useState<"board" | "list">("board");
@@ -107,7 +103,13 @@ export function PipelineBoard({
   const [activeId, setActiveId] = React.useState<string | null>(null);
 
   // The server is the source of truth; re-sync whenever it sends new data.
-  React.useEffect(() => setItems(applications), [applications]);
+  // Adjusted during render rather than in an effect, so the board never paints
+  // one frame of stale cards after a refresh.
+  const [syncedFrom, setSyncedFrom] = React.useState(applications);
+  if (applications !== syncedFrom) {
+    setSyncedFrom(applications);
+    setItems(applications);
+  }
 
   const sensors = useSensors(
     // A small distance threshold keeps the card's links clickable.
@@ -147,10 +149,7 @@ export function PipelineBoard({
         const data = await response.json().catch(() => ({}));
         throw new Error(data.error ?? "Could not move the application.");
       }
-      toast.success(
-        `${moved.company} → ${STAGE_META[target].label}`,
-        moved.title,
-      );
+      toast.success(`${moved.company} → ${STAGE_META[target].label}`, moved.title);
       router.refresh();
     } catch (error) {
       setItems(previous);
@@ -176,7 +175,7 @@ export function PipelineBoard({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
-        <div className="inline-flex items-center gap-0.5 rounded-lg border border-line bg-surface-2 p-0.5">
+        <div className="border-line bg-surface-2 inline-flex items-center gap-0.5 rounded-lg border p-0.5">
           {(
             [
               { id: "board", label: "Board", Icon: LayoutGrid },

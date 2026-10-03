@@ -27,20 +27,20 @@ export function EmptyState({
     >
       <div
         className={cn(
-          "grid place-items-center rounded-2xl border border-line bg-surface-2",
+          "border-line bg-surface-2 grid place-items-center rounded-2xl border",
           compact ? "size-9" : "size-12",
         )}
       >
         <Icon className={cn("text-ink-muted", compact ? "size-4" : "size-5")} />
       </div>
       <div className="max-w-sm">
-        <p className={cn("font-medium text-ink", compact ? "text-xs" : "text-sm")}>
+        <p className={cn("text-ink font-medium", compact ? "text-xs" : "text-sm")}>
           {title}
         </p>
         {description ? (
           <p
             className={cn(
-              "mt-1 leading-relaxed text-ink-muted",
+              "text-ink-muted mt-1 leading-relaxed",
               compact ? "text-[11px]" : "text-xs",
             )}
           >

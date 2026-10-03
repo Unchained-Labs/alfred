@@ -72,7 +72,8 @@
   --stage-withdrawn: #898781;
 
   --radius: 0.75rem;
-  --shadow-card: 0 1px 2px rgb(11 11 11 / 0.04), 0 8px 24px -12px rgb(11 11 11 / 0.1);
+  --shadow-card:
+    0 1px 2px rgb(11 11 11 / 0.04), 0 8px 24px -12px rgb(11 11 11 / 0.1);
   --shadow-pop: 0 12px 48px -12px rgb(11 11 11 / 0.22);
 }
 
@@ -264,11 +265,7 @@
     inset: 0;
     pointer-events: none;
     background:
-      radial-gradient(
-        60% 60% at 15% 0%,
-        var(--brand-wash) 0%,
-        transparent 60%
-      ),
+      radial-gradient(60% 60% at 15% 0%, var(--brand-wash) 0%, transparent 60%),
       radial-gradient(
         50% 50% at 100% 10%,
         color-mix(in oklab, var(--series-1) 14%, transparent) 0%,

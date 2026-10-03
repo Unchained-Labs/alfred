@@ -76,7 +76,11 @@ export async function analyzeJob(app: Application): Promise<AiRun<JobAnalysis>> 
     schemaName: "job_analysis",
     task: "analyze_job",
   });
-  return { result: object, provider: provider.kind, model: model ?? provider.model };
+  return {
+    result: object,
+    provider: provider.kind,
+    model: model ?? provider.model,
+  };
 }
 
 export async function generateActionables(
@@ -93,7 +97,11 @@ export async function generateActionables(
     task: "generate_actionables",
     maxTokens: 24000,
   });
-  return { result: object, provider: provider.kind, model: model ?? provider.model };
+  return {
+    result: object,
+    provider: provider.kind,
+    model: model ?? provider.model,
+  };
 }
 
 export async function generateQuestionnaire(
@@ -111,7 +119,11 @@ export async function generateQuestionnaire(
     task: "generate_questionnaire",
     maxTokens: 32000,
   });
-  return { result: object, provider: provider.kind, model: model ?? provider.model };
+  return {
+    result: object,
+    provider: provider.kind,
+    model: model ?? provider.model,
+  };
 }
 
 export async function parseJobPosting(raw: string): Promise<AiRun<ParsedJob>> {
@@ -124,7 +136,11 @@ export async function parseJobPosting(raw: string): Promise<AiRun<ParsedJob>> {
     schemaName: "parsed_job",
     task: "parse_job_posting",
   });
-  return { result: object, provider: provider.kind, model: model ?? provider.model };
+  return {
+    result: object,
+    provider: provider.kind,
+    model: model ?? provider.model,
+  };
 }
 
 export async function triageEmail(
@@ -141,7 +157,11 @@ export async function triageEmail(
     task: "triage_email",
     maxTokens: 4000,
   });
-  return { result: object, provider: provider.kind, model: model ?? provider.model };
+  return {
+    result: object,
+    provider: provider.kind,
+    model: model ?? provider.model,
+  };
 }
 
 export function chatStream(
@@ -151,7 +171,13 @@ export function chatStream(
   question: string,
 ): AsyncIterable<string> {
   const provider = resolveProvider();
-  const { system, prompt } = chatPrompt(app, profile(), analysis, history, question);
+  const { system, prompt } = chatPrompt(
+    app,
+    profile(),
+    analysis,
+    history,
+    question,
+  );
   return provider.streamText({ system, prompt, task: "chat", maxTokens: 4000 });
 }
 

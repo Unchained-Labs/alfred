@@ -45,14 +45,11 @@ export function Timeline({
     if (!note.trim()) return;
     setSaving(true);
     try {
-      const response = await fetch(
-        `/api/applications/${applicationId}/notes`,
-        {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ body: note }),
-        },
-      );
+      const response = await fetch(`/api/applications/${applicationId}/notes`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ body: note }),
+      });
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
         throw new Error(data.error ?? "Could not add the note.");
@@ -114,7 +111,7 @@ export function Timeline({
         ) : null}
 
         {events.length === 0 ? (
-          <p className="py-4 text-center text-xs text-ink-muted">
+          <p className="text-ink-muted py-4 text-center text-xs">
             Nothing logged yet.
           </p>
         ) : (
@@ -129,19 +126,19 @@ export function Timeline({
               return (
                 <li key={event.id} className="relative flex gap-3">
                   <span
-                    className="z-10 grid size-6 shrink-0 place-items-center rounded-full border border-line bg-surface"
+                    className="border-line bg-surface z-10 grid size-6 shrink-0 place-items-center rounded-full border"
                     aria-hidden
                   >
                     <style.Icon className="size-3" style={{ color: style.tint }} />
                   </span>
                   <div className="min-w-0 flex-1 pt-0.5">
-                    <p className="text-xs font-medium text-ink">{event.title}</p>
+                    <p className="text-ink text-xs font-medium">{event.title}</p>
                     {event.body ? (
-                      <p className="mt-0.5 text-[11px] leading-relaxed whitespace-pre-wrap text-ink-2">
+                      <p className="text-ink-2 mt-0.5 text-[11px] leading-relaxed whitespace-pre-wrap">
                         {event.body}
                       </p>
                     ) : null}
-                    <p className="mt-1 text-[10px] text-ink-muted">
+                    <p className="text-ink-muted mt-1 text-[10px]">
                       {formatDateTime(event.occurredAt)}
                     </p>
                   </div>

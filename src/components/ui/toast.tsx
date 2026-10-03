@@ -81,9 +81,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               >
                 <Icon className="mt-px size-4 shrink-0" style={{ color }} />
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-ink">{toast.title}</p>
+                  <p className="text-ink text-sm font-medium">{toast.title}</p>
                   {toast.detail ? (
-                    <p className="mt-0.5 text-xs leading-relaxed break-words text-ink-muted">
+                    <p className="text-ink-muted mt-0.5 text-xs leading-relaxed break-words">
                       {toast.detail}
                     </p>
                   ) : null}
@@ -91,7 +91,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                 <button
                   type="button"
                   onClick={() => dismiss(toast.id)}
-                  className="-mt-0.5 -mr-0.5 cursor-pointer rounded p-1 text-ink-muted transition-colors hover:text-ink"
+                  className="text-ink-muted hover:text-ink -mt-0.5 -mr-0.5 cursor-pointer rounded p-1 transition-colors"
                   aria-label="Dismiss"
                 >
                   <X className="size-3.5" />

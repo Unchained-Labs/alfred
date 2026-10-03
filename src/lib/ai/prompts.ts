@@ -180,13 +180,16 @@ posting gives an hourly or monthly figure, leave both salary fields null.`,
   };
 }
 
-export function mailTriagePrompt(mail: {
-  fromName: string | null;
-  fromAddress: string | null;
-  subject: string | null;
-  body: string | null;
-  receivedAt: Date;
-}, knownCompanies: string[]) {
+export function mailTriagePrompt(
+  mail: {
+    fromName: string | null;
+    fromAddress: string | null;
+    subject: string | null;
+    body: string | null;
+    receivedAt: Date;
+  },
+  knownCompanies: string[],
+) {
   const known = knownCompanies.length
     ? `\nCompanies already in the candidate's pipeline — prefer an exact match from this list when the email refers to one of them:\n${knownCompanies.join(", ")}\n`
     : "";
@@ -232,7 +235,9 @@ export function chatPrompt(
 
   const transcript = history
     .slice(-8)
-    .map((turn) => `${turn.role === "user" ? "Candidate" : "Alfred"}: ${turn.content}`)
+    .map(
+      (turn) => `${turn.role === "user" ? "Candidate" : "Alfred"}: ${turn.content}`,
+    )
     .join("\n\n");
 
   return {

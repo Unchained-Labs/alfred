@@ -29,7 +29,7 @@ export function Tooltip({
           side={side}
           sideOffset={6}
           collisionPadding={8}
-          className="z-50 max-w-64 rounded-lg border border-line bg-surface px-2.5 py-1.5 text-xs leading-snug text-ink-2 shadow-[var(--shadow-pop)]"
+          className="border-line bg-surface text-ink-2 z-50 max-w-64 rounded-lg border px-2.5 py-1.5 text-xs leading-snug shadow-[var(--shadow-pop)]"
         >
           {content}
         </RTooltip.Content>

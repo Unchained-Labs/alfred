@@ -41,25 +41,25 @@ export function DialogContent({
       <RDialog.Content
         className={cn(
           "fixed top-1/2 left-1/2 z-50 w-[calc(100vw-2rem)] -translate-x-1/2 -translate-y-1/2",
-          "max-h-[90vh] overflow-hidden rounded-2xl border border-line bg-surface shadow-[var(--shadow-pop)]",
+          "border-line bg-surface max-h-[90vh] overflow-hidden rounded-2xl border shadow-[var(--shadow-pop)]",
           "flex flex-col focus:outline-none",
           widths[width],
           className,
         )}
       >
-        <div className="flex items-start justify-between gap-4 border-b border-line px-6 py-4">
+        <div className="border-line flex items-start justify-between gap-4 border-b px-6 py-4">
           <div className="min-w-0">
-            <RDialog.Title className="text-base font-semibold tracking-tight text-ink">
+            <RDialog.Title className="text-ink text-base font-semibold tracking-tight">
               {title}
             </RDialog.Title>
             {description ? (
-              <RDialog.Description className="mt-0.5 text-xs text-ink-muted">
+              <RDialog.Description className="text-ink-muted mt-0.5 text-xs">
                 {description}
               </RDialog.Description>
             ) : null}
           </div>
           <RDialog.Close
-            className="-mr-1.5 -mt-1 cursor-pointer rounded-lg p-1.5 text-ink-muted transition-colors hover:bg-surface-2 hover:text-ink"
+            className="text-ink-muted hover:bg-surface-2 hover:text-ink -mt-1 -mr-1.5 cursor-pointer rounded-lg p-1.5 transition-colors"
             aria-label="Close"
           >
             <X className="size-4" />
@@ -71,14 +71,11 @@ export function DialogContent({
   );
 }
 
-export function DialogFooter({
-  className,
-  ...props
-}: React.ComponentProps<"div">) {
+export function DialogFooter({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       className={cn(
-        "flex items-center justify-end gap-2 border-t border-line bg-surface-2/50 px-6 py-3.5",
+        "border-line bg-surface-2/50 flex items-center justify-end gap-2 border-t px-6 py-3.5",
         className,
       )}
       {...props}

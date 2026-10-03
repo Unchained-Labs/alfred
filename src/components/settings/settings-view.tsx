@@ -77,7 +77,10 @@ function TestBadge({ result }: { result: TestResult | null }) {
       }}
     >
       {result.ok ? (
-        <Check className="mt-px size-3.5 shrink-0" style={{ color: "var(--good)" }} />
+        <Check
+          className="mt-px size-3.5 shrink-0"
+          style={{ color: "var(--good)" }}
+        />
       ) : (
         <CircleAlert
           className="mt-px size-3.5 shrink-0"
@@ -85,9 +88,9 @@ function TestBadge({ result }: { result: TestResult | null }) {
         />
       )}
       <div className="min-w-0">
-        <p className="font-medium text-ink">{result.message}</p>
+        <p className="text-ink font-medium">{result.message}</p>
         {result.detail ? (
-          <p className="mt-0.5 leading-relaxed break-words text-ink-2">
+          <p className="text-ink-2 mt-0.5 leading-relaxed break-words">
             {result.detail}
           </p>
         ) : null}
@@ -125,7 +128,8 @@ export function SettingsView({ initial }: { initial: RedactedSettings }) {
             name: profile.name,
             headline: profile.headline,
             yearsExperience:
-              profile.yearsExperience === null || profile.yearsExperience === ("" as never)
+              profile.yearsExperience === null ||
+              profile.yearsExperience === ("" as never)
                 ? null
                 : Number(profile.yearsExperience),
             resume: profile.resume,
@@ -143,7 +147,10 @@ export function SettingsView({ initial }: { initial: RedactedSettings }) {
       toast.success("Settings saved");
       router.refresh();
     } catch (error) {
-      toast.error("Save failed", error instanceof Error ? error.message : String(error));
+      toast.error(
+        "Save failed",
+        error instanceof Error ? error.message : String(error),
+      );
     } finally {
       setSaving(false);
     }
@@ -166,7 +173,8 @@ export function SettingsView({ initial }: { initial: RedactedSettings }) {
         body: JSON.stringify({ provider: ai.provider, config }),
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error ?? "The provider did not respond.");
+      if (!response.ok)
+        throw new Error(data.error ?? "The provider did not respond.");
 
       setAiResult({
         ok: data.ok,
@@ -198,7 +206,8 @@ export function SettingsView({ initial }: { initial: RedactedSettings }) {
         body: JSON.stringify(mail),
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error ?? "Could not reach the mailbox.");
+      if (!response.ok)
+        throw new Error(data.error ?? "Could not reach the mailbox.");
       setMailResult({
         ok: true,
         message: `Connected to ${data.folder}`,
@@ -241,9 +250,9 @@ export function SettingsView({ initial }: { initial: RedactedSettings }) {
             <CardHeader>
               <div>
                 <CardTitle>Your background</CardTitle>
-                <p className="mt-0.5 text-xs text-ink-muted">
-                  Everything Alfred says about a role is measured against this.
-                  The résumé field matters most.
+                <p className="text-ink-muted mt-0.5 text-xs">
+                  Everything Alfred says about a role is measured against this. The
+                  résumé field matters most.
                 </p>
               </div>
             </CardHeader>
@@ -349,7 +358,7 @@ export function SettingsView({ initial }: { initial: RedactedSettings }) {
             <CardHeader>
               <div>
                 <CardTitle>Provider</CardTitle>
-                <p className="mt-0.5 text-xs text-ink-muted">
+                <p className="text-ink-muted mt-0.5 text-xs">
                   Alfred speaks to all three through the same interface — switch
                   freely, nothing else changes.
                 </p>
@@ -376,7 +385,7 @@ export function SettingsView({ initial }: { initial: RedactedSettings }) {
                       className={cn(
                         "cursor-pointer rounded-xl border p-3 text-left transition-colors",
                         active
-                          ? "border-[var(--brand)] bg-brand-wash"
+                          ? "bg-brand-wash border-[var(--brand)]"
                           : "border-line bg-surface-2 hover:border-line-strong",
                       )}
                     >
@@ -387,11 +396,11 @@ export function SettingsView({ initial }: { initial: RedactedSettings }) {
                             color: active ? "var(--brand)" : "var(--ink-muted)",
                           }}
                         />
-                        <span className="text-xs font-semibold text-ink">
+                        <span className="text-ink text-xs font-semibold">
                           {label}
                         </span>
                       </span>
-                      <span className="mt-1.5 block text-[11px] leading-relaxed text-ink-muted">
+                      <span className="text-ink-muted mt-1.5 block text-[11px] leading-relaxed">
                         {blurb}
                       </span>
                     </button>
@@ -411,7 +420,7 @@ export function SettingsView({ initial }: { initial: RedactedSettings }) {
                   />
                   {activeProvider.label} configuration
                 </CardTitle>
-                <p className="mt-0.5 text-xs text-ink-muted">
+                <p className="text-ink-muted mt-0.5 text-xs">
                   Credentials are stored in your local SQLite database and never
                   leave this machine except to reach the provider.
                 </p>
@@ -434,7 +443,10 @@ export function SettingsView({ initial }: { initial: RedactedSettings }) {
                       onChange={(event) =>
                         setAi({
                           ...ai,
-                          anthropic: { ...ai.anthropic, apiKey: event.target.value },
+                          anthropic: {
+                            ...ai.anthropic,
+                            apiKey: event.target.value,
+                          },
                         })
                       }
                       placeholder={
@@ -611,12 +623,12 @@ export function SettingsView({ initial }: { initial: RedactedSettings }) {
                 </>
               )}
 
-              <div className="flex flex-wrap items-center gap-2 border-t border-line pt-4">
+              <div className="border-line flex flex-wrap items-center gap-2 border-t pt-4">
                 <Button variant="outline" onClick={testAi} loading={testing}>
                   <Plug className="size-3.5" />
                   Test connection
                 </Button>
-                <span className="text-[11px] text-ink-muted">
+                <span className="text-ink-muted text-[11px]">
                   Save first if you just changed a credential.
                 </span>
               </div>
@@ -632,9 +644,9 @@ export function SettingsView({ initial }: { initial: RedactedSettings }) {
             <CardHeader>
               <div>
                 <CardTitle>IMAP mailbox</CardTitle>
-                <p className="mt-0.5 text-xs text-ink-muted">
-                  Read-only. Alfred never marks, moves, or deletes anything in
-                  your mailbox.
+                <p className="text-ink-muted mt-0.5 text-xs">
+                  Read-only. Alfred never marks, moves, or deletes anything in your
+                  mailbox.
                 </p>
               </div>
               <Badge tint={mail.enabled ? "var(--good)" : undefined}>
@@ -653,7 +665,9 @@ export function SettingsView({ initial }: { initial: RedactedSettings }) {
                 <Field label="IMAP host">
                   <Input
                     value={mail.host}
-                    onChange={(event) => setMail({ ...mail, host: event.target.value })}
+                    onChange={(event) =>
+                      setMail({ ...mail, host: event.target.value })
+                    }
                     placeholder="imap.gmail.com"
                   />
                 </Field>
@@ -670,7 +684,9 @@ export function SettingsView({ initial }: { initial: RedactedSettings }) {
                 <Field label="Username">
                   <Input
                     value={mail.user}
-                    onChange={(event) => setMail({ ...mail, user: event.target.value })}
+                    onChange={(event) =>
+                      setMail({ ...mail, user: event.target.value })
+                    }
                     placeholder="you@gmail.com"
                     autoComplete="off"
                   />
@@ -689,7 +705,9 @@ export function SettingsView({ initial }: { initial: RedactedSettings }) {
                     onChange={(event) =>
                       setMail({ ...mail, password: event.target.value })
                     }
-                    placeholder={initial.mail.hasPassword ? "••••••••" : "App password"}
+                    placeholder={
+                      initial.mail.hasPassword ? "••••••••" : "App password"
+                    }
                     autoComplete="off"
                   />
                 </Field>
@@ -727,7 +745,7 @@ export function SettingsView({ initial }: { initial: RedactedSettings }) {
                 hint="Each new email costs one small AI call. High-confidence matches to a tracked company get linked automatically; stage changes always stay manual."
               />
 
-              <div className="flex flex-wrap items-center gap-2 border-t border-line pt-4">
+              <div className="border-line flex flex-wrap items-center gap-2 border-t pt-4">
                 <Button variant="outline" onClick={testMail} loading={testing}>
                   <Zap className="size-3.5" />
                   Test mailbox

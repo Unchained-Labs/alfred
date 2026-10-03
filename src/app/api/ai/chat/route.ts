@@ -20,12 +20,7 @@ export async function POST(request: Request) {
       : null;
     const analysis = application ? getLatestAnalysis(application.id) : null;
 
-    const chunks = chatStream(
-      application,
-      analysis,
-      body.history ?? [],
-      question,
-    );
+    const chunks = chatStream(application, analysis, body.history ?? [], question);
 
     const encoder = new TextEncoder();
     const stream = new ReadableStream({

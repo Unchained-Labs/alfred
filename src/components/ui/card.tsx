@@ -6,18 +6,16 @@ export function Card({
   lit = true,
   ...props
 }: React.ComponentProps<"div"> & { lit?: boolean }) {
-  return (
-    <div
-      className={cn("card", lit && "card-lit", className)}
-      {...props}
-    />
-  );
+  return <div className={cn("card", lit && "card-lit", className)} {...props} />;
 }
 
 export function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
-      className={cn("flex items-start justify-between gap-3 px-5 pt-4.5 pb-3", className)}
+      className={cn(
+        "flex items-start justify-between gap-3 px-5 pt-4.5 pb-3",
+        className,
+      )}
       {...props}
     />
   );
@@ -26,7 +24,7 @@ export function CardHeader({ className, ...props }: React.ComponentProps<"div">)
 export function CardTitle({ className, ...props }: React.ComponentProps<"h3">) {
   return (
     <h3
-      className={cn("text-sm font-semibold tracking-tight text-ink", className)}
+      className={cn("text-ink text-sm font-semibold tracking-tight", className)}
       {...props}
     />
   );
@@ -37,7 +35,7 @@ export function CardDescription({
   ...props
 }: React.ComponentProps<"p">) {
   return (
-    <p className={cn("mt-0.5 text-xs text-ink-muted", className)} {...props} />
+    <p className={cn("text-ink-muted mt-0.5 text-xs", className)} {...props} />
   );
 }
 

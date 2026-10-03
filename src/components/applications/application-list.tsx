@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/states";
 import { ALL_STAGES, STAGE_META } from "@/lib/stages";
+import { isOverdue, useNow } from "@/lib/use-now";
 import { formatDate, formatSalary, initials, relativeDay } from "@/lib/utils";
 
 const STAGE_ORDER = new Map(ALL_STAGES.map((stage, index) => [stage, index]));
@@ -17,6 +18,7 @@ export function ApplicationList({
 }: {
   applications: BoardCardData[];
 }) {
+  const now = useNow();
   const rows = React.useMemo(
     () =>
       [...applications].sort(
@@ -45,17 +47,32 @@ export function ApplicationList({
       <div className="overflow-x-auto">
         <table className="w-full text-left text-xs">
           <thead>
-            <tr className="border-b border-line text-ink-muted">
-              <th scope="col" className="px-4 py-2.5 font-medium">Role</th>
-              <th scope="col" className="px-4 py-2.5 font-medium">Stage</th>
-              <th scope="col" className="px-4 py-2.5 font-medium">Fit</th>
-              <th scope="col" className="hidden px-4 py-2.5 font-medium sm:table-cell">
+            <tr className="border-line text-ink-muted border-b">
+              <th scope="col" className="px-4 py-2.5 font-medium">
+                Role
+              </th>
+              <th scope="col" className="px-4 py-2.5 font-medium">
+                Stage
+              </th>
+              <th scope="col" className="px-4 py-2.5 font-medium">
+                Fit
+              </th>
+              <th
+                scope="col"
+                className="hidden px-4 py-2.5 font-medium sm:table-cell"
+              >
                 Compensation
               </th>
-              <th scope="col" className="hidden px-4 py-2.5 font-medium md:table-cell">
+              <th
+                scope="col"
+                className="hidden px-4 py-2.5 font-medium md:table-cell"
+              >
                 Applied
               </th>
-              <th scope="col" className="hidden px-4 py-2.5 font-medium lg:table-cell">
+              <th
+                scope="col"
+                className="hidden px-4 py-2.5 font-medium lg:table-cell"
+              >
                 Next action
               </th>
               <th scope="col" className="px-4 py-2.5" />
@@ -69,25 +86,23 @@ export function ApplicationList({
                 app.salaryMax,
                 app.currency ?? "USD",
               );
-              const overdue =
-                app.nextActionAt != null &&
-                app.nextActionAt.getTime() < Date.now();
+              const overdue = isOverdue(app.nextActionAt, now);
 
               return (
-                <tr key={app.id} className="transition-colors hover:bg-surface-2">
+                <tr key={app.id} className="hover:bg-surface-2 transition-colors">
                   <td className="px-4 py-2.5">
                     <div className="flex items-center gap-2.5">
-                      <span className="grid size-7 shrink-0 place-items-center rounded-md bg-surface-3 text-[9px] font-semibold text-ink-2">
+                      <span className="bg-surface-3 text-ink-2 grid size-7 shrink-0 place-items-center rounded-md text-[9px] font-semibold">
                         {initials(app.company)}
                       </span>
                       <div className="min-w-0">
                         <Link
                           href={`/pipeline/${app.id}`}
-                          className="block max-w-56 truncate font-medium text-ink hover:underline"
+                          className="text-ink block max-w-56 truncate font-medium hover:underline"
                         >
                           {app.title}
                         </Link>
-                        <p className="max-w-56 truncate text-[11px] text-ink-muted">
+                        <p className="text-ink-muted max-w-56 truncate text-[11px]">
                           {app.company}
                           {app.location ? ` · ${app.location}` : ""}
                         </p>
@@ -97,13 +112,13 @@ export function ApplicationList({
                   <td className="px-4 py-2.5">
                     <Badge tint={`var(${meta.token})`}>{meta.label}</Badge>
                   </td>
-                  <td className="tnum px-4 py-2.5 text-ink-2">
+                  <td className="tnum text-ink-2 px-4 py-2.5">
                     {app.fitScore ?? "—"}
                   </td>
-                  <td className="hidden px-4 py-2.5 text-ink-2 sm:table-cell">
+                  <td className="text-ink-2 hidden px-4 py-2.5 sm:table-cell">
                     {salary ?? "—"}
                   </td>
-                  <td className="hidden px-4 py-2.5 text-ink-muted md:table-cell">
+                  <td className="text-ink-muted hidden px-4 py-2.5 md:table-cell">
                     {app.appliedAt ? formatDate(app.appliedAt) : "—"}
                   </td>
                   <td className="hidden px-4 py-2.5 lg:table-cell">
@@ -129,7 +144,7 @@ export function ApplicationList({
                         target="_blank"
                         rel="noreferrer noopener"
                         aria-label={`Open the posting for ${app.title}`}
-                        className="inline-grid size-6 place-items-center rounded text-ink-muted transition-colors hover:text-ink"
+                        className="text-ink-muted hover:text-ink inline-grid size-6 place-items-center rounded transition-colors"
                       >
                         <ExternalLink className="size-3" />
                       </a>

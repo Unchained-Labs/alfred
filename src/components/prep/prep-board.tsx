@@ -26,6 +26,7 @@ import {
   type ActionableStatus,
 } from "@/db/schema";
 import { ACTIONABLE_META } from "@/lib/stages";
+import { isOverdue, useNow } from "@/lib/use-now";
 import { cn, relativeDay } from "@/lib/utils";
 
 export type PrepItem = Actionable & {
@@ -59,6 +60,7 @@ export function PrepBoard({ items }: { items: PrepItem[] }) {
   const [kind, setKind] = React.useState<"all" | ActionableKind>("all");
   const [showDone, setShowDone] = React.useState(false);
   const [busyId, setBusyId] = React.useState<string | null>(null);
+  const now = useNow();
 
   const byKind = React.useMemo(() => {
     const map = new Map<ActionableKind, { done: number; total: number }>();
@@ -128,14 +130,14 @@ export function PrepBoard({ items }: { items: PrepItem[] }) {
           return (
             <Card key={candidate} className="p-4">
               <div className="flex items-center justify-between gap-2">
-                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-ink">
+                <span className="text-ink inline-flex items-center gap-1.5 text-xs font-medium">
                   <Icon
                     className="size-3.5"
                     style={{ color: `var(${meta.token})` }}
                   />
                   {meta.label}
                 </span>
-                <span className="tnum text-xs text-ink-muted">
+                <span className="tnum text-ink-muted text-xs">
                   {stats.done}/{stats.total}
                 </span>
               </div>
@@ -162,7 +164,7 @@ export function PrepBoard({ items }: { items: PrepItem[] }) {
           </TabsList>
         </Tabs>
 
-        <label className="inline-flex cursor-pointer items-center gap-2 text-xs text-ink-muted">
+        <label className="text-ink-muted inline-flex cursor-pointer items-center gap-2 text-xs">
           <input
             type="checkbox"
             checked={showDone}
@@ -190,13 +192,12 @@ export function PrepBoard({ items }: { items: PrepItem[] }) {
               const Icon = KIND_ICONS[meta.icon] ?? CheckSquare;
               const status = STATUS_ICON[item.status];
               const done = item.status === "done";
-              const overdue =
-                item.dueAt != null && item.dueAt.getTime() < Date.now() && !done;
+              const overdue = !done && isOverdue(item.dueAt, now);
 
               return (
                 <li
                   key={item.id}
-                  className="flex items-start gap-3 px-4 py-3 transition-colors hover:bg-surface-2"
+                  className="hover:bg-surface-2 flex items-start gap-3 px-4 py-3 transition-colors"
                 >
                   <Tooltip content={status.label}>
                     <button
@@ -234,7 +235,7 @@ export function PrepBoard({ items }: { items: PrepItem[] }) {
                           target="_blank"
                           rel="noreferrer noopener"
                           aria-label={`Open ${item.title}`}
-                          className="text-ink-muted transition-colors hover:text-ink"
+                          className="text-ink-muted hover:text-ink transition-colors"
                         >
                           <ExternalLink className="size-3" />
                         </a>
@@ -242,7 +243,7 @@ export function PrepBoard({ items }: { items: PrepItem[] }) {
                     </div>
 
                     {item.detail ? (
-                      <p className="mt-1 text-[11px] leading-relaxed text-ink-2">
+                      <p className="text-ink-2 mt-1 text-[11px] leading-relaxed">
                         {item.detail}
                       </p>
                     ) : null}
@@ -258,13 +259,13 @@ export function PrepBoard({ items }: { items: PrepItem[] }) {
                       {item.applicationId ? (
                         <Link
                           href={`/pipeline/${item.applicationId}`}
-                          className="text-[10px] text-ink-muted underline-offset-2 hover:text-ink hover:underline"
+                          className="text-ink-muted hover:text-ink text-[10px] underline-offset-2 hover:underline"
                         >
                           {item.company ?? "application"}
                         </Link>
                       ) : null}
                       {item.estMinutes ? (
-                        <span className="inline-flex items-center gap-1 text-[10px] text-ink-muted">
+                        <span className="text-ink-muted inline-flex items-center gap-1 text-[10px]">
                           <Clock className="size-2.5" />
                           {item.estMinutes}m
                         </span>

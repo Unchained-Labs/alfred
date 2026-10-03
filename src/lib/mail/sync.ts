@@ -78,7 +78,12 @@ export async function syncMailbox(options?: {
     db
       .select({ messageId: mailMessages.messageId })
       .from(mailMessages)
-      .where(inArray(mailMessages.messageId, fetched.map((mail) => mail.messageId)))
+      .where(
+        inArray(
+          mailMessages.messageId,
+          fetched.map((mail) => mail.messageId),
+        ),
+      )
       .all()
       .map((row) => row.messageId),
   );

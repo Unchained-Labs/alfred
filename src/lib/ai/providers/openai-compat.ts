@@ -43,7 +43,9 @@ export class OpenAiCompatProvider implements AiProvider {
       );
     }
     if (!config.model?.trim()) {
-      throw new AiNotConfiguredError("No model name configured for the LLM endpoint.");
+      throw new AiNotConfiguredError(
+        "No model name configured for the LLM endpoint.",
+      );
     }
     this.baseUrl = config.baseUrl.trim().replace(/\/+$/, "");
     this.apiKey = config.apiKey?.trim() || process.env.ALFRED_LLM_API_KEY;
