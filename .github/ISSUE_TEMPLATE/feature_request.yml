@@ -1,0 +1,36 @@
+name: Feature request
+description: Suggest something Alfred should do
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What's the problem?
+      description: What are you trying to do in your job search that Alfred makes hard?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like it to do?
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which area?
+      multiple: true
+      options:
+        - Tracking the pipeline
+        - Fit analysis
+        - Prep plans and exercises
+        - Interview questionnaires
+        - Mailbox ingestion
+        - AI providers
+        - Dashboard and reporting
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What are you doing instead today?

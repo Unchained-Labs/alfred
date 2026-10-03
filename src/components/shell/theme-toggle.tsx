@@ -6,6 +6,9 @@ import * as React from "react";
 import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
+/** Never notifies: the client/server split is fixed for the life of the page. */
+const emptySubscribe = () => () => {};
+
 const MODES = [
   { value: "light", label: "Light", Icon: Sun },
   { value: "dark", label: "Dark", Icon: Moon },
@@ -14,15 +17,19 @@ const MODES = [
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = React.useState(false);
 
   // next-themes only knows the resolved theme after hydration; rendering the
-  // selected state before then would mismatch the server HTML.
-  React.useEffect(() => setMounted(true), []);
+  // selected state before then would mismatch the server HTML. useSyncExternalStore
+  // reports the server/client split directly, with no state to settle afterwards.
+  const mounted = React.useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false,
+  );
 
   return (
     <div
-      className="inline-flex items-center gap-0.5 rounded-lg border border-line bg-surface-2 p-0.5"
+      className="border-line bg-surface-2 inline-flex items-center gap-0.5 rounded-lg border p-0.5"
       role="radiogroup"
       aria-label="Color theme"
     >

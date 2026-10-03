@@ -32,9 +32,9 @@ function ActivityTooltip({
   if (!active || !payload?.length || !label) return null;
   const count = payload[0].value ?? 0;
   return (
-    <div className="rounded-lg border border-line bg-surface px-2.5 py-1.5 shadow-[var(--shadow-pop)]">
-      <p className="text-[11px] text-ink-muted">{tickLabel(label)}</p>
-      <p className="text-xs font-semibold text-ink">
+    <div className="border-line bg-surface rounded-lg border px-2.5 py-1.5 shadow-[var(--shadow-pop)]">
+      <p className="text-ink-muted text-[11px]">{tickLabel(label)}</p>
+      <p className="text-ink text-xs font-semibold">
         {count} {count === 1 ? "application" : "applications"}
       </p>
     </div>
@@ -61,11 +61,7 @@ export function ActivityChart({ data }: { data: ActivityPoint[] }) {
           </defs>
 
           {/* Hairline, solid, recessive. */}
-          <CartesianGrid
-            stroke="var(--grid)"
-            strokeWidth={1}
-            vertical={false}
-          />
+          <CartesianGrid stroke="var(--grid)" strokeWidth={1} vertical={false} />
           <XAxis
             dataKey="date"
             tickFormatter={tickLabel}

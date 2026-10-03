@@ -32,12 +32,12 @@ export function Sidebar({ badges }: { badges?: NavBadges }) {
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
   return (
-    <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r border-line bg-surface/60 backdrop-blur-xl lg:flex">
+    <aside className="border-line bg-surface/60 sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r backdrop-blur-xl lg:flex">
       <div className="flex items-center gap-2.5 px-4 py-4">
         <Logo />
         <div className="min-w-0">
-          <p className="text-sm font-semibold tracking-tight text-ink">Alfred</p>
-          <p className="truncate text-[11px] text-ink-muted">Job-hunt butler</p>
+          <p className="text-ink text-sm font-semibold tracking-tight">Alfred</p>
+          <p className="text-ink-muted truncate text-[11px]">Job-hunt butler</p>
         </div>
       </div>
 
@@ -53,7 +53,7 @@ export function Sidebar({ badges }: { badges?: NavBadges }) {
               className={cn(
                 "group relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition-colors",
                 active
-                  ? "font-medium text-ink"
+                  ? "text-ink font-medium"
                   : "text-ink-2 hover:bg-surface-2 hover:text-ink",
               )}
             >
@@ -76,9 +76,10 @@ export function Sidebar({ badges }: { badges?: NavBadges }) {
               <span className="relative flex-1">{label}</span>
               {badge ? (
                 <span
-                  className="relative tnum rounded-full px-1.5 py-0.5 text-[10px] font-semibold"
+                  className="tnum relative rounded-full px-1.5 py-0.5 text-[10px] font-semibold"
                   style={{
-                    background: "color-mix(in oklab, var(--brand) 20%, transparent)",
+                    background:
+                      "color-mix(in oklab, var(--brand) 20%, transparent)",
                     color: "var(--brand)",
                   }}
                 >
@@ -90,7 +91,7 @@ export function Sidebar({ badges }: { badges?: NavBadges }) {
         })}
       </nav>
 
-      <div className="border-t border-line p-3">
+      <div className="border-line border-t p-3">
         <ThemeToggle />
       </div>
     </aside>
@@ -104,7 +105,7 @@ export function MobileNav({ badges }: { badges?: NavBadges }) {
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 flex border-t border-line bg-surface/85 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden">
+    <nav className="border-line bg-surface/85 fixed inset-x-0 bottom-0 z-40 flex border-t pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden">
       {NAV.map(({ href, label, Icon }) => {
         const active = isActive(href);
         const badge = badges?.[href];

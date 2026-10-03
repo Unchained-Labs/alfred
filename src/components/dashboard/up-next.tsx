@@ -1,3 +1,5 @@
+"use client";
+
 import {
   BookOpen,
   CheckSquare,
@@ -15,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/states";
 import type { Actionable } from "@/db/schema";
 import { ACTIONABLE_META } from "@/lib/stages";
+import { isOverdue, useNow } from "@/lib/use-now";
 import { relativeDay } from "@/lib/utils";
 
 export const KIND_ICONS: Record<string, LucideIcon> = {
@@ -33,6 +36,8 @@ export type UpNextItem = Actionable & {
 };
 
 export function UpNext({ items }: { items: UpNextItem[] }) {
+  const now = useNow();
+
   if (!items.length) {
     return (
       <EmptyState
@@ -49,8 +54,7 @@ export function UpNext({ items }: { items: UpNextItem[] }) {
       {items.map((item) => {
         const meta = ACTIONABLE_META[item.kind];
         const Icon = KIND_ICONS[meta.icon] ?? CheckSquare;
-        const overdue =
-          item.dueAt != null && item.dueAt.getTime() < Date.now();
+        const overdue = isOverdue(item.dueAt, now);
 
         return (
           <li key={item.id}>
@@ -58,7 +62,7 @@ export function UpNext({ items }: { items: UpNextItem[] }) {
               href={
                 item.applicationId ? `/pipeline/${item.applicationId}` : "/prep"
               }
-              className="flex items-start gap-3 px-5 py-3 transition-colors hover:bg-surface-2"
+              className="hover:bg-surface-2 flex items-start gap-3 px-5 py-3 transition-colors"
             >
               <span
                 className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-lg"
@@ -66,12 +70,17 @@ export function UpNext({ items }: { items: UpNextItem[] }) {
                   background: `color-mix(in oklab, var(${meta.token}) 16%, transparent)`,
                 }}
               >
-                <Icon className="size-3.5" style={{ color: `var(${meta.token})` }} />
+                <Icon
+                  className="size-3.5"
+                  style={{ color: `var(${meta.token})` }}
+                />
               </span>
 
               <div className="min-w-0 flex-1">
-                <p className="truncate text-xs font-medium text-ink">{item.title}</p>
-                <p className="mt-0.5 truncate text-[11px] text-ink-muted">
+                <p className="text-ink truncate text-xs font-medium">
+                  {item.title}
+                </p>
+                <p className="text-ink-muted mt-0.5 truncate text-[11px]">
                   {item.company ? `${item.company} · ` : ""}
                   {meta.label}
                   {item.estMinutes ? ` · ${item.estMinutes}m` : ""}
@@ -83,7 +92,9 @@ export function UpNext({ items }: { items: UpNextItem[] }) {
               ) : item.dueAt ? (
                 <span
                   className="inline-flex shrink-0 items-center gap-1 text-[10px]"
-                  style={{ color: overdue ? "var(--critical)" : "var(--ink-muted)" }}
+                  style={{
+                    color: overdue ? "var(--critical)" : "var(--ink-muted)",
+                  }}
                 >
                   <Clock className="size-3" />
                   {relativeDay(item.dueAt)}

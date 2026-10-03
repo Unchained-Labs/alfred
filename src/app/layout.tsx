@@ -21,11 +21,7 @@ export const viewport: Viewport = {
 // The schema is applied on first render so a fresh clone works with no setup step.
 runMigrations();
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   const stats = dashboardStats();
 
   return (

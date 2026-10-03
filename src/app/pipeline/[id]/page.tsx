@@ -65,7 +65,7 @@ export default async function ApplicationPage({ params }: Params) {
               </CardHeader>
               <CardBody>
                 <div className="max-h-72 overflow-y-auto">
-                  <p className="text-xs leading-relaxed whitespace-pre-wrap text-ink-2">
+                  <p className="text-ink-2 text-xs leading-relaxed whitespace-pre-wrap">
                     {app.description}
                   </p>
                 </div>
@@ -79,7 +79,7 @@ export default async function ApplicationPage({ params }: Params) {
                 <CardTitle>Your notes</CardTitle>
               </CardHeader>
               <CardBody>
-                <p className="text-xs leading-relaxed whitespace-pre-wrap text-ink-2">
+                <p className="text-ink-2 text-xs leading-relaxed whitespace-pre-wrap">
                   {app.notes}
                 </p>
               </CardBody>

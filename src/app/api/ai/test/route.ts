@@ -25,8 +25,7 @@ export async function POST(request: Request) {
           kind: "anthropic",
           ...stored.anthropic,
           ...overrides,
-          apiKey:
-            (overrides.apiKey as string)?.trim() || stored.anthropic.apiKey,
+          apiKey: (overrides.apiKey as string)?.trim() || stored.anthropic.apiKey,
         };
         break;
       case "openai-compat":

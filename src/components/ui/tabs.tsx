@@ -10,7 +10,7 @@ export function TabsList({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <RTabs.List
       className={cn(
-        "inline-flex items-center gap-1 rounded-xl border border-line bg-surface-2 p-1",
+        "border-line bg-surface-2 inline-flex items-center gap-1 rounded-xl border p-1",
         className,
       )}
       {...props}
@@ -26,7 +26,7 @@ export function TabsTrigger({
     <RTabs.Trigger
       className={cn(
         "inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium",
-        "text-ink-muted transition-colors hover:text-ink",
+        "text-ink-muted hover:text-ink transition-colors",
         "data-[state=active]:bg-surface data-[state=active]:text-ink data-[state=active]:shadow-sm",
         className,
       )}

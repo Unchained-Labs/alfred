@@ -60,7 +60,9 @@ export default function DashboardPage() {
     settings.ai.provider === "anthropic"
       ? Boolean(settings.ai.anthropic.apiKey || process.env.ANTHROPIC_API_KEY)
       : settings.ai.provider === "openai-compat"
-        ? Boolean(settings.ai.openaiCompat.baseUrl && settings.ai.openaiCompat.model)
+        ? Boolean(
+            settings.ai.openaiCompat.baseUrl && settings.ai.openaiCompat.model,
+          )
         : Boolean(settings.ai.agent.endpoint);
 
   const empty = stats.active === 0 && stats.totalApplied === 0;
@@ -103,24 +105,26 @@ export default function DashboardPage() {
               <div className="relative p-5">
                 <p className="label-eyebrow">Live pipeline</p>
                 {/* The one hero figure on this view. */}
-                <p className="mt-2 text-6xl leading-none font-semibold tracking-tight text-ink">
+                <p className="text-ink mt-2 text-6xl leading-none font-semibold tracking-tight">
                   {stats.active}
                 </p>
-                <p className="mt-1.5 text-sm text-ink-muted">
+                <p className="text-ink-muted mt-1.5 text-sm">
                   {stats.active === 1 ? "application" : "applications"} in play
                 </p>
 
-                <div className="mt-5 grid grid-cols-3 gap-3 border-t border-line pt-4">
+                <div className="border-line mt-5 grid grid-cols-3 gap-3 border-t pt-4">
                   {[
                     { label: "Interviewing", value: stats.interviewing },
                     { label: "Offers", value: stats.offers },
                     { label: "Sent total", value: stats.totalApplied },
                   ].map((item) => (
                     <div key={item.label}>
-                      <p className="tnum text-lg leading-none font-semibold text-ink">
+                      <p className="tnum text-ink text-lg leading-none font-semibold">
                         {item.value}
                       </p>
-                      <p className="mt-1 text-[11px] text-ink-muted">{item.label}</p>
+                      <p className="text-ink-muted mt-1 text-[11px]">
+                        {item.label}
+                      </p>
                     </div>
                   ))}
                 </div>
@@ -131,8 +135,9 @@ export default function DashboardPage() {
               <CardHeader>
                 <div>
                   <CardTitle>Conversion funnel</CardTitle>
-                  <p className="mt-0.5 text-xs text-ink-muted">
-                    Applications that reached each stage, including ones later closed.
+                  <p className="text-ink-muted mt-0.5 text-xs">
+                    Applications that reached each stage, including ones later
+                    closed.
                   </p>
                 </div>
                 {stats.responseRate != null ? (
@@ -199,7 +204,7 @@ export default function DashboardPage() {
               <CardHeader>
                 <div>
                   <CardTitle>Applications sent</CardTitle>
-                  <p className="mt-0.5 text-xs text-ink-muted">Last 30 days</p>
+                  <p className="text-ink-muted mt-0.5 text-xs">Last 30 days</p>
                 </div>
               </CardHeader>
               <CardBody className="flex-1">
@@ -211,7 +216,7 @@ export default function DashboardPage() {
               <CardHeader>
                 <div>
                   <CardTitle>Up next</CardTitle>
-                  <p className="mt-0.5 text-xs text-ink-muted">
+                  <p className="text-ink-muted mt-0.5 text-xs">
                     Highest-leverage prep work
                   </p>
                 </div>
@@ -219,7 +224,7 @@ export default function DashboardPage() {
                   <Link href="/prep">All</Link>
                 </Button>
               </CardHeader>
-              <div className="flex-1 border-t border-line">
+              <div className="border-line flex-1 border-t">
                 <UpNext items={queue} />
               </div>
             </Card>
@@ -237,26 +242,26 @@ export default function DashboardPage() {
                     />
                     Needs a nudge
                   </CardTitle>
-                  <p className="mt-0.5 text-xs text-ink-muted">
+                  <p className="text-ink-muted mt-0.5 text-xs">
                     Follow-ups whose date has passed
                   </p>
                 </div>
               </CardHeader>
-              <ul className="divide-y divide-[var(--border)] border-t border-line">
+              <ul className="border-line divide-y divide-[var(--border)] border-t">
                 {attention.map((app) => (
                   <li key={app.id}>
                     <Link
                       href={`/pipeline/${app.id}`}
-                      className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-surface-2"
+                      className="hover:bg-surface-2 flex items-center gap-3 px-5 py-3 transition-colors"
                     >
-                      <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-surface-3 text-[10px] font-semibold text-ink-2">
+                      <span className="bg-surface-3 text-ink-2 grid size-8 shrink-0 place-items-center rounded-lg text-[10px] font-semibold">
                         {initials(app.company)}
                       </span>
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-xs font-medium text-ink">
+                        <p className="text-ink truncate text-xs font-medium">
                           {app.title}
                         </p>
-                        <p className="truncate text-[11px] text-ink-muted">
+                        <p className="text-ink-muted truncate text-[11px]">
                           {app.company}
                           {app.nextActionLabel ? ` · ${app.nextActionLabel}` : ""}
                         </p>

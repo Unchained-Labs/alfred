@@ -35,7 +35,11 @@ export function AskAlfred({ applicationId }: { applicationId: string }) {
 
     const history = turns;
     setDraft("");
-    setTurns([...history, { role: "user", content: trimmed }, { role: "assistant", content: "" }]);
+    setTurns([
+      ...history,
+      { role: "user", content: trimmed },
+      { role: "assistant", content: "" },
+    ]);
     setStreaming(true);
 
     try {
@@ -83,7 +87,7 @@ export function AskAlfred({ applicationId }: { applicationId: string }) {
             <Bot className="size-4" style={{ color: "var(--brand)" }} />
             Ask Alfred
           </CardTitle>
-          <p className="mt-0.5 text-xs text-ink-muted">
+          <p className="text-ink-muted mt-0.5 text-xs">
             He has the posting and your analysis in context.
           </p>
         </div>
@@ -120,17 +124,20 @@ export function AskAlfred({ applicationId }: { applicationId: string }) {
                     "max-w-[85%] rounded-xl px-3 py-2",
                     turn.role === "user"
                       ? "bg-brand-wash text-ink"
-                      : "border border-line bg-surface-2 text-ink-2",
+                      : "border-line bg-surface-2 text-ink-2 border",
                   )}
                 >
                   {turn.content ? (
                     <span className="whitespace-pre-wrap">{turn.content}</span>
                   ) : (
-                    <span className="inline-flex gap-1" aria-label="Alfred is thinking">
+                    <span
+                      className="inline-flex gap-1"
+                      aria-label="Alfred is thinking"
+                    >
                       {[0, 1, 2].map((dot) => (
                         <span
                           key={dot}
-                          className="size-1.5 animate-bounce rounded-full bg-ink-muted"
+                          className="bg-ink-muted size-1.5 animate-bounce rounded-full"
                           style={{ animationDelay: `${dot * 120}ms` }}
                         />
                       ))}
@@ -147,7 +154,7 @@ export function AskAlfred({ applicationId }: { applicationId: string }) {
                 key={suggestion}
                 type="button"
                 onClick={() => send(suggestion)}
-                className="cursor-pointer rounded-lg border border-line bg-surface-2 px-2.5 py-1.5 text-[11px] text-ink-2 transition-colors hover:border-line-strong hover:text-ink"
+                className="border-line bg-surface-2 text-ink-2 hover:border-line-strong hover:text-ink cursor-pointer rounded-lg border px-2.5 py-1.5 text-[11px] transition-colors"
               >
                 {suggestion}
               </button>
@@ -168,7 +175,7 @@ export function AskAlfred({ applicationId }: { applicationId: string }) {
             placeholder="Ask about this role…"
             aria-label="Ask Alfred about this role"
             disabled={streaming}
-            className="h-9.5 w-full rounded-lg border border-line bg-surface-2 pr-10 pl-3 text-xs text-ink transition-colors placeholder:text-ink-muted hover:border-line-strong focus:border-brand focus:outline-none disabled:opacity-60"
+            className="border-line bg-surface-2 text-ink placeholder:text-ink-muted hover:border-line-strong focus:border-brand h-9.5 w-full rounded-lg border pr-10 pl-3 text-xs transition-colors focus:outline-none disabled:opacity-60"
           />
           <Button
             type="submit"

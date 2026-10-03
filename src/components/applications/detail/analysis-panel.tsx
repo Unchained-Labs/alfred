@@ -35,16 +35,13 @@ function Bullets({
   if (!items.length) return null;
   return (
     <div>
-      <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-ink">
+      <p className="text-ink mb-2 flex items-center gap-1.5 text-xs font-semibold">
         <Icon className="size-3.5" style={{ color: tint }} />
         {title}
       </p>
       <ul className="space-y-1.5">
         {items.map((item) => (
-          <li
-            key={item}
-            className="flex gap-2 text-xs leading-relaxed text-ink-2"
-          >
+          <li key={item} className="text-ink-2 flex gap-2 text-xs leading-relaxed">
             <span
               aria-hidden
               className="mt-1.5 size-1 shrink-0 rounded-full"
@@ -104,7 +101,7 @@ export function AnalysisPanel({
             <Sparkles className="size-4" style={{ color: "var(--brand)" }} />
             Fit analysis
           </CardTitle>
-          <p className="mt-0.5 text-xs text-ink-muted">
+          <p className="text-ink-muted mt-0.5 text-xs">
             {analysis
               ? `${analysis.provider}${analysis.model ? ` · ${analysis.model}` : ""} · ${formatDateTime(analysis.createdAt)}`
               : "How your background lines up against this posting"}
@@ -146,21 +143,21 @@ export function AnalysisPanel({
                 <Badge tint={tone!.color} size="md">
                   {tone!.label}
                 </Badge>
-                <p className="mt-2 text-sm font-medium text-ink">
+                <p className="text-ink mt-2 text-sm font-medium">
                   {analysis.verdict}
                 </p>
-                <p className="mt-1.5 text-xs leading-relaxed text-ink-2">
+                <p className="text-ink-2 mt-1.5 text-xs leading-relaxed">
                   {analysis.summary}
                 </p>
               </div>
             </div>
 
-            <div className="border-t border-line pt-4">
+            <div className="border-line border-t pt-4">
               <p className="label-eyebrow mb-3">Skill coverage</p>
               <SkillBars skills={analysis.skills ?? []} />
             </div>
 
-            <div className="grid gap-5 border-t border-line pt-4 sm:grid-cols-2">
+            <div className="border-line grid gap-5 border-t pt-4 sm:grid-cols-2">
               <Bullets
                 title="Lead with these"
                 items={analysis.strengths ?? []}
@@ -176,9 +173,12 @@ export function AnalysisPanel({
             </div>
 
             {(analysis.interviewFocus ?? []).length ? (
-              <div className="border-t border-line pt-4">
-                <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-ink">
-                  <Compass className="size-3.5" style={{ color: "var(--series-1)" }} />
+              <div className="border-line border-t pt-4">
+                <p className="text-ink mb-2 flex items-center gap-1.5 text-xs font-semibold">
+                  <Compass
+                    className="size-3.5"
+                    style={{ color: "var(--series-1)" }}
+                  />
                   Likely interview focus
                 </p>
                 <div className="flex flex-wrap gap-1.5">
@@ -192,19 +192,19 @@ export function AnalysisPanel({
             ) : null}
 
             {analysis.positioning ? (
-              <div className="rounded-xl border border-line bg-surface-2 p-3.5">
-                <p className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-ink">
+              <div className="border-line bg-surface-2 rounded-xl border p-3.5">
+                <p className="text-ink mb-1.5 flex items-center gap-1.5 text-xs font-semibold">
                   <Compass className="size-3.5" style={{ color: "var(--brand)" }} />
                   How to position yourself
                 </p>
-                <p className="text-xs leading-relaxed text-ink-2">
+                <p className="text-ink-2 text-xs leading-relaxed">
                   {analysis.positioning}
                 </p>
               </div>
             ) : null}
 
             {analysis.salaryInsight ? (
-              <p className="flex items-start gap-2 text-xs leading-relaxed text-ink-muted">
+              <p className="text-ink-muted flex items-start gap-2 text-xs leading-relaxed">
                 <Banknote className="mt-0.5 size-3.5 shrink-0" />
                 {analysis.salaryInsight}
               </p>

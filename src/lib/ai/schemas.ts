@@ -68,7 +68,9 @@ export const actionableSchema = z.object({
     .describe("What to actually do, 1-3 sentences, concrete and actionable"),
   rationale: z
     .string()
-    .describe("Why this specific item matters for THIS job. Reference the posting."),
+    .describe(
+      "Why this specific item matters for THIS job. Reference the posting.",
+    ),
   difficulty: z.enum(DIFFICULTIES).nullable().describe("Null for non-coding items"),
   pattern: z
     .string()
@@ -76,7 +78,12 @@ export const actionableSchema = z.object({
     .describe(
       "For leetcode items, the DS&A pattern, e.g. 'sliding window'. Null otherwise.",
     ),
-  estMinutes: z.number().int().min(5).max(480).describe("Realistic time to complete"),
+  estMinutes: z
+    .number()
+    .int()
+    .min(5)
+    .max(480)
+    .describe("Realistic time to complete"),
   url: z
     .string()
     .nullable()
@@ -99,7 +106,9 @@ export const actionablePlanSchema = z.object({
     .describe("2-3 sentences framing the prep strategy for this role"),
   items: z
     .array(actionableSchema)
-    .describe("The prep plan. Cover coding, concepts, system design, and behavioral."),
+    .describe(
+      "The prep plan. Cover coding, concepts, system design, and behavioral.",
+    ),
 });
 export type ActionablePlan = z.infer<typeof actionablePlanSchema>;
 

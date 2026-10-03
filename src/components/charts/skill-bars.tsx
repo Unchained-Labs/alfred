@@ -17,7 +17,7 @@ const LEVELS = {
 export function SkillBars({ skills }: { skills: SkillMatch[] }) {
   if (!skills.length) {
     return (
-      <p className="py-4 text-center text-xs text-ink-muted">
+      <p className="text-ink-muted py-4 text-center text-xs">
         No skills extracted from this posting.
       </p>
     );
@@ -38,11 +38,11 @@ export function SkillBars({ skills }: { skills: SkillMatch[] }) {
           return (
             <span
               key={level}
-              className="inline-flex items-center gap-1.5 text-[11px] text-ink-muted"
+              className="text-ink-muted inline-flex items-center gap-1.5 text-[11px]"
             >
               <Icon className="size-3" style={{ color }} />
               {label}
-              <span className="tnum font-semibold text-ink-2">{counts[level]}</span>
+              <span className="tnum text-ink-2 font-semibold">{counts[level]}</span>
             </span>
           );
         })}
@@ -56,10 +56,10 @@ export function SkillBars({ skills }: { skills: SkillMatch[] }) {
               <Tooltip content={skill.note ? `${label} — ${skill.note}` : label}>
                 <div className="flex cursor-default items-center gap-2.5">
                   <Icon className="size-3 shrink-0" style={{ color }} />
-                  <span className="w-32 shrink-0 truncate text-xs text-ink-2 sm:w-40">
+                  <span className="text-ink-2 w-32 shrink-0 truncate text-xs sm:w-40">
                     {skill.skill}
                   </span>
-                  <div className="h-2 min-w-0 flex-1 overflow-hidden rounded-sm bg-surface-2">
+                  <div className="bg-surface-2 h-2 min-w-0 flex-1 overflow-hidden rounded-sm">
                     <div
                       className="h-full rounded-r-[4px]"
                       style={{
@@ -68,7 +68,7 @@ export function SkillBars({ skills }: { skills: SkillMatch[] }) {
                       }}
                     />
                   </div>
-                  <span className="w-14 shrink-0 text-right text-[10px] text-ink-muted">
+                  <span className="text-ink-muted w-14 shrink-0 text-right text-[10px]">
                     {label}
                   </span>
                 </div>

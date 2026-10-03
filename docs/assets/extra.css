@@ -1,0 +1,47 @@
+/* Alfred docs theme — the app's gold accent on its own surfaces. */
+:root,
+[data-md-color-scheme="default"] {
+  --md-primary-fg-color: #a9741a;
+  --md-primary-fg-color--light: #c08c2b;
+  --md-primary-fg-color--dark: #8c5f12;
+  --md-accent-fg-color: #2a78d6;
+  --al-surface: #f3f3ef;
+  --al-border: #e1e0d9;
+  --al-dim: #898781;
+}
+
+[data-md-color-scheme="slate"] {
+  --md-hue: 240;
+  --md-default-bg-color: #0b0b0e;
+  --md-default-fg-color: #ffffff;
+  --md-default-fg-color--light: #c3c2b7;
+  --md-default-fg-color--lighter: #898781;
+  --md-default-fg-color--lightest: #383835;
+  --md-code-bg-color: #15151a;
+  --md-code-fg-color: #c3c2b7;
+  --md-primary-fg-color: #e3b23c;
+  --md-primary-fg-color--light: #f3c65a;
+  --md-primary-fg-color--dark: #a9741a;
+  --md-primary-bg-color: #0b0b0e;
+  --md-accent-fg-color: #3987e5;
+  --md-typeset-a-color: #3987e5;
+  --md-footer-bg-color: #0b0b0e;
+  --md-footer-bg-color--dark: #08080a;
+  --al-surface: #15151a;
+  --al-border: rgb(255 255 255 / 0.1);
+  --al-dim: #898781;
+}
+
+.md-typeset table:not([class]) {
+  font-size: 0.72rem;
+}
+
+.md-typeset h1,
+.md-typeset h2 {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.md-typeset code {
+  border-radius: 4px;
+}

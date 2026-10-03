@@ -86,7 +86,7 @@ function ActionableRow({
   const done = item.status === "done";
 
   return (
-    <li className="group flex items-start gap-3 px-5 py-3 transition-colors hover:bg-surface-2">
+    <li className="group hover:bg-surface-2 flex items-start gap-3 px-5 py-3 transition-colors">
       <StatusButton
         status={item.status}
         onClick={() => onStatus(item.id, NEXT_STATUS[item.status])}
@@ -114,7 +114,7 @@ function ActionableRow({
               target="_blank"
               rel="noreferrer noopener"
               aria-label={`Open ${item.title}`}
-              className="text-ink-muted transition-colors hover:text-ink"
+              className="text-ink-muted hover:text-ink transition-colors"
             >
               <ExternalLink className="size-3" />
             </a>
@@ -122,13 +122,13 @@ function ActionableRow({
         </div>
 
         {item.detail ? (
-          <p className="mt-1 text-[11px] leading-relaxed text-ink-2">
+          <p className="text-ink-2 mt-1 text-[11px] leading-relaxed">
             {item.detail}
           </p>
         ) : null}
 
         {item.rationale ? (
-          <p className="mt-1 text-[11px] leading-relaxed text-ink-muted italic">
+          <p className="text-ink-muted mt-1 text-[11px] leading-relaxed italic">
             {item.rationale}
           </p>
         ) : null}
@@ -141,7 +141,7 @@ function ActionableRow({
           ) : null}
           {item.pattern ? <Badge>{item.pattern}</Badge> : null}
           {item.estMinutes ? (
-            <span className="inline-flex items-center gap-1 text-[10px] text-ink-muted">
+            <span className="text-ink-muted inline-flex items-center gap-1 text-[10px]">
               <Clock className="size-2.5" />
               {item.estMinutes}m
             </span>
@@ -154,7 +154,7 @@ function ActionableRow({
         onClick={() => onDelete(item.id)}
         disabled={busy}
         aria-label={`Delete ${item.title}`}
-        className="shrink-0 cursor-pointer rounded p-1 text-ink-muted opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+        className="text-ink-muted shrink-0 cursor-pointer rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
       >
         <Trash2 className="size-3" />
       </button>
@@ -242,7 +242,7 @@ export function ActionablesPanel({
             <ListTodo className="size-4" style={{ color: "var(--brand)" }} />
             Prep plan
           </CardTitle>
-          <p className="mt-0.5 text-xs text-ink-muted">
+          <p className="text-ink-muted mt-0.5 text-xs">
             {actionables.length
               ? `${done} of ${actionables.length} done${totalMinutes ? ` · ~${Math.round(totalMinutes / 60)}h remaining` : ""}`
               : "Coding problems, concepts, system design, and behavioral prep"}
@@ -263,7 +263,7 @@ export function ActionablesPanel({
       ) : null}
 
       {overview ? (
-        <p className="mx-5 mb-3 rounded-lg border border-line bg-surface-2 p-3 text-xs leading-relaxed text-ink-2">
+        <p className="border-line bg-surface-2 text-ink-2 mx-5 mb-3 rounded-lg border p-3 text-xs leading-relaxed">
           {overview}
         </p>
       ) : null}
@@ -290,7 +290,7 @@ export function ActionablesPanel({
           compact
         />
       ) : (
-        <ul className="divide-y divide-[var(--border)] border-t border-line">
+        <ul className="border-line divide-y divide-[var(--border)] border-t">
           {actionables.map((item) => (
             <ActionableRow
               key={item.id}

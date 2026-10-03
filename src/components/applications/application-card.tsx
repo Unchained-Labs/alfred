@@ -5,7 +5,14 @@ import Link from "next/link";
 import * as React from "react";
 import { Badge } from "@/components/ui/badge";
 import type { Application } from "@/db/schema";
-import { cn, formatSalary, hueFromString, initials, relativeDay } from "@/lib/utils";
+import {
+  cn,
+  formatSalary,
+  hueFromString,
+  initials,
+  relativeDay,
+} from "@/lib/utils";
+import { isOverdue, useNow } from "@/lib/use-now";
 
 export type BoardCardData = Application & { fitScore: number | null };
 
@@ -26,8 +33,8 @@ export function ApplicationCard({
 }) {
   const salary = formatSalary(app.salaryMin, app.salaryMax, app.currency ?? "USD");
   const hue = hueFromString(app.company);
-  const overdue =
-    app.nextActionAt != null && app.nextActionAt.getTime() < Date.now();
+  const now = useNow();
+  const overdue = isOverdue(app.nextActionAt, now);
 
   return (
     <div
@@ -53,7 +60,7 @@ export function ApplicationCard({
         >
           {initials(app.company)}
         </span>
-        <p className="min-w-0 flex-1 truncate text-[11px] font-medium text-ink-2">
+        <p className="text-ink-2 min-w-0 flex-1 truncate text-[11px] font-medium">
           {app.company}
         </p>
 
@@ -61,7 +68,7 @@ export function ApplicationCard({
           <button
             type="button"
             aria-label={`Reorder ${app.title}`}
-            className="-mr-1 cursor-grab rounded p-0.5 text-ink-muted opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 active:cursor-grabbing"
+            className="text-ink-muted -mr-1 cursor-grab rounded p-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 active:cursor-grabbing"
             {...dragHandleProps}
           >
             <GripVertical className="size-3.5" />
@@ -71,13 +78,13 @@ export function ApplicationCard({
 
       <Link
         href={`/pipeline/${app.id}`}
-        className="mt-1.5 block text-xs leading-snug font-semibold text-ink hover:underline"
+        className="text-ink mt-1.5 block text-xs leading-snug font-semibold hover:underline"
         title={app.title}
       >
         <span className="line-clamp-2">{app.title}</span>
       </Link>
 
-      {(app.location || salary || app.fitScore != null) ? (
+      {app.location || salary || app.fitScore != null ? (
         <div className="mt-2 flex flex-wrap items-center gap-1.5">
           {app.fitScore != null ? (
             <Badge
@@ -95,7 +102,7 @@ export function ApplicationCard({
           ) : null}
           {salary ? <Badge>{salary}</Badge> : null}
           {app.location ? (
-            <span className="inline-flex min-w-0 items-center gap-1 text-[10px] text-ink-muted">
+            <span className="text-ink-muted inline-flex min-w-0 items-center gap-1 text-[10px]">
               <MapPin className="size-2.5 shrink-0" />
               <span className="truncate">{app.location}</span>
             </span>

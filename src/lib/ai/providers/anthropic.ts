@@ -40,7 +40,11 @@ function wrap(error: unknown): AiError {
     return new AiError("Anthropic rejected the API key.", error);
   }
   if (error instanceof Anthropic.RateLimitError) {
-    return new AiError("Anthropic rate limit hit — try again shortly.", error, true);
+    return new AiError(
+      "Anthropic rate limit hit — try again shortly.",
+      error,
+      true,
+    );
   }
   if (error instanceof Anthropic.BadRequestError) {
     return new AiError(`Anthropic rejected the request: ${error.message}`, error);
@@ -49,7 +53,11 @@ function wrap(error: unknown): AiError {
     return new AiError("Could not reach the Anthropic API.", error, true);
   }
   if (error instanceof Anthropic.APIError) {
-    return new AiError(`Anthropic error ${error.status}: ${error.message}`, error, (error.status ?? 0) >= 500);
+    return new AiError(
+      `Anthropic error ${error.status}: ${error.message}`,
+      error,
+      (error.status ?? 0) >= 500,
+    );
   }
   return new AiError(
     error instanceof Error ? error.message : "Unknown Anthropic failure",

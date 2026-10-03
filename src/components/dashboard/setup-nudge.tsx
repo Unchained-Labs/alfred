@@ -30,10 +30,12 @@ export function SetupNudge({
           <Sparkles className="size-4" style={{ color: "var(--brand)" }} />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-ink">
-            {needsProvider ? "Alfred isn't connected yet" : "Tell Alfred about yourself"}
+          <p className="text-ink text-sm font-medium">
+            {needsProvider
+              ? "Alfred isn't connected yet"
+              : "Tell Alfred about yourself"}
           </p>
-          <p className="mt-0.5 text-xs leading-relaxed text-ink-muted">{message}</p>
+          <p className="text-ink-muted mt-0.5 text-xs leading-relaxed">{message}</p>
         </div>
         <Button asChild variant="primary">
           <Link href="/settings">

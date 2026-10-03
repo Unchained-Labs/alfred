@@ -67,7 +67,7 @@ function ConfidencePicker({
           />
         );
       })}
-      <span className="ml-1.5 text-[10px] text-ink-muted">
+      <span className="text-ink-muted ml-1.5 text-[10px]">
         {value != null ? CONFIDENCE_LABELS[value - 1] : "Rate your readiness"}
       </span>
     </div>
@@ -81,10 +81,7 @@ function QuestionItem({ question }: { question: Question }) {
   const [saving, setSaving] = React.useState(false);
   const dirty = answer !== (question.userAnswer ?? "");
 
-  async function persist(patch: {
-    userAnswer?: string;
-    confidence?: number;
-  }) {
+  async function persist(patch: { userAnswer?: string; confidence?: number }) {
     setSaving(true);
     try {
       const response = await fetch(`/api/questions/${question.id}`, {
@@ -106,13 +103,13 @@ function QuestionItem({ question }: { question: Question }) {
   return (
     <RAccordion.Item
       value={question.id}
-      className="border-b border-line last:border-0"
+      className="border-line border-b last:border-0"
     >
       <RAccordion.Header>
-        <RAccordion.Trigger className="group flex w-full cursor-pointer items-start gap-3 px-5 py-3 text-left transition-colors hover:bg-surface-2">
-          <ChevronDown className="mt-0.5 size-3.5 shrink-0 text-ink-muted transition-transform group-data-[state=open]:rotate-180" />
+        <RAccordion.Trigger className="group hover:bg-surface-2 flex w-full cursor-pointer items-start gap-3 px-5 py-3 text-left transition-colors">
+          <ChevronDown className="text-ink-muted mt-0.5 size-3.5 shrink-0 transition-transform group-data-[state=open]:rotate-180" />
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-medium text-ink">{question.question}</p>
+            <p className="text-ink text-xs font-medium">{question.question}</p>
             <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
               <Badge tint={tint}>
                 {CATEGORY_LABEL[question.category] ?? question.category}
@@ -121,7 +118,7 @@ function QuestionItem({ question }: { question: Question }) {
                 <Badge tint="var(--good)">Answered</Badge>
               ) : null}
               {question.confidence ? (
-                <span className="text-[10px] text-ink-muted">
+                <span className="text-ink-muted text-[10px]">
                   {CONFIDENCE_LABELS[question.confidence - 1]}
                 </span>
               ) : null}
@@ -133,16 +130,18 @@ function QuestionItem({ question }: { question: Question }) {
       <RAccordion.Content className="overflow-hidden">
         <div className="space-y-3 px-5 pb-4 pl-11.5">
           {question.probing ? (
-            <p className="text-[11px] leading-relaxed text-ink-muted">
-              <span className="font-medium text-ink-2">They&apos;re really asking:</span>{" "}
+            <p className="text-ink-muted text-[11px] leading-relaxed">
+              <span className="text-ink-2 font-medium">
+                They&apos;re really asking:
+              </span>{" "}
               {question.probing}
             </p>
           ) : null}
 
           {question.suggestedAnswer ? (
-            <div className="rounded-lg border border-line bg-surface-2 p-3">
+            <div className="border-line bg-surface-2 rounded-lg border p-3">
               <p className="label-eyebrow mb-1.5">Alfred&apos;s draft</p>
-              <p className="text-xs leading-relaxed whitespace-pre-wrap text-ink-2">
+              <p className="text-ink-2 text-xs leading-relaxed whitespace-pre-wrap">
                 {question.suggestedAnswer}
               </p>
             </div>
@@ -228,7 +227,7 @@ export function QuestionnairePanel({
             <MessagesSquare className="size-4" style={{ color: "var(--brand)" }} />
             Interview questionnaire
           </CardTitle>
-          <p className="mt-0.5 text-xs text-ink-muted">
+          <p className="text-ink-muted mt-0.5 text-xs">
             {questions.length
               ? `${answered} of ${questions.length} answered in your own words`
               : "The questions this loop will probably ask, with drafted answers"}
@@ -260,10 +259,7 @@ export function QuestionnairePanel({
           compact
         />
       ) : (
-        <RAccordion.Root
-          type="multiple"
-          className={cn("border-t border-line")}
-        >
+        <RAccordion.Root type="multiple" className={cn("border-line border-t")}>
           {questions.map((question) => (
             <QuestionItem key={question.id} question={question} />
           ))}

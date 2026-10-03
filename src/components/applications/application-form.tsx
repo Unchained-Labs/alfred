@@ -4,11 +4,7 @@ import { Sparkles, Wand2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter } from "@/components/ui/dialog";
 import { Field, Input, Select, Textarea } from "@/components/ui/field";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/toast";
@@ -122,19 +118,28 @@ export function ApplicationForm({
   const [tab, setTab] = React.useState("manual");
 
   // Reset whenever the dialog opens so a stale draft never leaks between uses.
-  React.useEffect(() => {
-    if (!open) return;
-    setForm(application ? fromApplication(application) : EMPTY);
-    setPaste("");
-    setTab(application ? "manual" : "paste");
-  }, [open, application]);
+  // Keyed on the opening transition and applied during render, so the first
+  // painted frame already shows the right application.
+  const openedFor = open ? (application?.id ?? "new") : null;
+  const [resetFor, setResetFor] = React.useState<string | null>(openedFor);
+  if (openedFor !== resetFor) {
+    setResetFor(openedFor);
+    if (openedFor !== null) {
+      setForm(application ? fromApplication(application) : EMPTY);
+      setPaste("");
+      setTab(application ? "manual" : "paste");
+    }
+  }
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((current) => ({ ...current, [key]: value }));
 
   async function runParse() {
     if (paste.trim().length < 40) {
-      toast.error("Paste a bit more", "Alfred needs the posting body to work with.");
+      toast.error(
+        "Paste a bit more",
+        "Alfred needs the posting body to work with.",
+      );
       return;
     }
     setParsing(true);
@@ -145,7 +150,8 @@ export function ApplicationForm({
         body: JSON.stringify({ raw: paste }),
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error ?? "Could not parse the posting.");
+      if (!response.ok)
+        throw new Error(data.error ?? "Could not parse the posting.");
 
       const parsed = data.job;
       setForm((current) => ({
@@ -210,14 +216,19 @@ export function ApplicationForm({
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? "Could not save.");
 
-      toast.success(editing ? "Application updated" : `Now tracking ${payload.company}`);
+      toast.success(
+        editing ? "Application updated" : `Now tracking ${payload.company}`,
+      );
       onOpenChange(false);
       router.refresh();
       if (!editing && data.application?.id) {
         router.push(`/pipeline/${data.application.id}`);
       }
     } catch (error) {
-      toast.error("Save failed", error instanceof Error ? error.message : String(error));
+      toast.error(
+        "Save failed",
+        error instanceof Error ? error.message : String(error),
+      );
     } finally {
       setSaving(false);
     }
@@ -411,7 +422,12 @@ export function ApplicationForm({
           <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button type="submit" form="application-form" variant="primary" loading={saving}>
+          <Button
+            type="submit"
+            form="application-form"
+            variant="primary"
+            loading={saving}
+          >
             {editing ? "Save changes" : "Start tracking"}
           </Button>
         </DialogFooter>

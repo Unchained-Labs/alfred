@@ -63,10 +63,10 @@ export function FitGauge({
       </svg>
       <div className="absolute inset-0 grid place-items-center text-center">
         <div>
-          <p className="text-2xl leading-none font-semibold tracking-tight text-ink">
+          <p className="text-ink text-2xl leading-none font-semibold tracking-tight">
             {score}
           </p>
-          <p className="mt-0.5 text-[10px] text-ink-muted">/ 100</p>
+          <p className="text-ink-muted mt-0.5 text-[10px]">/ 100</p>
         </div>
       </div>
     </div>
@@ -88,7 +88,10 @@ export function ProgressBar({
   const pct = total > 0 ? Math.round((value / total) * 100) : 0;
   return (
     <div
-      className={cn("h-1.5 w-full overflow-hidden rounded-full bg-surface-3", className)}
+      className={cn(
+        "bg-surface-3 h-1.5 w-full overflow-hidden rounded-full",
+        className,
+      )}
       role="progressbar"
       aria-valuenow={value}
       aria-valuemin={0}

@@ -27,7 +27,14 @@ const ahead = (days: number) => new Date(Date.now() + days * DAY);
 
 runMigrations();
 
-for (const table of [questions, actionables, analyses, events, mailMessages, applications]) {
+for (const table of [
+  questions,
+  actionables,
+  analyses,
+  events,
+  mailMessages,
+  applications,
+]) {
   db.delete(table).run();
 }
 
@@ -92,14 +99,42 @@ Requirements:
       summary:
         "This is squarely in your wheelhouse: a correctness-critical ledger in Go on Postgres is what you've done at Mercury for three years. The gap is scope — they want eight-plus years and multi-quarter technical leadership, and your experience reads as strong senior rather than proven staff.",
       skills: [
-        { skill: "Go", level: "have" as const, note: "Primary language for 4 years" },
-        { skill: "Postgres at scale", level: "have" as const, note: "400M-row partitioning" },
+        {
+          skill: "Go",
+          level: "have" as const,
+          note: "Primary language for 4 years",
+        },
+        {
+          skill: "Postgres at scale",
+          level: "have" as const,
+          note: "400M-row partitioning",
+        },
         { skill: "Kafka", level: "have" as const, note: "Ledger event pipeline" },
-        { skill: "Financial ledgers", level: "have" as const, note: "Direct ledger ownership" },
-        { skill: "Idempotency / exactly-once", level: "have" as const, note: "Built the layer that killed duplicate charges" },
-        { skill: "Staff-level scope", level: "partial" as const, note: "Led a migration, but no multi-quarter org-wide direction" },
-        { skill: "Mentoring seniors", level: "partial" as const, note: "Implied but not evidenced" },
-        { skill: "Double-entry accounting", level: "partial" as const, note: "Ledger work, but accounting model unstated" },
+        {
+          skill: "Financial ledgers",
+          level: "have" as const,
+          note: "Direct ledger ownership",
+        },
+        {
+          skill: "Idempotency / exactly-once",
+          level: "have" as const,
+          note: "Built the layer that killed duplicate charges",
+        },
+        {
+          skill: "Staff-level scope",
+          level: "partial" as const,
+          note: "Led a migration, but no multi-quarter org-wide direction",
+        },
+        {
+          skill: "Mentoring seniors",
+          level: "partial" as const,
+          note: "Implied but not evidenced",
+        },
+        {
+          skill: "Double-entry accounting",
+          level: "partial" as const,
+          note: "Ledger work, but accounting model unstated",
+        },
       ],
       strengths: [
         "The duplicate-charge elimination is the single best story you have — it is exactly the correctness bar they describe",
@@ -127,29 +162,260 @@ Requirements:
       overview:
         "This loop will test correctness reasoning far harder than raw algorithms. Weight your time toward idempotency, Postgres isolation, and a rehearsed ledger design, and prepare two staff-scope stories.",
       items: [
-        { kind: "leetcode" as const, title: "LRU Cache", detail: "Implement get/put in O(1). Build it from scratch twice without looking.", rationale: "Stripe screens commonly use cache design as a warm-up before the ledger discussion.", difficulty: "medium" as const, pattern: "hash map + doubly linked list", estMinutes: 45, url: "https://leetcode.com/problems/lru-cache/", priority: 3, tags: ["design", "hashmap"] },
-        { kind: "leetcode" as const, title: "Insert Delete GetRandom O(1)", detail: "Array plus index map. Pay attention to the swap-with-last deletion trick.", rationale: "Same O(1)-structure family as LRU; cheap second rep on the same muscle.", difficulty: "medium" as const, pattern: "hash map + array", estMinutes: 30, url: "https://leetcode.com/problems/insert-delete-getrandom-o1/", priority: 2, tags: ["design", "hashmap"] },
-        { kind: "leetcode" as const, title: "Merge Intervals", detail: "Sort then sweep. Then do the variant where intervals arrive as a stream.", rationale: "Settlement windows and reconciliation ranges are interval problems in disguise.", difficulty: "medium" as const, pattern: "sorting + sweep line", estMinutes: 35, url: "https://leetcode.com/problems/merge-intervals/", priority: 2, tags: ["intervals", "sorting"] },
-        { kind: "leetcode" as const, title: "Course Schedule", detail: "Cycle detection on a directed graph via Kahn's algorithm.", rationale: "Dependency ordering shows up in transaction settlement graphs.", difficulty: "medium" as const, pattern: "topological sort", estMinutes: 40, url: "https://leetcode.com/problems/course-schedule/", priority: 2, tags: ["graph", "toposort"] },
-        { kind: "leetcode" as const, title: "Design Hit Counter", detail: "Count events in a sliding 5-minute window with bounded memory.", rationale: "Rate limiting is a near-certain Stripe infrastructure question.", difficulty: "medium" as const, pattern: "sliding window", estMinutes: 30, url: "https://leetcode.com/problems/design-hit-counter/", priority: 3, tags: ["sliding-window", "rate-limiting"] },
-        { kind: "concept" as const, title: "Postgres isolation levels, precisely", detail: "Be able to state what read committed, repeatable read, and serializable each prevent, and what a serialization failure looks like to your application.", rationale: "They name Postgres depth explicitly, and a ledger discussion goes straight here.", difficulty: null, pattern: null, estMinutes: 90, url: "https://www.postgresql.org/docs/current/transaction-iso.html", priority: 3, tags: ["postgres", "transactions"] },
-        { kind: "concept" as const, title: "Exactly-once is at-least-once plus idempotency", detail: "Write out why exactly-once delivery is impossible and how idempotency keys recover the property. Use your Mercury work as the worked example.", rationale: "Your strongest story lives here — make sure you can explain the theory behind it, not just the implementation.", difficulty: null, pattern: null, estMinutes: 60, url: null, priority: 3, tags: ["distributed-systems", "idempotency"] },
-        { kind: "concept" as const, title: "Double-entry accounting for engineers", detail: "Debits, credits, why the ledger must always balance, and how that invariant is enforced in a database.", rationale: "Listed as a strong plus and flagged as a partial gap in your analysis.", difficulty: null, pattern: null, estMinutes: 75, url: null, priority: 2, tags: ["ledger", "accounting"] },
-        { kind: "system_design" as const, title: "Design Stripe's settlement pipeline", detail: "Money in, money out, across providers that time out and double-charge. Cover the ledger schema, idempotency, reconciliation, and what happens when a provider's response is lost.", rationale: "This is the role's core problem. Rehearse it out loud, twice, on a whiteboard.", difficulty: "hard" as const, pattern: null, estMinutes: 120, url: null, priority: 3, tags: ["system-design", "payments"] },
-        { kind: "system_design" as const, title: "Design a distributed rate limiter", detail: "Token bucket across N nodes. Discuss Redis vs local counters, clock skew, and the accuracy/latency trade.", rationale: "Standard Stripe infrastructure question and a natural follow-on from the hit counter problem.", difficulty: "medium" as const, pattern: null, estMinutes: 75, url: null, priority: 2, tags: ["system-design", "rate-limiting"] },
-        { kind: "behavioral" as const, title: "The duplicate-charge story, staff-framed", detail: "Three-to-zero incidents per quarter. Tell it as technical direction you set — how you found the root cause, who you had to convince, and what you changed organizationally so it stayed fixed.", rationale: "Your best evidence, and the version that answers their staff-scope requirement rather than just the engineering one.", difficulty: null, pattern: null, estMinutes: 45, url: null, priority: 3, tags: ["star", "ownership"] },
-        { kind: "behavioral" as const, title: "The Rails-to-Go migration, as leadership", detail: "6h to 11min settlement latency. Emphasize sequencing, risk management, and how you kept the business running during the cutover.", rationale: "Directly addresses the 'no multi-quarter direction' gap.", difficulty: null, pattern: null, estMinutes: 40, url: null, priority: 3, tags: ["star", "leadership"] },
-        { kind: "behavioral" as const, title: "A time you mentored a senior engineer", detail: "Find a real example. If you genuinely have none, prepare an honest answer about what you have done and what you want to grow into.", rationale: "Explicit requirement with no supporting evidence on your résumé — do not get caught flat here.", difficulty: null, pattern: null, estMinutes: 30, url: null, priority: 2, tags: ["star", "mentoring"] },
-        { kind: "research" as const, title: "Read Stripe's engineering blog on idempotency and Increment", detail: "Their public writing on API idempotency and reliability. Note two specifics you can reference by name.", rationale: "Referencing their own published reasoning back at them is the cheapest credibility you can buy.", difficulty: null, pattern: null, estMinutes: 60, url: "https://stripe.com/blog/engineering", priority: 2, tags: ["company-research"] },
-        { kind: "research" as const, title: "Know the EU staff compensation band", detail: "Check levels.fyi for Stripe staff in Berlin and Amsterdam before any number is discussed.", rationale: "Your stated target is below their midpoint; going in uninformed costs real money.", difficulty: null, pattern: null, estMinutes: 25, url: "https://www.levels.fyi/companies/stripe/salaries", priority: 3, tags: ["compensation"] },
+        {
+          kind: "leetcode" as const,
+          title: "LRU Cache",
+          detail:
+            "Implement get/put in O(1). Build it from scratch twice without looking.",
+          rationale:
+            "Stripe screens commonly use cache design as a warm-up before the ledger discussion.",
+          difficulty: "medium" as const,
+          pattern: "hash map + doubly linked list",
+          estMinutes: 45,
+          url: "https://leetcode.com/problems/lru-cache/",
+          priority: 3,
+          tags: ["design", "hashmap"],
+        },
+        {
+          kind: "leetcode" as const,
+          title: "Insert Delete GetRandom O(1)",
+          detail:
+            "Array plus index map. Pay attention to the swap-with-last deletion trick.",
+          rationale:
+            "Same O(1)-structure family as LRU; cheap second rep on the same muscle.",
+          difficulty: "medium" as const,
+          pattern: "hash map + array",
+          estMinutes: 30,
+          url: "https://leetcode.com/problems/insert-delete-getrandom-o1/",
+          priority: 2,
+          tags: ["design", "hashmap"],
+        },
+        {
+          kind: "leetcode" as const,
+          title: "Merge Intervals",
+          detail:
+            "Sort then sweep. Then do the variant where intervals arrive as a stream.",
+          rationale:
+            "Settlement windows and reconciliation ranges are interval problems in disguise.",
+          difficulty: "medium" as const,
+          pattern: "sorting + sweep line",
+          estMinutes: 35,
+          url: "https://leetcode.com/problems/merge-intervals/",
+          priority: 2,
+          tags: ["intervals", "sorting"],
+        },
+        {
+          kind: "leetcode" as const,
+          title: "Course Schedule",
+          detail: "Cycle detection on a directed graph via Kahn's algorithm.",
+          rationale:
+            "Dependency ordering shows up in transaction settlement graphs.",
+          difficulty: "medium" as const,
+          pattern: "topological sort",
+          estMinutes: 40,
+          url: "https://leetcode.com/problems/course-schedule/",
+          priority: 2,
+          tags: ["graph", "toposort"],
+        },
+        {
+          kind: "leetcode" as const,
+          title: "Design Hit Counter",
+          detail: "Count events in a sliding 5-minute window with bounded memory.",
+          rationale:
+            "Rate limiting is a near-certain Stripe infrastructure question.",
+          difficulty: "medium" as const,
+          pattern: "sliding window",
+          estMinutes: 30,
+          url: "https://leetcode.com/problems/design-hit-counter/",
+          priority: 3,
+          tags: ["sliding-window", "rate-limiting"],
+        },
+        {
+          kind: "concept" as const,
+          title: "Postgres isolation levels, precisely",
+          detail:
+            "Be able to state what read committed, repeatable read, and serializable each prevent, and what a serialization failure looks like to your application.",
+          rationale:
+            "They name Postgres depth explicitly, and a ledger discussion goes straight here.",
+          difficulty: null,
+          pattern: null,
+          estMinutes: 90,
+          url: "https://www.postgresql.org/docs/current/transaction-iso.html",
+          priority: 3,
+          tags: ["postgres", "transactions"],
+        },
+        {
+          kind: "concept" as const,
+          title: "Exactly-once is at-least-once plus idempotency",
+          detail:
+            "Write out why exactly-once delivery is impossible and how idempotency keys recover the property. Use your Mercury work as the worked example.",
+          rationale:
+            "Your strongest story lives here — make sure you can explain the theory behind it, not just the implementation.",
+          difficulty: null,
+          pattern: null,
+          estMinutes: 60,
+          url: null,
+          priority: 3,
+          tags: ["distributed-systems", "idempotency"],
+        },
+        {
+          kind: "concept" as const,
+          title: "Double-entry accounting for engineers",
+          detail:
+            "Debits, credits, why the ledger must always balance, and how that invariant is enforced in a database.",
+          rationale:
+            "Listed as a strong plus and flagged as a partial gap in your analysis.",
+          difficulty: null,
+          pattern: null,
+          estMinutes: 75,
+          url: null,
+          priority: 2,
+          tags: ["ledger", "accounting"],
+        },
+        {
+          kind: "system_design" as const,
+          title: "Design Stripe's settlement pipeline",
+          detail:
+            "Money in, money out, across providers that time out and double-charge. Cover the ledger schema, idempotency, reconciliation, and what happens when a provider's response is lost.",
+          rationale:
+            "This is the role's core problem. Rehearse it out loud, twice, on a whiteboard.",
+          difficulty: "hard" as const,
+          pattern: null,
+          estMinutes: 120,
+          url: null,
+          priority: 3,
+          tags: ["system-design", "payments"],
+        },
+        {
+          kind: "system_design" as const,
+          title: "Design a distributed rate limiter",
+          detail:
+            "Token bucket across N nodes. Discuss Redis vs local counters, clock skew, and the accuracy/latency trade.",
+          rationale:
+            "Standard Stripe infrastructure question and a natural follow-on from the hit counter problem.",
+          difficulty: "medium" as const,
+          pattern: null,
+          estMinutes: 75,
+          url: null,
+          priority: 2,
+          tags: ["system-design", "rate-limiting"],
+        },
+        {
+          kind: "behavioral" as const,
+          title: "The duplicate-charge story, staff-framed",
+          detail:
+            "Three-to-zero incidents per quarter. Tell it as technical direction you set — how you found the root cause, who you had to convince, and what you changed organizationally so it stayed fixed.",
+          rationale:
+            "Your best evidence, and the version that answers their staff-scope requirement rather than just the engineering one.",
+          difficulty: null,
+          pattern: null,
+          estMinutes: 45,
+          url: null,
+          priority: 3,
+          tags: ["star", "ownership"],
+        },
+        {
+          kind: "behavioral" as const,
+          title: "The Rails-to-Go migration, as leadership",
+          detail:
+            "6h to 11min settlement latency. Emphasize sequencing, risk management, and how you kept the business running during the cutover.",
+          rationale: "Directly addresses the 'no multi-quarter direction' gap.",
+          difficulty: null,
+          pattern: null,
+          estMinutes: 40,
+          url: null,
+          priority: 3,
+          tags: ["star", "leadership"],
+        },
+        {
+          kind: "behavioral" as const,
+          title: "A time you mentored a senior engineer",
+          detail:
+            "Find a real example. If you genuinely have none, prepare an honest answer about what you have done and what you want to grow into.",
+          rationale:
+            "Explicit requirement with no supporting evidence on your résumé — do not get caught flat here.",
+          difficulty: null,
+          pattern: null,
+          estMinutes: 30,
+          url: null,
+          priority: 2,
+          tags: ["star", "mentoring"],
+        },
+        {
+          kind: "research" as const,
+          title: "Read Stripe's engineering blog on idempotency and Increment",
+          detail:
+            "Their public writing on API idempotency and reliability. Note two specifics you can reference by name.",
+          rationale:
+            "Referencing their own published reasoning back at them is the cheapest credibility you can buy.",
+          difficulty: null,
+          pattern: null,
+          estMinutes: 60,
+          url: "https://stripe.com/blog/engineering",
+          priority: 2,
+          tags: ["company-research"],
+        },
+        {
+          kind: "research" as const,
+          title: "Know the EU staff compensation band",
+          detail:
+            "Check levels.fyi for Stripe staff in Berlin and Amsterdam before any number is discussed.",
+          rationale:
+            "Your stated target is below their midpoint; going in uninformed costs real money.",
+          difficulty: null,
+          pattern: null,
+          estMinutes: 25,
+          url: "https://www.levels.fyi/companies/stripe/salaries",
+          priority: 3,
+          tags: ["compensation"],
+        },
       ],
     },
     questionnaire: [
-      { question: "Walk me through how you'd guarantee a payment is never processed twice.", category: "technical", probing: "Whether you understand that exactly-once delivery is impossible and idempotency is the real mechanism.", suggestedAnswer: "You can't get exactly-once delivery, so I don't try — I get at-least-once delivery plus idempotent processing. At Mercury every money-movement request carries a client-supplied idempotency key. We write that key into Postgres under a unique constraint in the same transaction as the ledger entry, so a retry either sees the constraint violation and returns the original result, or it's the first write and proceeds. The key point is that the dedupe record and the side effect commit atomically; if you store the key in Redis and the ledger in Postgres, you've just moved the race. That pattern took us from about three duplicate-charge incidents a quarter to zero." },
-      { question: "What Postgres isolation level would you use for ledger writes, and why?", category: "technical", probing: "Depth on transaction semantics, and whether you know the cost of serializable.", suggestedAnswer: "Read committed by default, with explicit locking where I need more. Repeatable read and serializable both cost you retries under contention, and on a hot ledger that's a throughput problem. For the balance-check-then-debit pattern, I take a SELECT FOR UPDATE on the account row, which gives me the serialization I actually need on exactly the rows that need it. Where the invariant spans rows — the double-entry sum must be zero — I'd push that into a constraint or a trigger rather than relying on isolation. And whatever level you pick, the application has to handle serialization failures as a retry, not a 500." },
-      { question: "Tell me about a time you eliminated an entire class of bug.", category: "behavioral", probing: "Whether you go after root causes or patch symptoms — and whether the fix outlasted you.", suggestedAnswer: "We were seeing roughly three duplicate-charge incidents a quarter, and each one was being handled as an individual bug. I pushed back on that framing and traced them to a common cause: retries at the API edge with no idempotency contract, so any network timeout could produce a second charge. Rather than fix the call sites, I built an idempotency layer into the ledger service and made the key mandatory at the API boundary, which meant a migration across four client teams. That was the hard part — I had to make the case that the churn was worth it. We've had zero duplicate-charge incidents since, and because the key is required rather than optional, new code can't reintroduce the bug." },
-      { question: "You have seven years of experience and this role asks for eight-plus. Why are you ready?", category: "behavioral", probing: "Self-awareness, and whether you argue with the premise or answer it.", suggestedAnswer: "Fair question, and I won't pretend the number isn't what it is. What I'd point at instead is scope: for the last three years I've owned the ledger end to end — correctness, latency, on-call, and the roadmap — at 12k writes a second with money on the line. I drove the settlement migration across teams and set the idempotency contract the rest of the organization now builds against. Where I'm genuinely still growing is influence beyond my own service and mentoring other senior engineers, and that's a large part of why this role appeals to me. I'd rather be honest about the edge of my experience than oversell it." },
-      { question: "Design a system that moves money between two providers that can both time out.", category: "system_design", probing: "Whether you reach for a saga and reconciliation rather than hoping for distributed transactions.", suggestedAnswer: "I'd start by refusing to treat it as one transaction, because I can't have a distributed transaction across two providers. So: a saga with an explicit state machine per transfer, persisted in Postgres — initiated, debited, credited, settled, or needs-reconciliation. Every outbound call carries an idempotency key so a timeout can be retried safely. A timeout is specifically not a failure; it's an unknown, so the state machine parks the transfer and a reconciliation job polls the provider for the real outcome. Compensation is a reversing ledger entry, never a delete, so the audit trail stays intact. The thing I'd watch most closely is the needs-reconciliation queue depth — that's the metric that tells you a provider is misbehaving before your customers do." },
+      {
+        question:
+          "Walk me through how you'd guarantee a payment is never processed twice.",
+        category: "technical",
+        probing:
+          "Whether you understand that exactly-once delivery is impossible and idempotency is the real mechanism.",
+        suggestedAnswer:
+          "You can't get exactly-once delivery, so I don't try — I get at-least-once delivery plus idempotent processing. At Mercury every money-movement request carries a client-supplied idempotency key. We write that key into Postgres under a unique constraint in the same transaction as the ledger entry, so a retry either sees the constraint violation and returns the original result, or it's the first write and proceeds. The key point is that the dedupe record and the side effect commit atomically; if you store the key in Redis and the ledger in Postgres, you've just moved the race. That pattern took us from about three duplicate-charge incidents a quarter to zero.",
+      },
+      {
+        question:
+          "What Postgres isolation level would you use for ledger writes, and why?",
+        category: "technical",
+        probing:
+          "Depth on transaction semantics, and whether you know the cost of serializable.",
+        suggestedAnswer:
+          "Read committed by default, with explicit locking where I need more. Repeatable read and serializable both cost you retries under contention, and on a hot ledger that's a throughput problem. For the balance-check-then-debit pattern, I take a SELECT FOR UPDATE on the account row, which gives me the serialization I actually need on exactly the rows that need it. Where the invariant spans rows — the double-entry sum must be zero — I'd push that into a constraint or a trigger rather than relying on isolation. And whatever level you pick, the application has to handle serialization failures as a retry, not a 500.",
+      },
+      {
+        question: "Tell me about a time you eliminated an entire class of bug.",
+        category: "behavioral",
+        probing:
+          "Whether you go after root causes or patch symptoms — and whether the fix outlasted you.",
+        suggestedAnswer:
+          "We were seeing roughly three duplicate-charge incidents a quarter, and each one was being handled as an individual bug. I pushed back on that framing and traced them to a common cause: retries at the API edge with no idempotency contract, so any network timeout could produce a second charge. Rather than fix the call sites, I built an idempotency layer into the ledger service and made the key mandatory at the API boundary, which meant a migration across four client teams. That was the hard part — I had to make the case that the churn was worth it. We've had zero duplicate-charge incidents since, and because the key is required rather than optional, new code can't reintroduce the bug.",
+      },
+      {
+        question:
+          "You have seven years of experience and this role asks for eight-plus. Why are you ready?",
+        category: "behavioral",
+        probing:
+          "Self-awareness, and whether you argue with the premise or answer it.",
+        suggestedAnswer:
+          "Fair question, and I won't pretend the number isn't what it is. What I'd point at instead is scope: for the last three years I've owned the ledger end to end — correctness, latency, on-call, and the roadmap — at 12k writes a second with money on the line. I drove the settlement migration across teams and set the idempotency contract the rest of the organization now builds against. Where I'm genuinely still growing is influence beyond my own service and mentoring other senior engineers, and that's a large part of why this role appeals to me. I'd rather be honest about the edge of my experience than oversell it.",
+      },
+      {
+        question:
+          "Design a system that moves money between two providers that can both time out.",
+        category: "system_design",
+        probing:
+          "Whether you reach for a saga and reconciliation rather than hoping for distributed transactions.",
+        suggestedAnswer:
+          "I'd start by refusing to treat it as one transaction, because I can't have a distributed transaction across two providers. So: a saga with an explicit state machine per transfer, persisted in Postgres — initiated, debited, credited, settled, or needs-reconciliation. Every outbound call carries an idempotency key so a timeout can be retried safely. A timeout is specifically not a failure; it's an unknown, so the state machine parks the transfer and a reconciliation job polls the provider for the real outcome. Compensation is a reversing ledger entry, never a delete, so the audit trail stays intact. The thing I'd watch most closely is the needs-reconciliation queue depth — that's the metric that tells you a provider is misbehaving before your customers do.",
+      },
     ],
   },
   {
@@ -187,11 +453,31 @@ Requirements:
         "Go plus Kafka plus a throughput-sensitive hot path is a direct match, and your Python-to-Go rewrite shows the profiling instinct they want. The stretch is magnitude: they run trillions of points a day, and your strongest number is 12k writes a second. Compensation is also well below your target.",
       skills: [
         { skill: "Go", level: "have" as const, note: "Primary language" },
-        { skill: "Kafka", level: "have" as const, note: "Production ledger pipeline" },
-        { skill: "Performance profiling", level: "have" as const, note: "9x speedup on the route hot path" },
-        { skill: "High-volume streaming", level: "partial" as const, note: "12k/sec is real but orders of magnitude below theirs" },
-        { skill: "Time-series storage", level: "gap" as const, note: "No evidence of columnar or TSDB work" },
-        { skill: "Tier-0 on-call", level: "partial" as const, note: "Ledger on-call, smaller blast radius" },
+        {
+          skill: "Kafka",
+          level: "have" as const,
+          note: "Production ledger pipeline",
+        },
+        {
+          skill: "Performance profiling",
+          level: "have" as const,
+          note: "9x speedup on the route hot path",
+        },
+        {
+          skill: "High-volume streaming",
+          level: "partial" as const,
+          note: "12k/sec is real but orders of magnitude below theirs",
+        },
+        {
+          skill: "Time-series storage",
+          level: "gap" as const,
+          note: "No evidence of columnar or TSDB work",
+        },
+        {
+          skill: "Tier-0 on-call",
+          level: "partial" as const,
+          note: "Ledger on-call, smaller blast radius",
+        },
       ],
       strengths: [
         "The 9x Go rewrite is exactly the profiling-and-optimize story this team hires for",
@@ -218,22 +504,169 @@ Requirements:
       overview:
         "Close the time-series gap first — it is the one real hole. Then rehearse the profiling story in method form, since your scale numbers won't carry the argument on their own.",
       items: [
-        { kind: "concept" as const, title: "Read the Gorilla paper", detail: "Facebook's in-memory TSDB. Focus on delta-of-delta timestamp encoding and XOR float compression.", rationale: "This is the single highest-leverage item: it converts your one real gap into something you can discuss fluently.", difficulty: null, pattern: null, estMinutes: 90, url: "https://www.vldb.org/pvldb/vol8/p1816-teller.pdf", priority: 3, tags: ["time-series", "compression"] },
-        { kind: "concept" as const, title: "Go GC and escape analysis", detail: "Know when allocations escape to the heap, how to read a pprof alloc profile, and what GOGC actually tunes.", rationale: "They name memory optimization explicitly, and ingestion work lives or dies on allocation rate.", difficulty: null, pattern: null, estMinutes: 75, url: "https://go.dev/doc/gc-guide", priority: 3, tags: ["go", "performance"] },
-        { kind: "concept" as const, title: "Kafka consumer-group rebalancing", detail: "Why rebalances stall consumption, what cooperative sticky assignment changes, and how partition count bounds throughput.", rationale: "Operating a tier-0 Kafka ingestion path means rebalance pathologies will come up.", difficulty: null, pattern: null, estMinutes: 60, url: null, priority: 2, tags: ["kafka"] },
-        { kind: "leetcode" as const, title: "Sliding Window Maximum", detail: "Monotonic deque, O(n). This is the shape of a streaming rollup.", rationale: "Metric aggregation over a time window is literally this problem.", difficulty: "hard" as const, pattern: "monotonic deque", estMinutes: 50, url: "https://leetcode.com/problems/sliding-window-maximum/", priority: 3, tags: ["sliding-window", "deque"] },
-        { kind: "leetcode" as const, title: "Merge k Sorted Lists", detail: "Min-heap across k streams.", rationale: "Merging sorted time-series shards is the production version of this.", difficulty: "hard" as const, pattern: "heap", estMinutes: 45, url: "https://leetcode.com/problems/merge-k-sorted-lists/", priority: 2, tags: ["heap", "merge"] },
-        { kind: "leetcode" as const, title: "Top K Frequent Elements", detail: "Heap and bucket-sort approaches. Then discuss how you'd do it approximately over a stream.", rationale: "Top-k over a metric stream is a real Datadog problem, and the follow-up is count-min sketch.", difficulty: "medium" as const, pattern: "heap / bucket sort", estMinutes: 40, url: "https://leetcode.com/problems/top-k-frequent-elements/", priority: 2, tags: ["heap", "streaming"] },
-        { kind: "leetcode" as const, title: "Time Based Key-Value Store", detail: "Binary search over timestamped versions.", rationale: "Closest LeetCode analogue to a time-series point lookup.", difficulty: "medium" as const, pattern: "binary search", estMinutes: 35, url: "https://leetcode.com/problems/time-based-key-value-store/", priority: 3, tags: ["binary-search", "time-series"] },
-        { kind: "system_design" as const, title: "Design Datadog's metrics ingestion path", detail: "Agent to edge to Kafka to storage. Cover cardinality explosion, backpressure, out-of-order points, and what degrades first under a traffic spike.", rationale: "The role's central design question. Cardinality is the trap — make sure you raise it before they do.", difficulty: "hard" as const, pattern: null, estMinutes: 110, url: null, priority: 3, tags: ["system-design", "observability"] },
-        { kind: "behavioral" as const, title: "The 9x rewrite, told as method", detail: "Lead with how you found the bottleneck — profile first, hypothesis, measure — not with the 9x. Interviewers discount results and trust method.", rationale: "Your scale is smaller than theirs, so method is what transfers.", difficulty: null, pattern: null, estMinutes: 35, url: null, priority: 3, tags: ["star", "performance"] },
-        { kind: "research" as const, title: "Decide your position on Paris and the salary band", detail: "The range caps 45k below your target and the role is hybrid in Paris. Work out your actual answer before the recruiter call tomorrow.", rationale: "Two hard constraints collide here. Going into a recruiter call without a position on either wastes everyone's time.", difficulty: null, pattern: null, estMinutes: 20, url: null, priority: 3, tags: ["compensation", "logistics"] },
+        {
+          kind: "concept" as const,
+          title: "Read the Gorilla paper",
+          detail:
+            "Facebook's in-memory TSDB. Focus on delta-of-delta timestamp encoding and XOR float compression.",
+          rationale:
+            "This is the single highest-leverage item: it converts your one real gap into something you can discuss fluently.",
+          difficulty: null,
+          pattern: null,
+          estMinutes: 90,
+          url: "https://www.vldb.org/pvldb/vol8/p1816-teller.pdf",
+          priority: 3,
+          tags: ["time-series", "compression"],
+        },
+        {
+          kind: "concept" as const,
+          title: "Go GC and escape analysis",
+          detail:
+            "Know when allocations escape to the heap, how to read a pprof alloc profile, and what GOGC actually tunes.",
+          rationale:
+            "They name memory optimization explicitly, and ingestion work lives or dies on allocation rate.",
+          difficulty: null,
+          pattern: null,
+          estMinutes: 75,
+          url: "https://go.dev/doc/gc-guide",
+          priority: 3,
+          tags: ["go", "performance"],
+        },
+        {
+          kind: "concept" as const,
+          title: "Kafka consumer-group rebalancing",
+          detail:
+            "Why rebalances stall consumption, what cooperative sticky assignment changes, and how partition count bounds throughput.",
+          rationale:
+            "Operating a tier-0 Kafka ingestion path means rebalance pathologies will come up.",
+          difficulty: null,
+          pattern: null,
+          estMinutes: 60,
+          url: null,
+          priority: 2,
+          tags: ["kafka"],
+        },
+        {
+          kind: "leetcode" as const,
+          title: "Sliding Window Maximum",
+          detail: "Monotonic deque, O(n). This is the shape of a streaming rollup.",
+          rationale:
+            "Metric aggregation over a time window is literally this problem.",
+          difficulty: "hard" as const,
+          pattern: "monotonic deque",
+          estMinutes: 50,
+          url: "https://leetcode.com/problems/sliding-window-maximum/",
+          priority: 3,
+          tags: ["sliding-window", "deque"],
+        },
+        {
+          kind: "leetcode" as const,
+          title: "Merge k Sorted Lists",
+          detail: "Min-heap across k streams.",
+          rationale:
+            "Merging sorted time-series shards is the production version of this.",
+          difficulty: "hard" as const,
+          pattern: "heap",
+          estMinutes: 45,
+          url: "https://leetcode.com/problems/merge-k-sorted-lists/",
+          priority: 2,
+          tags: ["heap", "merge"],
+        },
+        {
+          kind: "leetcode" as const,
+          title: "Top K Frequent Elements",
+          detail:
+            "Heap and bucket-sort approaches. Then discuss how you'd do it approximately over a stream.",
+          rationale:
+            "Top-k over a metric stream is a real Datadog problem, and the follow-up is count-min sketch.",
+          difficulty: "medium" as const,
+          pattern: "heap / bucket sort",
+          estMinutes: 40,
+          url: "https://leetcode.com/problems/top-k-frequent-elements/",
+          priority: 2,
+          tags: ["heap", "streaming"],
+        },
+        {
+          kind: "leetcode" as const,
+          title: "Time Based Key-Value Store",
+          detail: "Binary search over timestamped versions.",
+          rationale: "Closest LeetCode analogue to a time-series point lookup.",
+          difficulty: "medium" as const,
+          pattern: "binary search",
+          estMinutes: 35,
+          url: "https://leetcode.com/problems/time-based-key-value-store/",
+          priority: 3,
+          tags: ["binary-search", "time-series"],
+        },
+        {
+          kind: "system_design" as const,
+          title: "Design Datadog's metrics ingestion path",
+          detail:
+            "Agent to edge to Kafka to storage. Cover cardinality explosion, backpressure, out-of-order points, and what degrades first under a traffic spike.",
+          rationale:
+            "The role's central design question. Cardinality is the trap — make sure you raise it before they do.",
+          difficulty: "hard" as const,
+          pattern: null,
+          estMinutes: 110,
+          url: null,
+          priority: 3,
+          tags: ["system-design", "observability"],
+        },
+        {
+          kind: "behavioral" as const,
+          title: "The 9x rewrite, told as method",
+          detail:
+            "Lead with how you found the bottleneck — profile first, hypothesis, measure — not with the 9x. Interviewers discount results and trust method.",
+          rationale:
+            "Your scale is smaller than theirs, so method is what transfers.",
+          difficulty: null,
+          pattern: null,
+          estMinutes: 35,
+          url: null,
+          priority: 3,
+          tags: ["star", "performance"],
+        },
+        {
+          kind: "research" as const,
+          title: "Decide your position on Paris and the salary band",
+          detail:
+            "The range caps 45k below your target and the role is hybrid in Paris. Work out your actual answer before the recruiter call tomorrow.",
+          rationale:
+            "Two hard constraints collide here. Going into a recruiter call without a position on either wastes everyone's time.",
+          difficulty: null,
+          pattern: null,
+          estMinutes: 20,
+          url: null,
+          priority: 3,
+          tags: ["compensation", "logistics"],
+        },
       ],
     },
     questionnaire: [
-      { question: "How would you handle cardinality explosion in a metrics system?", category: "technical", probing: "Whether you know cardinality — not volume — is what actually kills a TSDB.", suggestedAnswer: "Cardinality is the real failure mode, not point volume — a million points a second on a thousand series is fine, and a thousand points a second across a million series will take you down, because every unique tag combination becomes its own series with its own index entry and memory footprint. So I'd attack it at the source: enforce limits per customer and per metric at the ingestion edge, reject or aggregate away unbounded tags like request IDs and user IDs, and make the rejection visible to the customer rather than silent. Operationally I'd alert on new-series creation rate, since that's the leading indicator — by the time memory is climbing you're already in trouble. I haven't run a TSDB at Datadog's scale, but I hit the same shape of problem with Postgres partitioning: the cost was never the row count, it was how many partitions the planner had to consider." },
-      { question: "Your largest system did 12k writes/sec. We do orders of magnitude more. Why does your experience transfer?", category: "technical", probing: "Honesty about scale, and whether your reasoning is principled or cargo-culted.", suggestedAnswer: "It transfers as method, not as a number, and I'd rather say that plainly than pretend 12k is close to what you run. What I've actually practised is finding the bottleneck rather than guessing at it. On the route service I had a Python hot path everyone assumed was CPU-bound; the profile showed it was allocation and serialization overhead, and the Go rewrite got 9x because it attacked that, not because Go is faster. The same discipline — profile before you change anything, form one hypothesis at a time, measure under realistic load — is what I'd bring here. What I'd genuinely have to learn is which things break first at your scale, because the failure modes at 12k and at trillions-per-day are not the same set, and I don't want to claim an intuition I haven't earned." },
-      { question: "Why Datadog, and why now?", category: "culture", probing: "Whether you have a real reason or you're mass-applying.", suggestedAnswer: "I've spent three years on a system where correctness mattered more than anything else, and I want to spend the next few on one where latency and throughput are the hard constraint — that's a different set of muscles and I'd like to build them. Ingestion appeals specifically because it's the part of observability where the engineering is genuinely hard and the requirements are unambiguous: points in, no loss, low latency, enormous volume. I'd also say honestly that I'm talking to a few companies, and the two open questions for me here are the Paris hybrid expectation against my remote preference, and where the compensation band actually lands relative to what I'm targeting. I'd rather put those on the table early than six rounds in." },
+      {
+        question: "How would you handle cardinality explosion in a metrics system?",
+        category: "technical",
+        probing:
+          "Whether you know cardinality — not volume — is what actually kills a TSDB.",
+        suggestedAnswer:
+          "Cardinality is the real failure mode, not point volume — a million points a second on a thousand series is fine, and a thousand points a second across a million series will take you down, because every unique tag combination becomes its own series with its own index entry and memory footprint. So I'd attack it at the source: enforce limits per customer and per metric at the ingestion edge, reject or aggregate away unbounded tags like request IDs and user IDs, and make the rejection visible to the customer rather than silent. Operationally I'd alert on new-series creation rate, since that's the leading indicator — by the time memory is climbing you're already in trouble. I haven't run a TSDB at Datadog's scale, but I hit the same shape of problem with Postgres partitioning: the cost was never the row count, it was how many partitions the planner had to consider.",
+      },
+      {
+        question:
+          "Your largest system did 12k writes/sec. We do orders of magnitude more. Why does your experience transfer?",
+        category: "technical",
+        probing:
+          "Honesty about scale, and whether your reasoning is principled or cargo-culted.",
+        suggestedAnswer:
+          "It transfers as method, not as a number, and I'd rather say that plainly than pretend 12k is close to what you run. What I've actually practised is finding the bottleneck rather than guessing at it. On the route service I had a Python hot path everyone assumed was CPU-bound; the profile showed it was allocation and serialization overhead, and the Go rewrite got 9x because it attacked that, not because Go is faster. The same discipline — profile before you change anything, form one hypothesis at a time, measure under realistic load — is what I'd bring here. What I'd genuinely have to learn is which things break first at your scale, because the failure modes at 12k and at trillions-per-day are not the same set, and I don't want to claim an intuition I haven't earned.",
+      },
+      {
+        question: "Why Datadog, and why now?",
+        category: "culture",
+        probing: "Whether you have a real reason or you're mass-applying.",
+        suggestedAnswer:
+          "I've spent three years on a system where correctness mattered more than anything else, and I want to spend the next few on one where latency and throughput are the hard constraint — that's a different set of muscles and I'd like to build them. Ingestion appeals specifically because it's the part of observability where the engineering is genuinely hard and the requirements are unambiguous: points in, no loss, low latency, enormous volume. I'd also say honestly that I'm talking to a few companies, and the two open questions for me here are the Paris hybrid expectation against my remote preference, and where the compensation band actually lands relative to what I'm targeting. I'd rather put those on the table early than six rounds in.",
+      },
     ],
   },
   {
@@ -296,7 +729,8 @@ Requirements:
     description:
       "Principal Engineer to own platform direction across six teams. Requires 10+ years and prior principal-level scope.",
     stages: ["applied", "screening", "rejected"] as const,
-    notes: "Former employer. Rejected at screening — they wanted prior principal scope.",
+    notes:
+      "Former employer. Rejected at screening — they wanted prior principal scope.",
   },
   {
     company: "Linear",

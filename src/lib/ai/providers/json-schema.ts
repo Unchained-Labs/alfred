@@ -19,7 +19,11 @@ function tighten(node: unknown): unknown {
     out[key] = tighten(value);
   }
 
-  if (out.type === "object" && out.properties && typeof out.properties === "object") {
+  if (
+    out.type === "object" &&
+    out.properties &&
+    typeof out.properties === "object"
+  ) {
     out.additionalProperties = false;
     out.required = Object.keys(out.properties as JsonSchemaNode);
   }

@@ -106,7 +106,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 /** Deep-merges stored settings over defaults so new fields appear automatically. */
 function merge<T>(base: T, override: unknown): T {
   if (!isRecord(override) || !isRecord(base)) {
-    return (override === undefined ? base : (override as T));
+    return override === undefined ? base : (override as T);
   }
   const out: Record<string, unknown> = { ...base };
   for (const [key, value] of Object.entries(override)) {
@@ -156,7 +156,9 @@ export function redactSettings(input: AlfredSettings) {
       anthropic: {
         ...input.ai.anthropic,
         apiKey: "",
-        hasApiKey: Boolean(input.ai.anthropic.apiKey || process.env.ANTHROPIC_API_KEY),
+        hasApiKey: Boolean(
+          input.ai.anthropic.apiKey || process.env.ANTHROPIC_API_KEY,
+        ),
       },
       openaiCompat: {
         ...input.ai.openaiCompat,
@@ -169,7 +171,11 @@ export function redactSettings(input: AlfredSettings) {
         hasApiKey: Boolean(input.ai.agent.apiKey),
       },
     },
-    mail: { ...input.mail, password: "", hasPassword: Boolean(input.mail.password) },
+    mail: {
+      ...input.mail,
+      password: "",
+      hasPassword: Boolean(input.mail.password),
+    },
   };
 }
 

@@ -117,8 +117,7 @@ export async function fetchRecentMail(
         collected.push({
           // Fall back to a UID-derived key so a message without a Message-ID
           // header still dedupes across syncs.
-          messageId:
-            parsed.messageId ?? `uid-${config.user}-${message.uid}`,
+          messageId: parsed.messageId ?? `uid-${config.user}-${message.uid}`,
           subject: parsed.subject ?? message.envelope?.subject ?? null,
           fromAddress: from?.address ?? null,
           fromName: from?.name || null,

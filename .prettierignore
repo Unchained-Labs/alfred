@@ -1,0 +1,6 @@
+.next/
+node_modules/
+drizzle/
+site/
+package-lock.json
+data/

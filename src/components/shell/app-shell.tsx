@@ -27,7 +27,7 @@ export function AppShell({
       <Sidebar badges={badges} />
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-2 border-b border-line bg-page/80 px-4 backdrop-blur-xl lg:px-6">
+        <header className="border-line bg-page/80 sticky top-0 z-30 flex h-14 shrink-0 items-center gap-2 border-b px-4 backdrop-blur-xl lg:px-6">
           <div className="flex items-center gap-2 lg:hidden">
             <Logo className="size-7" />
             <span className="text-sm font-semibold tracking-tight">Alfred</span>
@@ -36,13 +36,13 @@ export function AppShell({
           <button
             type="button"
             onClick={() => palette.setOpen(true)}
-            className="ml-auto flex h-9 cursor-pointer items-center gap-2 rounded-lg border border-line bg-surface-2 pr-2 pl-3 text-xs text-ink-muted transition-colors hover:border-line-strong hover:text-ink lg:ml-0 lg:w-72"
+            className="border-line bg-surface-2 text-ink-muted hover:border-line-strong hover:text-ink ml-auto flex h-9 cursor-pointer items-center gap-2 rounded-lg border pr-2 pl-3 text-xs transition-colors lg:ml-0 lg:w-72"
           >
             <Search className="size-3.5 shrink-0" />
             <span className="hidden flex-1 text-left lg:block">
               Search applications…
             </span>
-            <kbd className="hidden items-center gap-0.5 rounded border border-line bg-surface px-1.5 py-0.5 text-[10px] lg:flex">
+            <kbd className="border-line bg-surface hidden items-center gap-0.5 rounded border px-1.5 py-0.5 text-[10px] lg:flex">
               <Command className="size-2.5" />K
             </kbd>
           </button>
@@ -86,9 +86,9 @@ export function PageHeader({
   return (
     <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
       <div className="min-w-0">
-        <h1 className="text-xl font-semibold tracking-tight text-ink">{title}</h1>
+        <h1 className="text-ink text-xl font-semibold tracking-tight">{title}</h1>
         {description ? (
-          <p className="mt-1 text-sm text-ink-muted">{description}</p>
+          <p className="text-ink-muted mt-1 text-sm">{description}</p>
         ) : null}
       </div>
       {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
