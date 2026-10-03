@@ -2,7 +2,10 @@
   "name": "alfred",
   "version": "0.1.0",
   "private": true,
-  "description": "Alfred — your job-hunt butler. Track applications, get AI-driven interview prep actionables.",
+  "engines": {
+    "node": ">=22"
+  },
+  "description": "Alfred \u2014 your job-hunt butler. Track applications, get AI-driven interview prep actionables.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

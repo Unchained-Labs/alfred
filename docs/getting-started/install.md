@@ -4,7 +4,7 @@ Alfred is a Next.js app that runs on your machine against a local SQLite file.
 
 ## Requirements
 
-- **Node.js 20, 22 or 24** — these are the versions CI covers.
+- **Node.js 22 or newer** — `better-sqlite3` requires it, and CI covers 22 and 24.
 - A C toolchain for `better-sqlite3`. Prebuilt binaries cover most platforms; if
   yours isn't covered, npm compiles from source and you'll need `build-essential`
   (Debian/Ubuntu) or the Xcode command line tools (macOS).
