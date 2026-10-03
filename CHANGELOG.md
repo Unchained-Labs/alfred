@@ -11,6 +11,8 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Fixed
 
+- The dashboard claimed "Alfred isn't connected yet" whenever Local Claude Code was the selected provider: the readiness check only knew about the other three. The check moved to `providerIsConfigured` in `settings.ts`, where an exhaustive switch makes omitting a new provider a type error rather than a silent wrong answer.
+
 - Time-dependent styling ("overdue" badges) was computed with `Date.now()` during render, so the server and the browser could disagree about whether a deadline had passed. It now resolves after mount through `useNow()` and refreshes every minute.
 - Derived state (board cards, the stage picker, the application form, the command palette) was synchronised in effects, which painted one stale frame after a server refresh. It is now adjusted during render.
 
