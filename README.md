@@ -1,9 +1,20 @@
+<div align="center">
+
 # Alfred
 
-Your job-hunt butler. Alfred tracks every application you have in flight and
-turns each one into concrete work: a calibrated fit score, a prep plan of real
-LeetCode problems and concepts, and a questionnaire of the interview questions
-that role is actually going to ask.
+**Your job-hunt butler.**
+
+Track every application you have in flight, and turn each one into concrete work:<br>
+a calibrated fit score, a prep plan of real problems and concepts, and the interview
+questions that role is actually going to ask.
+
+[![CI](https://github.com/Unchained-Labs/alfred/actions/workflows/ci.yml/badge.svg)](https://github.com/Unchained-Labs/alfred/actions/workflows/ci.yml)
+[![Docs](https://img.shields.io/badge/docs-unchained--labs.github.io-e3b23c)](https://unchained-labs.github.io/alfred/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
+**[Documentation](https://unchained-labs.github.io/alfred/)** · [Quick start](#quick-start) · [AI providers](#the-ai-layer) · [Changelog](CHANGELOG.md)
+
+</div>
 
 It runs locally against SQLite. Nothing leaves your machine except the calls you
 configure to an AI provider and, optionally, a read-only IMAP connection.
@@ -20,7 +31,7 @@ posting and let Alfred extract the fields.
 cheerleader, with skill-by-skill coverage, the gaps worth closing, and a
 positioning angle for your résumé.
 
-**Prepare** — A prep plan built for *that* role: coding problems chosen for the
+**Prepare** — A prep plan built for _that_ role: coding problems chosen for the
 patterns the company's stack implies, concepts targeting your gaps, system
 design prompts framed around their product, and the behavioral stories to
 rehearse. Plus a questionnaire with draft answers grounded in your real
@@ -89,14 +100,14 @@ Alfred `POST`s a task envelope and accepts whatever you send back:
 ```jsonc
 // Request
 {
-  "task": "analyze_job",        // which operation is running
-  "agent": "job-coach",         // optional, from Settings
-  "system": "...",              // the system prompt
-  "prompt": "...",              // candidate + job context
-  "responseType": "object",     // or "text"
-  "schema": { /* JSON Schema */ },   // only when responseType is "object"
+  "task": "analyze_job", // which operation is running
+  "agent": "job-coach", // optional, from Settings
+  "system": "...", // the system prompt
+  "prompt": "...", // candidate + job context
+  "responseType": "object", // or "text"
+  "schema": {/* JSON Schema */}, // only when responseType is "object"
   "schemaName": "job_analysis",
-  "maxTokens": 16000
+  "maxTokens": 16000,
 }
 ```
 
@@ -113,14 +124,14 @@ rather than swallowed.
 
 ### Operations
 
-| Operation | Trigger |
-|---|---|
-| `parse_job_posting` | Pasting a posting into the add-application dialog |
-| `analyze_job` | **Analyze this role** on an application |
-| `generate_actionables` | **Build my prep plan** |
-| `generate_questionnaire` | **Draft the questions** |
-| `triage_email` | Each new email during a mailbox sync |
-| `chat` | Ask Alfred, streamed |
+| Operation                | Trigger                                           |
+| ------------------------ | ------------------------------------------------- |
+| `parse_job_posting`      | Pasting a posting into the add-application dialog |
+| `analyze_job`            | **Analyze this role** on an application           |
+| `generate_actionables`   | **Build my prep plan**                            |
+| `generate_questionnaire` | **Draft the questions**                           |
+| `triage_email`           | Each new email during a mailbox sync              |
+| `chat`                   | Ask Alfred, streamed                              |
 
 ---
 
@@ -131,7 +142,7 @@ Gmail or Outlook, use an app password, not your account password.
 
 Each sync fetches mail newer than your lookback window, dedupes on `Message-ID`,
 and (if triage is on) classifies each new message. An email is auto-linked only
-when the model's confidence is at least 0.75 *and* the company resolves to one
+when the model's confidence is at least 0.75 _and_ the company resolves to one
 already in your pipeline. Everything else waits in the inbox for you.
 
 ---
@@ -160,24 +171,36 @@ src/
 (`better-sqlite3`), Radix primitives, Recharts, dnd-kit.
 
 **Data viz** — The palette is validated, not eyeballed. Pipeline stages are
-*ordinal*, so they take a single-hue blue ramp; actionable kinds are
-*categorical* and take fixed palette slots in order; fit scores and skill
-coverage are *status*, so they use the reserved status colors and always ship
+_ordinal_, so they take a single-hue blue ramp; actionable kinds are
+_categorical_ and take fixed palette slots in order; fit scores and skill
+coverage are _status_, so they use the reserved status colors and always ship
 an icon or text label alongside. Both themes were validated against Alfred's
 own surfaces.
 
 ### Scripts
 
-| Command | What it does |
-|---|---|
-| `npm run dev` | Dev server |
-| `npm run build` / `start` | Production build and serve |
-| `npm run typecheck` | `tsc --noEmit` |
-| `npm run seed` | **Destructive.** Replaces all data with the demo pipeline |
-| `npm run db:generate` | New migration from a schema change |
-| `npm run db:studio` | Drizzle Studio |
+| Command                   | What it does                                              |
+| ------------------------- | --------------------------------------------------------- |
+| `npm run dev`             | Dev server                                                |
+| `npm run build` / `start` | Production build and serve                                |
+| `npm run typecheck`       | `tsc --noEmit`                                            |
+| `npm run seed`            | **Destructive.** Replaces all data with the demo pipeline |
+| `npm run db:generate`     | New migration from a schema change                        |
+| `npm run db:studio`       | Drizzle Studio                                            |
 
 ---
+
+## Documentation
+
+Full documentation is at **<https://unchained-labs.github.io/alfred/>** — guides for
+[tracking](https://unchained-labs.github.io/alfred/guide/tracking/),
+[analysis](https://unchained-labs.github.io/alfred/guide/analysis/),
+[prep](https://unchained-labs.github.io/alfred/guide/prep/) and the
+[mailbox](https://unchained-labs.github.io/alfred/guide/mailbox/), plus the
+[provider comparison](https://unchained-labs.github.io/alfred/reference/ai-providers/)
+and the [custom agent API](https://unchained-labs.github.io/alfred/reference/agent-api/).
+
+Contributions welcome — see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## A note on secrets
 

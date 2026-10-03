@@ -1,0 +1,112 @@
+site_name: Alfred
+site_description: Your job-hunt butler — track applications and turn each one into concrete interview prep, powered by the AI provider of your choice.
+site_url: https://unchained-labs.github.io/alfred/
+repo_url: https://github.com/Unchained-Labs/alfred
+repo_name: Unchained-Labs/alfred
+edit_uri: edit/main/docs/
+copyright: MIT licensed · © 2026 Erwin Lejeune and contributors
+
+theme:
+  name: material
+  custom_dir: docs/overrides
+  logo: assets/logo.svg
+  favicon: assets/logo.svg
+  font:
+    text: Inter
+    code: JetBrains Mono
+  icon:
+    repo: fontawesome/brands/github
+  palette:
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-sunny
+        name: Light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-night
+        name: Dark mode
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - navigation.indexes
+    - navigation.instant
+    - navigation.instant.progress
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+    - content.action.edit
+    - toc.follow
+
+extra_css:
+  - assets/extra.css
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/Unchained-Labs/alfred
+  generator: false
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - footnotes
+  - def_list
+  - toc:
+      permalink: "#"
+  - pymdownx.details
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.inlinehilite
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.snippets:
+      base_path: [".", "docs"]
+      check_paths: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+
+plugins:
+  - search
+
+nav:
+  - Home: index.md
+  - Getting started:
+      - Install: getting-started/install.md
+      - Quick start: getting-started/quickstart.md
+  - Guide:
+      - Tracking applications: guide/tracking.md
+      - Fit analysis: guide/analysis.md
+      - Prep plans & questionnaires: guide/prep.md
+      - Mailbox: guide/mailbox.md
+  - Reference:
+      - AI providers: reference/ai-providers.md
+      - Custom agent API: reference/agent-api.md
+      - Configuration: reference/configuration.md
+      - Architecture: reference/architecture.md
+      - Security: reference/security.md
+  - FAQ: faq.md
+  - Project:
+      - Contributing: project/contributing.md
+      - Code of Conduct: project/code-of-conduct.md
+      - Changelog: project/changelog.md
