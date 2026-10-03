@@ -1,0 +1,96 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: check (node ${{ matrix.node }})
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ["20", "22", "24"]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - name: typecheck
+        run: npm run typecheck
+      - name: lint
+        run: npm run lint
+      - name: format
+        run: npm run format:check
+      - name: build
+        run: npm run build
+
+  migrations:
+    name: migrations are committed
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - name: schema applies from scratch
+        run: npm run migrate
+      - name: no uncommitted migration for the current schema
+        run: |
+          npm run db:generate
+          if ! git diff --quiet -- drizzle; then
+            echo "::error::src/db/schema.ts changed without a committed migration. Run 'npm run db:generate' and commit drizzle/."
+            git --no-pager diff --stat -- drizzle
+            exit 1
+          fi
+
+  smoke:
+    name: app boots and serves
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: every route responds, unknown routes 404
+        run: |
+          npm run start -- -p 3000 &
+          for i in $(seq 1 30); do curl -sf -o /dev/null http://localhost:3000/ && break; sleep 1; done
+          fail=0
+          for path in / /pipeline /prep /inbox /settings; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:3000$path")
+            echo "$code $path"; [ "$code" = 200 ] || fail=1
+          done
+          code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/nope)
+          echo "$code /nope"; [ "$code" = 404 ] || fail=1
+          # With no provider configured, AI routes must refuse cleanly rather than 500.
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST http://localhost:3000/api/ai/test \
+            -H 'content-type: application/json' -d '{"provider":"agent","config":{"endpoint":""}}')
+          echo "$code /api/ai/test (unconfigured)"; [ "$code" = 409 ] || fail=1
+          exit $fail
+
+  docs:
+    name: docs build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: docs/requirements.txt
+      - run: pip install -r docs/requirements.txt
+      - name: build docs (strict — broken links fail)
+        run: mkdocs build --strict
