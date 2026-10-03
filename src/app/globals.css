@@ -1,0 +1,318 @@
+@import "tailwindcss";
+
+/* next-themes writes `class="dark"` on <html>; make that Tailwind's dark variant. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ==================================================================
+ * Palette
+ *
+ * Series, ordinal, and status values come from the validated data-viz
+ * palette — do not eyeball new ones. Both modes were re-validated
+ * against Alfred's own surfaces (light #fdfdfc / dark #15151a):
+ *   categorical 8  → all checks pass in both modes
+ *   stage ramp 5   → ordinal checks pass in both modes
+ * Light mode's aqua / yellow / magenta sit below 3:1, so every use of
+ * them ships a visible text label (the "relief rule").
+ * ================================================================== */
+
+:root {
+  color-scheme: light;
+
+  /* Surfaces */
+  --page: #f9f9f7;
+  --surface: #fdfdfc;
+  --surface-2: #f3f3ef;
+  --surface-3: #e9e9e3;
+
+  /* Ink */
+  --ink: #0b0b0b;
+  --ink-2: #52514e;
+  --ink-muted: #898781;
+
+  /* Chrome lines */
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+  --border: rgb(11 11 11 / 0.1);
+  --border-strong: rgb(11 11 11 / 0.18);
+
+  /* Brand — UI chrome ONLY. Never a series color, never inside a plot. */
+  --brand: #a9741a;
+  --brand-hot: #8c5f12;
+  --brand-wash: rgb(169 116 26 / 0.12);
+  --brand-ink: #ffffff;
+
+  /* Categorical series — fixed order, assigned in sequence, never cycled */
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+  --series-4: #eda100;
+  --series-5: #e87ba4;
+  --series-6: #008300;
+  --series-7: #4a3aa7;
+  --series-8: #e34948;
+
+  /* Pipeline stages — ordinal blue ramp, light → dark with progress */
+  --stage-wishlist: #898781;
+  --stage-applied: #86b6ef;
+  --stage-screening: #5598e7;
+  --stage-technical: #2a78d6;
+  --stage-onsite: #1c5cab;
+  --stage-offer: #104281;
+
+  /* Status — reserved meanings, always shipped with an icon or label */
+  --good: #0ca30c;
+  --warning: #fab219;
+  --serious: #ec835a;
+  --critical: #d03b3b;
+  --good-ink: #006300;
+
+  /* Terminal stages read as outcomes, so they borrow status, not the ramp */
+  --stage-accepted: var(--good);
+  --stage-rejected: var(--critical);
+  --stage-withdrawn: #898781;
+
+  --radius: 0.75rem;
+  --shadow-card: 0 1px 2px rgb(11 11 11 / 0.04), 0 8px 24px -12px rgb(11 11 11 / 0.1);
+  --shadow-pop: 0 12px 48px -12px rgb(11 11 11 / 0.22);
+}
+
+.dark {
+  color-scheme: dark;
+
+  --page: #0b0b0e;
+  --surface: #15151a;
+  --surface-2: #1c1c22;
+  --surface-3: #25252c;
+
+  --ink: #ffffff;
+  --ink-2: #c3c2b7;
+  --ink-muted: #898781;
+
+  --grid: #2c2c2a;
+  --axis: #383835;
+  --border: rgb(255 255 255 / 0.1);
+  --border-strong: rgb(255 255 255 / 0.18);
+
+  --brand: #e3b23c;
+  --brand-hot: #f3c65a;
+  --brand-wash: rgb(227 178 60 / 0.14);
+  --brand-ink: #15151a;
+
+  /* Same eight hues, stepped for the dark surface — not an automatic flip */
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-3: #199e70;
+  --series-4: #c98500;
+  --series-5: #d55181;
+  --series-6: #008300;
+  --series-7: #9085e9;
+  --series-8: #e66767;
+
+  /* Progress reads as brightness on a dark surface, so the ramp inverts */
+  --stage-wishlist: #898781;
+  --stage-applied: #184f95;
+  --stage-screening: #256abf;
+  --stage-technical: #3987e5;
+  --stage-onsite: #6da7ec;
+  --stage-offer: #9ec5f4;
+
+  --good-ink: #0ca30c;
+
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.5), 0 8px 24px -12px rgb(0 0 0 / 0.7);
+  --shadow-pop: 0 12px 48px -12px rgb(0 0 0 / 0.8);
+}
+
+/* `inline` keeps the generated utilities pointing at the custom property, so
+ * flipping the .dark class restyles everything without a rebuild. */
+@theme inline {
+  --color-page: var(--page);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-muted: var(--ink-muted);
+
+  --color-grid: var(--grid);
+  --color-axis: var(--axis);
+  --color-line: var(--border);
+  --color-line-strong: var(--border-strong);
+
+  --color-brand: var(--brand);
+  --color-brand-hot: var(--brand-hot);
+  --color-brand-wash: var(--brand-wash);
+  --color-brand-ink: var(--brand-ink);
+
+  --color-series-1: var(--series-1);
+  --color-series-2: var(--series-2);
+  --color-series-3: var(--series-3);
+  --color-series-4: var(--series-4);
+  --color-series-5: var(--series-5);
+  --color-series-6: var(--series-6);
+  --color-series-7: var(--series-7);
+  --color-series-8: var(--series-8);
+
+  --color-good: var(--good);
+  --color-good-ink: var(--good-ink);
+  --color-warning: var(--warning);
+  --color-serious: var(--serious);
+  --color-critical: var(--critical);
+
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+
+  --radius-card: var(--radius);
+}
+
+/* ================================================================== */
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--page);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* One visible focus treatment everywhere, keyboard-only. */
+  :focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  ::selection {
+    background: var(--brand-wash);
+  }
+
+  /* Recessive scrollbars so panels don't gain a hard edge. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--surface-3) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: var(--surface-3);
+    border: 3px solid transparent;
+    border-radius: 999px;
+    background-clip: content-box;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: var(--axis);
+    background-clip: content-box;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  /* The one card treatment the whole app shares. */
+  .card {
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-card);
+  }
+
+  /* Faint top highlight — reads as light catching an edge in dark mode. */
+  .card-lit {
+    position: relative;
+    overflow: hidden;
+  }
+  .card-lit::before {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    top: 0;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      var(--border-strong) 20%,
+      var(--border-strong) 80%,
+      transparent
+    );
+    pointer-events: none;
+  }
+
+  /* Ambient brand glow behind hero areas. Decorative, never over data. */
+  .aurora {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(
+        60% 60% at 15% 0%,
+        var(--brand-wash) 0%,
+        transparent 60%
+      ),
+      radial-gradient(
+        50% 50% at 100% 10%,
+        color-mix(in oklab, var(--series-1) 14%, transparent) 0%,
+        transparent 55%
+      );
+  }
+
+  /* Numbers in aligned columns only — per the figures spec. */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .label-eyebrow {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+  }
+
+  /* Skeleton shimmer for pending AI work. */
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      var(--surface-2) 0%,
+      var(--surface-3) 50%,
+      var(--surface-2) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.6s ease-in-out infinite;
+  }
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* Recharts injects its own focus ring on every surface; ours is enough. */
+.recharts-wrapper:focus,
+.recharts-surface:focus {
+  outline: none;
+}
