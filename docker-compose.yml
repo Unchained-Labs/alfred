@@ -32,11 +32,14 @@ services:
       ALFRED_AGENT_API_KEY: ${ALFRED_AGENT_API_KEY:-}
 
     volumes:
-      # A named volume rather than a bind mount: it survives `down`, it does not
-      # inherit host ownership (SQLite must write, and a root-owned bind mount
-      # it cannot), and it keeps the three WAL files together where a backup can
-      # find them.
-      - alfred-data:/data
+      # Defaults to the named volume `alfred-data`, which survives `down` and
+      # does not inherit host ownership. Set ALFRED_DATA to an absolute or
+      # ./relative path to bind a host directory instead — do that when
+      # something on the host backs the database up, because a named volume
+      # lives under /var/lib/docker and a sweep of your app directories will
+      # not see it. The container runs as uid 1000, so a bound directory must
+      # be writable by uid 1000.
+      - ${ALFRED_DATA:-alfred-data}:/data
 
     # A ceiling, not a reservation. The work is a Next server and a SQLite file.
     mem_limit: 512m

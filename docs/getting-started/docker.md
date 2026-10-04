@@ -17,7 +17,7 @@ render, exactly as when you run Alfred with `npm run dev`.
 |---|---|
 | **Image** | Multi-stage, `node:22-bookworm-slim`, runs as the non-root `node` user |
 | **Port** | `127.0.0.1:3100` — loopback only, deliberately |
-| **Data** | Named volume `alfred-data`, mounted at `/data` |
+| **Data** | Named volume `alfred-data` at `/data`, or a host path via `ALFRED_DATA` |
 | **Health** | `/api/health`, which asks SQLite a question rather than returning a constant |
 
 ## Why it binds loopback
@@ -74,6 +74,21 @@ docker compose down -v    # stop AND delete the database (destructive)
 To back it up, copy `alfred.db`, `alfred.db-wal` and `alfred.db-shm` together,
 or stop the container first. Copying only the `.db` while the app is running
 gives you a file missing the most recent writes.
+
+### Keeping the database on the host
+
+Set `ALFRED_DATA` to a path and the container binds that directory instead of
+the named volume:
+
+```sh
+ALFRED_DATA=./data docker compose up -d
+```
+
+Do this when you already have an `alfred.db` to carry over, or when something
+on the host backs the database up — a named volume lives under
+`/var/lib/docker`, so a backup that sweeps your app directories will not find
+it. The container runs as uid 1000, so the directory must be writable by uid
+1000.
 
 ## Providers
 

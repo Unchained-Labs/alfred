@@ -79,15 +79,30 @@ COPY --from=builder --chown=node:node /app/.next/static ./.next/static
 # around a native module and miss the compiled .node file, which produces an
 # image that looks correct until the first query.
 COPY --from=builder --chown=node:node /app/node_modules/better-sqlite3 ./node_modules/better-sqlite3
+# The migrations themselves. src/app/layout.tsx calls runMigrations(), so EVERY
+# page renders through drizzle reading ./drizzle/meta/_journal.json at a path
+# relative to the working directory. Standalone tracing cannot see it — it is
+# read at runtime by a string path, not imported — so without this line the
+# image builds, starts, and answers /api/health happily while every single page
+# returns 500 "Can't find meta/_journal.json file".
+COPY --from=builder --chown=node:node /app/drizzle ./drizzle
 
 USER node
 EXPOSE 3100
 VOLUME ["/data"]
 
-# Hits the app's own health route rather than the root page: the root renders
-# the dashboard, which touches the database, so a root-based check would report
-# unhealthy during a slow first migration when the server is in fact fine.
-HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
-  CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||3100)+'/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+# Checks BOTH the health route and the root page, and needs both to pass.
+#
+# /api/health alone is not enough, and the way that was discovered is the reason
+# for this comment: a route handler does not render the root layout, so when the
+# migrations folder was missing from this image the health route answered
+# {"ok":true} while every page in the app returned 500. A check that cannot
+# observe the failure mode you have is not a check.
+#
+# The root page touches the database and runs migrations, so a cold start is
+# slow — that is what start-period and retries are for, rather than a reason to
+# probe something cheaper and less truthful.
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD node -e "const b='http://127.0.0.1:'+(process.env.PORT||3100);Promise.all([fetch(b+'/api/health'),fetch(b+'/')]).then(rs=>process.exit(rs.every(r=>r.ok)?0:1)).catch(()=>process.exit(1))"
 
 CMD ["node", "server.js"]
