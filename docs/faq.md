@@ -16,6 +16,17 @@ in it. To avoid storing them, set `ANTHROPIC_API_KEY`, `ALFRED_LLM_API_KEY` or
 the environment takes precedence. The browser never receives a stored
 credential.
 
+### Can Alfred read my CV?
+
+Yes — **Settings → You** takes a PDF (or `.txt` / `.md`). It extracts the text,
+has your configured provider structure it, and shows you the result before
+filling anything in. The text of your CV goes to whichever provider you have
+configured, so a local endpoint or the local Claude Code CLI keeps it on your
+machine.
+
+Only the text layer is read, so a scanned or photographed CV will not work —
+Alfred tells you that rather than returning a blank profile. There is no OCR.
+
 ### Can I use my Claude subscription instead of an API key?
 
 Yes — pick **Local Claude Code** in Settings. It drives the `claude` CLI already

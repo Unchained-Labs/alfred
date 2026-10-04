@@ -4,7 +4,18 @@ Three things to set up, in **Settings**.
 
 ## 1. Tell Alfred about you
 
-Open **Settings → You** and paste your résumé.
+Open **Settings → You** and either **drop your CV as a PDF** onto the import box,
+or paste your résumé into the field.
+
+Importing reads the PDF's text layer, asks your configured provider to structure
+it, and shows you what it found before anything is filled in — name, headline,
+years, skills, target roles and the résumé itself. Nothing is saved until you
+press **Save settings**, so you can review and correct first.
+
+!!! note "Scans will not work"
+    Only the text layer is read. A CV that is a photo or a scanned image has no
+    text to extract, and Alfred says so rather than quietly producing an empty
+    profile. Export a text PDF, or paste the text in.
 
 This is the single biggest driver of output quality. Every judgement Alfred makes
 about a role is measured against this text, so the more concrete it is — real

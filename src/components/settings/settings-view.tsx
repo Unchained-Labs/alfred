@@ -19,11 +19,13 @@ import * as React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
+import { ResumeImport } from "@/components/settings/resume-import";
 import { Field, Input, Select, Switch, Textarea } from "@/components/ui/field";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/toast";
 import { ANTHROPIC_MODELS, CLAUDE_CODE_MODELS } from "@/lib/ai/catalog";
 import type { ProviderKind } from "@/lib/ai/types";
+import type { ParsedResume } from "@/lib/ai/schemas";
 import type { RedactedSettings } from "@/lib/settings";
 import { cn, parseList } from "@/lib/utils";
 
@@ -266,7 +268,32 @@ export function SettingsView({ initial }: { initial: RedactedSettings }) {
                 </p>
               </div>
             </CardHeader>
-            <CardBody className="space-y-4">
+            <CardBody className="space-y-5">
+              <ResumeImport
+                onApply={(cv: ParsedResume) =>
+                  setProfile((current) => ({
+                    ...current,
+                    // Only overwrite what the CV actually yielded, so a partial
+                    // parse cannot blank out something already filled in.
+                    name: cv.name || current.name,
+                    headline: cv.headline || current.headline,
+                    yearsExperience: cv.yearsExperience ?? current.yearsExperience,
+                    compensationTarget:
+                      cv.compensationTarget || current.compensationTarget,
+                    resume: cv.summary || current.resume,
+                    skillsText: cv.skills.length
+                      ? cv.skills.join(", ")
+                      : current.skillsText,
+                    rolesText: cv.targetRoles.length
+                      ? cv.targetRoles.join(", ")
+                      : current.rolesText,
+                    locationsText: cv.locations.length
+                      ? cv.locations.join(", ")
+                      : current.locationsText,
+                  }))
+                }
+              />
+
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field label="Name">
                   <Input

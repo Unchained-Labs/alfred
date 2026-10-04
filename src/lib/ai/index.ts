@@ -6,6 +6,7 @@ import {
   chatPrompt,
   mailTriagePrompt,
   parseJobPrompt,
+  parseResumePrompt,
   questionnairePrompt,
 } from "./prompts";
 import { AgentProvider } from "./providers/agent";
@@ -21,6 +22,8 @@ import {
   mailTriageSchema,
   type ParsedJob,
   parsedJobSchema,
+  type ParsedResume,
+  parsedResumeSchema,
   type Questionnaire,
   questionnaireSchema,
 } from "./schemas";
@@ -140,6 +143,24 @@ export async function parseJobPosting(raw: string): Promise<AiRun<ParsedJob>> {
     schema: parsedJobSchema,
     schemaName: "parsed_job",
     task: "parse_job_posting",
+  });
+  return {
+    result: object,
+    provider: provider.kind,
+    model: model ?? provider.model,
+  };
+}
+
+export async function parseResume(raw: string): Promise<AiRun<ParsedResume>> {
+  const provider = resolveProvider();
+  const { system, prompt } = parseResumePrompt(raw);
+  const { object, model } = await provider.generateObject({
+    system,
+    prompt,
+    schema: parsedResumeSchema,
+    schemaName: "parsed_resume",
+    task: "parse_resume",
+    maxTokens: 24000,
   });
   return {
     result: object,
