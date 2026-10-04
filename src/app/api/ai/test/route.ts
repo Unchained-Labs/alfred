@@ -1,5 +1,6 @@
 import { testProvider } from "@/lib/ai";
 import type { ProviderConfig, ProviderKind } from "@/lib/ai/types";
+import { requireUser } from "@/lib/auth";
 import { badRequest, failed, ok, readJson } from "@/lib/api";
 import { getSettings } from "@/lib/settings";
 
@@ -9,12 +10,13 @@ import { getSettings } from "@/lib/settings";
  */
 export async function POST(request: Request) {
   try {
+    const user = await requireUser();
     const body = await readJson<{
       provider?: ProviderKind;
       config?: Record<string, string | number | boolean>;
     }>(request);
 
-    const stored = getSettings().ai;
+    const stored = getSettings(user.id).ai;
     const kind = body.provider ?? stored.provider;
     const overrides = body.config ?? {};
 

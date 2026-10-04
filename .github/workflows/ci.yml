@@ -65,21 +65,55 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
-      - name: every route responds, unknown routes 404
+      - name: signed out, then signed in, behaves as documented
         run: |
           npm run start -- -p 3000 &
-          for i in $(seq 1 30); do curl -sf -o /dev/null http://localhost:3000/ && break; sleep 1; done
+          for i in $(seq 1 30); do curl -sf -o /dev/null http://localhost:3000/setup && break; sleep 1; done
           fail=0
+          check() { # check <label> <expected> <actual>
+            printf '%-42s %s' "$1" "$3"
+            if [ "$3" = "$2" ]; then echo "  ok"; else echo "  EXPECTED $2"; fail=1; fi
+          }
+
+          # --- signed out -------------------------------------------------
+          check "GET /            (redirect to login)" 307 \
+            "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/)"
+          # Before anyone exists, /login sends you to /setup — there is nobody to sign in as.
+          check "GET /login       (-> /setup, no accounts)" 307 \
+            "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/login)"
+          check "GET /setup       (no accounts yet)" 200 \
+            "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/setup)"
+          check "GET /api/applications (no session)" 401 \
+            "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/api/applications)"
+
+          # --- create the owner -------------------------------------------
+          check "POST /api/auth/setup" 201 \
+            "$(curl -s -o /dev/null -w '%{http_code}' -c /tmp/ck.txt -X POST http://localhost:3000/api/auth/setup \
+               -H 'content-type: application/json' \
+               -d '{"email":"ci@example.com","name":"CI","password":"a-long-enough-password"}')"
+          check "POST /api/auth/setup (second time)" 400 \
+            "$(curl -s -o /dev/null -w '%{http_code}' -X POST http://localhost:3000/api/auth/setup \
+               -H 'content-type: application/json' \
+               -d '{"email":"other@example.com","name":"X","password":"a-long-enough-password"}')"
+
+          # --- signed out again, now that an account exists -----------------
+          check "GET /login       (serves once set up)" 200 \
+            "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/login)"
+          check "GET /setup       (-> /login, closed)" 307 \
+            "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/setup)"
+
+          # --- signed in ---------------------------------------------------
           for path in / /pipeline /prep /inbox /settings; do
-            code=$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:3000$path")
-            echo "$code $path"; [ "$code" = 200 ] || fail=1
+            check "GET $path (signed in)" 200 \
+              "$(curl -s -o /dev/null -b /tmp/ck.txt -w '%{http_code}' "http://localhost:3000$path")"
           done
-          code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/nope)
-          echo "$code /nope"; [ "$code" = 404 ] || fail=1
-          # With no provider configured, AI routes must refuse cleanly rather than 500.
-          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST http://localhost:3000/api/ai/test \
-            -H 'content-type: application/json' -d '{"provider":"agent","config":{"endpoint":""}}')
-          echo "$code /api/ai/test (unconfigured)"; [ "$code" = 409 ] || fail=1
+          check "GET /nope        (unknown route)" 404 \
+            "$(curl -s -o /dev/null -b /tmp/ck.txt -w '%{http_code}' http://localhost:3000/nope)"
+          # With no provider configured, AI routes refuse cleanly rather than 500.
+          check "POST /api/ai/test (unconfigured)" 409 \
+            "$(curl -s -o /dev/null -b /tmp/ck.txt -w '%{http_code}' -X POST http://localhost:3000/api/ai/test \
+               -H 'content-type: application/json' -d '{"provider":"agent","config":{"endpoint":""}}')"
+
           exit $fail
 
   docs:

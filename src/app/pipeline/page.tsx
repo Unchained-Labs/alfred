@@ -1,3 +1,4 @@
+import { requireUser } from "@/lib/auth";
 import type { Metadata } from "next";
 import * as React from "react";
 import { PipelineBoard } from "@/components/applications/pipeline-board";
@@ -10,8 +11,9 @@ import { desc } from "drizzle-orm";
 export const metadata: Metadata = { title: "Pipeline" };
 export const dynamic = "force-dynamic";
 
-export default function PipelinePage() {
-  const applications = listApplications({ includeArchived: false });
+export default async function PipelinePage() {
+  const user = await requireUser();
+  const applications = listApplications(user.id, { includeArchived: false });
 
   // One query for every application's latest fit score, rather than N.
   const scores = new Map<string, number>();

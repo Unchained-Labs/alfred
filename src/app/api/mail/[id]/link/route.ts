@@ -1,4 +1,5 @@
 import { APPLICATION_STAGES, type ApplicationStage } from "@/db/schema";
+import { requireUser } from "@/lib/auth";
 import { badRequest, failed, notFound, ok, readJson } from "@/lib/api";
 import { applicationFromMail, linkMailToApplication } from "@/lib/mutations";
 
@@ -6,6 +7,7 @@ type Params = { params: Promise<{ id: string }> };
 
 export async function POST(request: Request, { params }: Params) {
   try {
+    const user = await requireUser();
     const { id } = await params;
     const body = await readJson<{
       applicationId?: string;
@@ -14,7 +16,7 @@ export async function POST(request: Request, { params }: Params) {
     }>(request);
 
     if (body.createNew) {
-      const application = applicationFromMail(id);
+      const application = applicationFromMail(user.id, id);
       if (!application) {
         return badRequest(
           "Alfred could not tell which company this is from. Add the application manually.",
@@ -30,7 +32,7 @@ export async function POST(request: Request, { params }: Params) {
       return badRequest(`Unknown stage: ${body.advanceToStage}`);
     }
 
-    const mail = linkMailToApplication(id, body.applicationId, {
+    const mail = linkMailToApplication(user.id, id, body.applicationId, {
       advanceToStage: stage,
     });
     if (!mail) return notFound("Email not found.");

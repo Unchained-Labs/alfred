@@ -48,8 +48,8 @@ export function createProvider(config: ProviderConfig): AiProvider {
 }
 
 /** Builds the provider the user has selected in Settings. */
-export function resolveProvider(): AiProvider {
-  const { ai } = getSettings();
+export function resolveProvider(userId: string): AiProvider {
+  const { ai } = getSettings(userId);
   switch (ai.provider) {
     case "anthropic":
       return createProvider({ kind: "anthropic", ...ai.anthropic });
@@ -64,8 +64,8 @@ export function resolveProvider(): AiProvider {
   }
 }
 
-function profile(): UserProfile {
-  return getSettings().profile;
+function profile(userId: string): UserProfile {
+  return getSettings(userId).profile;
 }
 
 export type AiRun<T> = { result: T; provider: string; model: string };
@@ -74,9 +74,12 @@ export type AiRun<T> = { result: T; provider: string; model: string };
  * Operations
  * ------------------------------------------------------------------ */
 
-export async function analyzeJob(app: Application): Promise<AiRun<JobAnalysis>> {
-  const provider = resolveProvider();
-  const { system, prompt } = analyzeJobPrompt(app, profile());
+export async function analyzeJob(
+  userId: string,
+  app: Application,
+): Promise<AiRun<JobAnalysis>> {
+  const provider = resolveProvider(userId);
+  const { system, prompt } = analyzeJobPrompt(app, profile(userId));
   const { object, model } = await provider.generateObject({
     system,
     prompt,
@@ -92,11 +95,12 @@ export async function analyzeJob(app: Application): Promise<AiRun<JobAnalysis>> 
 }
 
 export async function generateActionables(
+  userId: string,
   app: Application,
   analysis: Analysis | null,
 ): Promise<AiRun<ActionablePlan>> {
-  const provider = resolveProvider();
-  const { system, prompt } = actionablesPrompt(app, profile(), analysis);
+  const provider = resolveProvider(userId);
+  const { system, prompt } = actionablesPrompt(app, profile(userId), analysis);
   const { object, model } = await provider.generateObject({
     system,
     prompt,
@@ -113,12 +117,18 @@ export async function generateActionables(
 }
 
 export async function generateQuestionnaire(
+  userId: string,
   app: Application,
   analysis: Analysis | null,
   count = 12,
 ): Promise<AiRun<Questionnaire>> {
-  const provider = resolveProvider();
-  const { system, prompt } = questionnairePrompt(app, profile(), analysis, count);
+  const provider = resolveProvider(userId);
+  const { system, prompt } = questionnairePrompt(
+    app,
+    profile(userId),
+    analysis,
+    count,
+  );
   const { object, model } = await provider.generateObject({
     system,
     prompt,
@@ -134,8 +144,11 @@ export async function generateQuestionnaire(
   };
 }
 
-export async function parseJobPosting(raw: string): Promise<AiRun<ParsedJob>> {
-  const provider = resolveProvider();
+export async function parseJobPosting(
+  userId: string,
+  raw: string,
+): Promise<AiRun<ParsedJob>> {
+  const provider = resolveProvider(userId);
   const { system, prompt } = parseJobPrompt(raw);
   const { object, model } = await provider.generateObject({
     system,
@@ -151,8 +164,11 @@ export async function parseJobPosting(raw: string): Promise<AiRun<ParsedJob>> {
   };
 }
 
-export async function parseResume(raw: string): Promise<AiRun<ParsedResume>> {
-  const provider = resolveProvider();
+export async function parseResume(
+  userId: string,
+  raw: string,
+): Promise<AiRun<ParsedResume>> {
+  const provider = resolveProvider(userId);
   const { system, prompt } = parseResumePrompt(raw);
   const { object, model } = await provider.generateObject({
     system,
@@ -170,10 +186,11 @@ export async function parseResume(raw: string): Promise<AiRun<ParsedResume>> {
 }
 
 export async function triageEmail(
+  userId: string,
   mail: Parameters<typeof mailTriagePrompt>[0],
   knownCompanies: string[],
 ): Promise<AiRun<MailTriage>> {
-  const provider = resolveProvider();
+  const provider = resolveProvider(userId);
   const { system, prompt } = mailTriagePrompt(mail, knownCompanies);
   const { object, model } = await provider.generateObject({
     system,
@@ -191,15 +208,16 @@ export async function triageEmail(
 }
 
 export function chatStream(
+  userId: string,
   app: Application | null,
   analysis: Analysis | null,
   history: { role: "user" | "assistant"; content: string }[],
   question: string,
 ): AsyncIterable<string> {
-  const provider = resolveProvider();
+  const provider = resolveProvider(userId);
   const { system, prompt } = chatPrompt(
     app,
-    profile(),
+    profile(userId),
     analysis,
     history,
     question,

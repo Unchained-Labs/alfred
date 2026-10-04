@@ -2,6 +2,7 @@
  * Seeds a realistic pipeline for trying Alfred out without an AI provider.
  * Safe to re-run: it clears only the rows it owns.
  */
+import { eq } from "drizzle-orm";
 import { db } from "../src/db";
 import {
   actionables,
@@ -20,6 +21,8 @@ import {
 } from "../src/lib/mutations";
 import { moveApplication } from "../src/lib/mutations";
 import { saveSettings } from "../src/lib/settings";
+import { users } from "../src/db/schema";
+import { hashPassword } from "../src/lib/passwords";
 
 const DAY = 86_400_000;
 const ago = (days: number) => new Date(Date.now() - days * DAY);
@@ -38,7 +41,27 @@ for (const table of [
   db.delete(table).run();
 }
 
-saveSettings({
+// The demo pipeline needs an owner now that Alfred has accounts. Reuse the
+// existing demo account if there is one, so re-seeding does not orphan the
+// previous run's login.
+const DEMO_EMAIL = "demo@alfred.local";
+const DEMO_PASSWORD = "alfred-demo-password";
+const existing = db.select().from(users).where(eq(users.email, DEMO_EMAIL)).get();
+const owner =
+  existing ??
+  db
+    .insert(users)
+    .values({
+      email: DEMO_EMAIL,
+      name: "Alex Rivera",
+      passwordHash: await hashPassword(DEMO_PASSWORD),
+      role: "owner",
+    })
+    .returning()
+    .get();
+console.log(`Demo account: ${DEMO_EMAIL} / ${DEMO_PASSWORD}`);
+
+saveSettings(owner.id, {
   profile: {
     name: "Alex Rivera",
     headline: "Senior backend engineer — distributed systems, Go, Postgres",
@@ -759,7 +782,7 @@ Requirements:
 ];
 
 for (const seed of seeds) {
-  const app = createApplication({
+  const app = createApplication(owner.id, {
     company: seed.company,
     title: seed.title,
     description: seed.description,
@@ -780,17 +803,18 @@ for (const seed of seeds) {
 
   // Replay the stage history so the funnel reflects what each application cleared.
   for (const stage of seed.stages ?? []) {
-    moveApplication(app.id, stage);
+    moveApplication(owner.id, app.id, stage);
   }
 
   if ("analysis" in seed && seed.analysis) {
-    saveAnalysis(app.id, seed.analysis, "seed", "demo-data");
+    saveAnalysis(owner.id, app.id, seed.analysis, "seed", "demo-data");
   }
   if ("actionables" in seed && seed.actionables) {
-    saveActionables(app.id, seed.actionables, "seed", "demo-data");
+    saveActionables(owner.id, app.id, seed.actionables, "seed", "demo-data");
   }
   if ("questionnaire" in seed && seed.questionnaire) {
     saveQuestionnaire(
+      owner.id,
       app.id,
       { questions: seed.questionnaire as never },
       "seed",
@@ -803,6 +827,7 @@ for (const seed of seeds) {
 db.insert(mailMessages)
   .values([
     {
+      userId: owner.id,
       messageId: "<seed-interview-invite@stripe.com>",
       fromAddress: "recruiting@stripe.com",
       fromName: "Stripe Recruiting",
@@ -819,6 +844,7 @@ db.insert(mailMessages)
       status: "pending",
     },
     {
+      userId: owner.id,
       messageId: "<seed-recruiter@hashicorp.com>",
       fromAddress: "talent@hashicorp.com",
       fromName: "Priya at HashiCorp",
@@ -835,6 +861,7 @@ db.insert(mailMessages)
       status: "pending",
     },
     {
+      userId: owner.id,
       messageId: "<seed-assessment@datadog.com>",
       fromAddress: "no-reply@datadoghq.com",
       fromName: "Datadog",

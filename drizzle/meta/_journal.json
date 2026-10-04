@@ -8,6 +8,20 @@
       "when": 1791038522436,
       "tag": "0000_adorable_rockslide",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1791140175186,
+      "tag": "0001_lumpy_vengeance",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1791140825201,
+      "tag": "0002_wakeful_malcolm_colcord",
+      "breakpoints": true
     }
   ]
 }

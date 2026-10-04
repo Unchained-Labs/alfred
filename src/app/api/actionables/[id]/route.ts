@@ -1,4 +1,5 @@
 import { ACTIONABLE_STATUSES, type ActionableStatus } from "@/db/schema";
+import { requireUser } from "@/lib/auth";
 import { asDate, badRequest, failed, notFound, ok, readJson } from "@/lib/api";
 import {
   deleteActionable,
@@ -10,6 +11,7 @@ type Params = { params: Promise<{ id: string }> };
 
 export async function PATCH(request: Request, { params }: Params) {
   try {
+    const user = await requireUser();
     const { id } = await params;
     const body = await readJson<Record<string, unknown>>(request);
 
@@ -20,7 +22,7 @@ export async function PATCH(request: Request, { params }: Params) {
       if (!ACTIONABLE_STATUSES.includes(status)) {
         return badRequest(`Unknown status: ${String(body.status)}`);
       }
-      const actionable = setActionableStatus(id, status);
+      const actionable = setActionableStatus(user.id, id, status);
       if (!actionable) return notFound("Actionable not found.");
       return ok({ actionable });
     }
@@ -42,7 +44,7 @@ export async function PATCH(request: Request, { params }: Params) {
     if ("dueAt" in body) patch.dueAt = asDate(body.dueAt);
     if ("status" in body) patch.status = body.status;
 
-    const actionable = updateActionable(id, patch);
+    const actionable = updateActionable(user.id, id, patch);
     if (!actionable) return notFound("Actionable not found.");
     return ok({ actionable });
   } catch (error) {
@@ -52,8 +54,10 @@ export async function PATCH(request: Request, { params }: Params) {
 
 export async function DELETE(_request: Request, { params }: Params) {
   try {
+    const user = await requireUser();
     const { id } = await params;
-    deleteActionable(id);
+    const result = deleteActionable(user.id, id);
+    if (result.changes === 0) return notFound("Actionable not found.");
     return ok({ deleted: true });
   } catch (error) {
     return failed(error);

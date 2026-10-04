@@ -28,6 +28,75 @@ const updatedAt = () =>
     .default(sql`(unixepoch() * 1000)`);
 
 /* ------------------------------------------------------------------ *
+ * Accounts
+ * ------------------------------------------------------------------ */
+
+export const USER_ROLES = ["owner", "member"] as const;
+export type UserRole = (typeof USER_ROLES)[number];
+
+export const users = sqliteTable(
+  "users",
+  {
+    id: id(),
+    /** Stored lowercased and trimmed; the unique index is on that form. */
+    email: text("email").notNull(),
+    name: text("name").notNull().default(""),
+    /** scrypt, as `scrypt$N$r$p$salt$hash`. Never a bare digest. */
+    passwordHash: text("password_hash").notNull(),
+    role: text("role", { enum: USER_ROLES }).notNull().default("member"),
+    /** Set when the account is suspended; sessions are revoked with it. */
+    disabledAt: integer("disabled_at", { mode: "timestamp_ms" }),
+    lastSeenAt: integer("last_seen_at", { mode: "timestamp_ms" }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [uniqueIndex("users_email_idx").on(t.email)],
+);
+
+/**
+ * Server-side sessions. The cookie carries an opaque token; only its SHA-256
+ * is stored, so a leaked database cannot be replayed as a login.
+ */
+export const sessions = sqliteTable(
+  "sessions",
+  {
+    /** SHA-256 of the token, hex. */
+    tokenHash: text("token_hash").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
+    /** Truncated; enough to recognise a device, not to fingerprint one. */
+    userAgent: text("user_agent"),
+    lastSeenAt: integer("last_seen_at", { mode: "timestamp_ms" }),
+    createdAt: createdAt(),
+  },
+  (t) => [index("sessions_user_idx").on(t.userId)],
+);
+
+/** One-time invitations. There is no public sign-up. */
+export const invites = sqliteTable(
+  "invites",
+  {
+    id: id(),
+    /** SHA-256 of the invite token, hex. The plaintext is shown once. */
+    tokenHash: text("token_hash").notNull(),
+    email: text("email").notNull(),
+    role: text("role", { enum: USER_ROLES }).notNull().default("member"),
+    invitedBy: text("invited_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
+    acceptedAt: integer("accepted_at", { mode: "timestamp_ms" }),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    uniqueIndex("invites_token_idx").on(t.tokenHash),
+    index("invites_email_idx").on(t.email),
+  ],
+);
+
+/* ------------------------------------------------------------------ *
  * Applications — the spine of the app
  * ------------------------------------------------------------------ */
 
@@ -56,6 +125,12 @@ export const applications = sqliteTable(
   "applications",
   {
     id: id(),
+    /**
+     * Owner. Nullable only so that a database created before accounts existed
+     * can be migrated — `claimOrphanedData` assigns those rows to the first
+     * account. Every query filters on it; a null owner is never visible.
+     */
+    userId: text("user_id").references(() => users.id, { onDelete: "cascade" }),
     company: text("company").notNull(),
     title: text("title").notNull(),
     description: text("description"),
@@ -117,6 +192,12 @@ export const events = sqliteTable(
     applicationId: text("application_id").references(() => applications.id, {
       onDelete: "cascade",
     }),
+    /**
+     * Owner. Nullable only so that a database created before accounts existed
+     * can be migrated — `claimOrphanedData` assigns those rows to the first
+     * account. Every query filters on it; a null owner is never visible.
+     */
+    userId: text("user_id").references(() => users.id, { onDelete: "cascade" }),
     type: text("type", { enum: EVENT_TYPES }).notNull(),
     title: text("title").notNull(),
     body: text("body"),
@@ -165,6 +246,12 @@ export const actionables = sqliteTable(
     applicationId: text("application_id").references(() => applications.id, {
       onDelete: "cascade",
     }),
+    /**
+     * Owner. Nullable only so that a database created before accounts existed
+     * can be migrated — `claimOrphanedData` assigns those rows to the first
+     * account. Every query filters on it; a null owner is never visible.
+     */
+    userId: text("user_id").references(() => users.id, { onDelete: "cascade" }),
     kind: text("kind", { enum: ACTIONABLE_KINDS }).notNull(),
     title: text("title").notNull(),
     detail: text("detail"),
@@ -208,6 +295,12 @@ export const questions = sqliteTable(
     actionableId: text("actionable_id").references(() => actionables.id, {
       onDelete: "set null",
     }),
+    /**
+     * Owner. Nullable only so that a database created before accounts existed
+     * can be migrated — `claimOrphanedData` assigns those rows to the first
+     * account. Every query filters on it; a null owner is never visible.
+     */
+    userId: text("user_id").references(() => users.id, { onDelete: "cascade" }),
     question: text("question").notNull(),
     /** technical | behavioral | system_design | culture | compensation */
     category: text("category").notNull().default("technical"),
@@ -285,6 +378,12 @@ export const mailMessages = sqliteTable(
   {
     id: id(),
     /** RFC822 Message-ID — the dedupe key across syncs. */
+    /**
+     * Owner. Nullable only so that a database created before accounts existed
+     * can be migrated — `claimOrphanedData` assigns those rows to the first
+     * account. Every query filters on it; a null owner is never visible.
+     */
+    userId: text("user_id").references(() => users.id, { onDelete: "cascade" }),
     messageId: text("message_id").notNull(),
     folder: text("folder").notNull().default("INBOX"),
     fromAddress: text("from_address"),
@@ -307,7 +406,8 @@ export const mailMessages = sqliteTable(
     createdAt: createdAt(),
   },
   (t) => [
-    uniqueIndex("mail_message_id_idx").on(t.messageId),
+    // Per account: the same Message-ID can legitimately land in two mailboxes.
+    uniqueIndex("mail_message_id_idx").on(t.userId, t.messageId),
     index("mail_status_idx").on(t.status),
     index("mail_received_idx").on(t.receivedAt),
   ],
@@ -317,11 +417,18 @@ export const mailMessages = sqliteTable(
  * Settings — single-row key/value store
  * ------------------------------------------------------------------ */
 
-export const settings = sqliteTable("settings", {
-  key: text("key").primaryKey(),
-  value: text("value", { mode: "json" }).$type<unknown>(),
-  updatedAt: updatedAt(),
-});
+export const settings = sqliteTable(
+  "settings",
+  {
+    id: id(),
+    /** Null only for rows predating accounts; claimed on first setup. */
+    userId: text("user_id").references(() => users.id, { onDelete: "cascade" }),
+    key: text("key").notNull(),
+    value: text("value", { mode: "json" }).$type<unknown>(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [uniqueIndex("settings_user_key_idx").on(t.userId, t.key)],
+);
 
 /* ------------------------------------------------------------------ *
  * Inferred types
@@ -337,5 +444,9 @@ export type Question = typeof questions.$inferSelect;
 export type NewQuestion = typeof questions.$inferInsert;
 export type Analysis = typeof analyses.$inferSelect;
 export type NewAnalysis = typeof analyses.$inferInsert;
+export type User = typeof users.$inferSelect;
+export type NewUser = typeof users.$inferInsert;
+export type Session = typeof sessions.$inferSelect;
+export type Invite = typeof invites.$inferSelect;
 export type MailMessage = typeof mailMessages.$inferSelect;
 export type NewMailMessage = typeof mailMessages.$inferInsert;

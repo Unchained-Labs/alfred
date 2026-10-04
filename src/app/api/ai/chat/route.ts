@@ -1,4 +1,5 @@
 import { chatStream } from "@/lib/ai";
+import { requireUser } from "@/lib/auth";
 import { badRequest, failed, readJson } from "@/lib/api";
 import { getApplication, getLatestAnalysis } from "@/lib/queries";
 
@@ -6,6 +7,7 @@ type ChatTurn = { role: "user" | "assistant"; content: string };
 
 export async function POST(request: Request) {
   try {
+    const user = await requireUser();
     const body = await readJson<{
       applicationId?: string;
       question?: string;
@@ -16,11 +18,19 @@ export async function POST(request: Request) {
     if (!question) return badRequest("Ask Alfred something.");
 
     const application = body.applicationId
-      ? (getApplication(body.applicationId) ?? null)
+      ? (getApplication(user.id, body.applicationId) ?? null)
       : null;
-    const analysis = application ? getLatestAnalysis(application.id) : null;
+    const analysis = application
+      ? getLatestAnalysis(user.id, application.id)
+      : null;
 
-    const chunks = chatStream(application, analysis, body.history ?? [], question);
+    const chunks = chatStream(
+      user.id,
+      application,
+      analysis,
+      body.history ?? [],
+      question,
+    );
 
     const encoder = new TextEncoder();
     const stream = new ReadableStream({

@@ -1,3 +1,4 @@
+import { requireUser } from "@/lib/auth";
 import {
   Activity,
   AlertCircle,
@@ -48,13 +49,14 @@ function sparkline(activity: { count: number }[]): number[] {
   return out;
 }
 
-export default function DashboardPage() {
-  const stats = dashboardStats();
-  const funnel = funnelDepth();
-  const activity = applicationActivity(30);
-  const queue = upcomingWork(7);
-  const attention = needsAttention(5);
-  const settings = getSettings();
+export default async function DashboardPage() {
+  const user = await requireUser();
+  const stats = dashboardStats(user.id);
+  const funnel = funnelDepth(user.id);
+  const activity = applicationActivity(user.id, 30);
+  const queue = upcomingWork(user.id, 7);
+  const attention = needsAttention(user.id, 5);
+  const settings = getSettings(user.id);
 
   const providerReady = providerIsConfigured(settings.ai);
 

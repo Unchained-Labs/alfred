@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { settings } from "@/db/schema";
 import {
@@ -133,21 +133,29 @@ function merge<T>(base: T, override: unknown): T {
   return out as T;
 }
 
-export function getSettings(): AlfredSettings {
+/*
+ * Settings are per account: each person brings their own provider keys and
+ * their own mailbox. Nobody should be able to read another account's mail or
+ * spend their tokens.
+ */
+
+export function getSettings(userId: string): AlfredSettings {
   const row = db
     .select()
     .from(settings)
-    .where(eq(settings.key, SETTINGS_KEY))
+    .where(and(eq(settings.userId, userId), eq(settings.key, SETTINGS_KEY)))
     .get();
   return merge(DEFAULT_SETTINGS, row?.value);
 }
 
-export function saveSettings(patch: unknown): AlfredSettings {
-  const next = merge(getSettings(), patch);
+export function saveSettings(userId: string, patch: unknown): AlfredSettings {
+  const next = merge(getSettings(userId), patch);
   db.insert(settings)
-    .values({ key: SETTINGS_KEY, value: next, updatedAt: new Date() })
+    .values({ userId, key: SETTINGS_KEY, value: next, updatedAt: new Date() })
     .onConflictDoUpdate({
-      target: settings.key,
+      // The unique index is (user_id, key), so a second account writing the
+      // same key inserts rather than overwriting the first.
+      target: [settings.userId, settings.key],
       set: { value: next, updatedAt: new Date() },
     })
     .run();

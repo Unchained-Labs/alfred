@@ -1,11 +1,13 @@
 import type { ApplicationStage } from "@/db/schema";
+import { requireUser } from "@/lib/auth";
 import { badRequest, failed, ok, readJson } from "@/lib/api";
 import { createApplication } from "@/lib/mutations";
 import { listApplications } from "@/lib/queries";
 
 export async function GET() {
   try {
-    return ok({ applications: listApplications() });
+    const user = await requireUser();
+    return ok({ applications: listApplications(user.id) });
   } catch (error) {
     return failed(error);
   }
@@ -13,12 +15,13 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const user = await requireUser();
     const body = await readJson<Record<string, unknown>>(request);
     const company = String(body.company ?? "").trim();
     const title = String(body.title ?? "").trim();
     if (!company || !title) return badRequest("Company and title are required.");
 
-    const application = createApplication({
+    const application = createApplication(user.id, {
       company,
       title,
       description: (body.description as string) ?? null,
