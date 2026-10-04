@@ -156,6 +156,48 @@ export const parsedJobSchema = z.object({
 });
 export type ParsedJob = z.infer<typeof parsedJobSchema>;
 
+export const parsedResumeSchema = z.object({
+  name: z
+    .string()
+    .describe("The candidate's full name, or an empty string if absent"),
+  headline: z
+    .string()
+    .describe(
+      "A one-line professional headline, e.g. 'Senior backend engineer — distributed systems, Go'. Derive it from the most recent role and the dominant stack.",
+    ),
+  yearsExperience: z
+    .number()
+    .int()
+    .min(0)
+    .max(60)
+    .nullable()
+    .describe(
+      "Total professional years, counted from the earliest professional role to the latest. Null if the dates do not support a confident figure.",
+    ),
+  skills: z
+    .array(z.string())
+    .describe(
+      "8-20 concrete technologies and competencies the CV actually evidences. Prefer specifics ('Postgres', 'Kafka') over categories ('databases'). No soft skills.",
+    ),
+  targetRoles: z
+    .array(z.string())
+    .describe(
+      "2-5 role titles this background realistically targets next, based on the trajectory — not every title they have held.",
+    ),
+  locations: z
+    .array(z.string())
+    .describe("Locations or work preferences stated in the CV. Empty if none."),
+  compensationTarget: z
+    .string()
+    .describe("Any stated compensation expectation, else an empty string."),
+  summary: z
+    .string()
+    .describe(
+      "The background rewritten as the résumé field Alfred stores: roles with dates, and the achievements under each, preserving every metric and technology named. This is what every later analysis is measured against, so keep the substance and drop only formatting artefacts, page furniture and contact details.",
+    ),
+});
+export type ParsedResume = z.infer<typeof parsedResumeSchema>;
+
 export const mailTriageSchema = z.object({
   classification: z
     .enum(MAIL_CLASSES)

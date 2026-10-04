@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { AiError, AiNotConfiguredError } from "@/lib/ai/types";
-import { ConfigError } from "@/lib/errors";
+import { ConfigError, InputError } from "@/lib/errors";
 
 export function ok<T>(data: T, init?: number) {
   return NextResponse.json(data, { status: init ?? 200 });
@@ -24,6 +24,12 @@ export function failed(error: unknown) {
     return NextResponse.json(
       { error: error.message, code: "ai_not_configured" },
       { status: 409 },
+    );
+  }
+  if (error instanceof InputError) {
+    return NextResponse.json(
+      { error: error.message, code: "invalid_input" },
+      { status: 400 },
     );
   }
   if (error instanceof ConfigError) {

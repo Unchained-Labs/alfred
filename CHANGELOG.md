@@ -10,6 +10,8 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Added
 
+- **Import your CV from a PDF.** Drop a PDF on Settings → You and Alfred extracts the text layer, has your configured provider structure it, and shows you what it found before filling anything in — nothing is saved until you press Save. Scanned CVs are detected and reported rather than silently producing an empty profile; there is no OCR.
+
 - **A demo.** A 58-second walkthrough recorded against the running app — the board with a real drag, a fit analysis, a generated prep plan, the interview questionnaire and the provider options. It plays on the documentation home page, and each guide page carries the clip for its own section. The README leads with a short looping GIF of the strongest beats.
 - The README is now a lean landing page; the detail it used to duplicate lives on the documentation site.
 

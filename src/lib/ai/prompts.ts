@@ -180,6 +180,22 @@ posting gives an hourly or monthly figure, leave both salary fields null.`,
   };
 }
 
+export function parseResumePrompt(raw: string) {
+  return {
+    system: `${BUTLER}
+
+Your task: turn the raw text of a CV into the profile Alfred stores about the candidate.
+
+This text came out of a PDF, so it may carry artefacts — columns interleaved, headers and footers repeated on every page, bullet glyphs as stray characters, ligatures run together. Read through them.
+
+Rules:
+- Extract only what the CV supports. Never invent an employer, a date, a metric or a technology.
+- \`summary\` is the highest-value field: it becomes the résumé every future fit analysis is measured against. Preserve the specifics — numbers, scale, stack, what they actually owned. Drop page furniture, contact details and formatting noise.
+- Leave a field empty (or null) rather than guessing at it.`,
+    prompt: `Raw CV text:\n"""\n${raw.trim().slice(0, 60000)}\n"""\n\nExtract the profile.`,
+  };
+}
+
 export function mailTriagePrompt(
   mail: {
     fromName: string | null;
