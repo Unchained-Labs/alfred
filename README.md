@@ -50,6 +50,12 @@ npm install
 npm run dev
 ```
 
+Or in a container, with nothing else to install:
+
+```bash
+docker compose up -d --build
+```
+
 Open <http://localhost:3000>. The database is created and migrated on first
 render — there is no setup step.
 

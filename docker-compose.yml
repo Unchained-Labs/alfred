@@ -1,0 +1,48 @@
+# Alfred, as one command.
+#
+# `docker compose up -d --build`, then http://127.0.0.1:3100. There is no
+# database service to wait for and no migration step: SQLite is a file, and the
+# app creates and migrates it on first render.
+
+services:
+  alfred:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: alfred:latest
+    container_name: alfred
+    restart: unless-stopped
+
+    # 127.0.0.1, not 0.0.0.0. Alfred has no authentication of its own and holds
+    # a résumé, an application history and whichever AI provider key you gave
+    # it. Publishing it to every interface puts all three on the local network.
+    # Put a tailnet, a tunnel or an authenticating proxy in front of it instead.
+    ports:
+      - "127.0.0.1:${ALFRED_PORT:-3100}:3100"
+
+    environment:
+      # On the volume, never in an image layer — a path under /app would be
+      # replaced on every rebuild and take the job history with it.
+      ALFRED_DB_PATH: /data/alfred.db
+      NODE_ENV: production
+      # All optional: the same values can be set in Settings, which stores them
+      # in the database. Environment wins where both are present.
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ALFRED_LLM_API_KEY: ${ALFRED_LLM_API_KEY:-}
+      ALFRED_AGENT_API_KEY: ${ALFRED_AGENT_API_KEY:-}
+
+    volumes:
+      # Defaults to the named volume `alfred-data`, which survives `down` and
+      # does not inherit host ownership. Set ALFRED_DATA to an absolute or
+      # ./relative path to bind a host directory instead — do that when
+      # something on the host backs the database up, because a named volume
+      # lives under /var/lib/docker and a sweep of your app directories will
+      # not see it. The container runs as uid 1000, so a bound directory must
+      # be writable by uid 1000.
+      - ${ALFRED_DATA:-alfred-data}:/data
+
+    # A ceiling, not a reservation. The work is a Next server and a SQLite file.
+    mem_limit: 512m
+
+volumes:
+  alfred-data:

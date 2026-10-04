@@ -1,0 +1,29 @@
+# node_modules above all: it is rebuilt inside the image against that image's
+# libc, and copying the host's would overwrite the native better-sqlite3 binary
+# with one compiled for a different platform — the exact failure this build is
+# shaped to avoid.
+node_modules
+.next
+.git
+.github
+
+# Local data. A database baked into an image is someone else's job history
+# shipped to everyone who pulls it.
+data
+*.db
+*.db-shm
+*.db-wal
+
+# Secrets never belong in a build context: every file here is readable by any
+# layer, whether or not the Dockerfile copies it.
+.env
+.env.*
+!.env.example
+
+docs
+site
+*.md
+!README.md
+.vscode
+.idea
+coverage
