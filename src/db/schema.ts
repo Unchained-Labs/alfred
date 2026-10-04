@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  blob,
   index,
   integer,
   real,
@@ -41,8 +42,15 @@ export const users = sqliteTable(
     /** Stored lowercased and trimmed; the unique index is on that form. */
     email: text("email").notNull(),
     name: text("name").notNull().default(""),
-    /** scrypt, as `scrypt$N$r$p$salt$hash`. Never a bare digest. */
-    passwordHash: text("password_hash").notNull(),
+    /**
+     * scrypt, as `scrypt$N$r$p$salt$hash`. Never a bare digest.
+     *
+     * NULL for passkey-only accounts, which is now the normal case — sign-up
+     * creates a passkey and never asks for a password. It stays nullable
+     * rather than being dropped so that an account created before passkeys
+     * can still sign in with the password it already has.
+     */
+    passwordHash: text("password_hash"),
     role: text("role", { enum: USER_ROLES }).notNull().default("member"),
     /** Set when the account is suspended; sessions are revoked with it. */
     disabledAt: integer("disabled_at", { mode: "timestamp_ms" }),
@@ -74,7 +82,65 @@ export const sessions = sqliteTable(
   (t) => [index("sessions_user_idx").on(t.userId)],
 );
 
-/** One-time invitations. There is no public sign-up. */
+/**
+ * WebAuthn credentials. One account can have several — the laptop it was
+ * created on, a phone added by QR code, a hardware key.
+ *
+ * `id` is the credential id the authenticator chose, so it is the natural
+ * primary key: a login presents it and we look the account up from it, which
+ * is what makes "just tap sign in" work without first asking who you are.
+ */
+export const passkeys = sqliteTable(
+  "passkeys",
+  {
+    /** Base64url credential id from the authenticator. */
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    publicKey: blob("public_key", { mode: "buffer" }).notNull(),
+    /** Signature counter; a decrease can mean a cloned authenticator. */
+    counter: integer("counter").notNull().default(0),
+    /** JSON array: "internal" | "hybrid" | "usb" | "nfc" | "ble". */
+    transports: text("transports", { mode: "json" }).$type<string[] | null>(),
+    /** "singleDevice" | "multiDevice" — multiDevice means it syncs. */
+    deviceType: text("device_type"),
+    backedUp: integer("backed_up", { mode: "boolean" }).notNull().default(false),
+    /** Human label: "Phone", "This device", "Security key". */
+    name: text("name").notNull().default("Passkey"),
+    lastUsedAt: integer("last_used_at", { mode: "timestamp_ms" }),
+    createdAt: createdAt(),
+  },
+  (t) => [index("passkeys_user_idx").on(t.userId)],
+);
+
+/**
+ * In-flight WebAuthn ceremonies. A challenge is single-use and short-lived.
+ *
+ * It lives in the database rather than a cookie because the phone flow spans
+ * two devices: the QR code is scanned on a phone while the ceremony belongs
+ * to the browser that started it, and a cookie cannot be in both places.
+ */
+export const authChallenges = sqliteTable(
+  "auth_challenges",
+  {
+    id: text("id").primaryKey(),
+    kind: text("kind", { enum: ["register", "login", "add_passkey"] }).notNull(),
+    challenge: text("challenge").notNull(),
+    /** Set for add_passkey (the signed-in user); null while signing up. */
+    userId: text("user_id").references(() => users.id, { onDelete: "cascade" }),
+    /** JSON {name, email, userId} held until the passkey verifies. */
+    pending: text("pending", { mode: "json" }).$type<Record<
+      string,
+      string
+    > | null>(),
+    expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index("auth_challenges_expires_idx").on(t.expiresAt)],
+);
+
+/** One-time invitations. Sign-up is also open when ALFRED_ALLOW_SIGNUP=1. */
 export const invites = sqliteTable(
   "invites",
   {
@@ -445,6 +511,7 @@ export type NewQuestion = typeof questions.$inferInsert;
 export type Analysis = typeof analyses.$inferSelect;
 export type NewAnalysis = typeof analyses.$inferInsert;
 export type User = typeof users.$inferSelect;
+export type Passkey = typeof passkeys.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type Session = typeof sessions.$inferSelect;
 export type Invite = typeof invites.$inferSelect;

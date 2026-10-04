@@ -3,8 +3,10 @@ import type { Metadata } from "next";
 import * as React from "react";
 import { PageHeader } from "@/components/shell/app-shell";
 import { SettingsView } from "@/components/settings/settings-view";
+import { PasskeysCard } from "@/components/settings/passkeys-card";
 import { listInvites, listUsers } from "@/lib/auth";
 import { getSettings, redactSettings } from "@/lib/settings";
+import { listPasskeys } from "@/lib/passkeys";
 
 export const metadata: Metadata = { title: "Settings" };
 export const dynamic = "force-dynamic";
@@ -43,6 +45,19 @@ export default async function SettingsPage() {
             : []
         }
       />
+      <div className="mt-6">
+        <PasskeysCard
+          initial={listPasskeys(user.id).map((row) => ({
+            id: row.id,
+            name: row.name,
+            deviceType: row.deviceType,
+            backedUp: row.backedUp,
+            createdAt: row.createdAt.getTime(),
+            lastUsedAt: row.lastUsedAt ? row.lastUsedAt.getTime() : null,
+          }))}
+          hasPassword={Boolean(user.passwordHash)}
+        />
+      </div>
     </div>
   );
 }
