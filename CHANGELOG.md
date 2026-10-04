@@ -10,6 +10,9 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Added
 
+- **A demo.** A 58-second walkthrough recorded against the running app — the board with a real drag, a fit analysis, a generated prep plan, the interview questionnaire and the provider options. It plays on the documentation home page, and each guide page carries the clip for its own section. The README leads with a short looping GIF of the strongest beats.
+- The README is now a lean landing page; the detail it used to duplicate lives on the documentation site.
+
 - Project scaffolding: CI across Node 20/22/24, a documentation site on GitHub Pages, issue and PR templates, Dependabot, `SECURITY.md`, `CONTRIBUTING.md`, a Code of Conduct, and a `Makefile` wrapping the common tasks.
 - ESLint (flat config) and Prettier, wired into CI.
 

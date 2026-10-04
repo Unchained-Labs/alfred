@@ -17,6 +17,14 @@ Alfred models an application as moving through nine stages:
 The board shows the six live stages; closed applications move to the list view.
 Drag a card to move it, or use the stage picker on the application page.
 
+<div class="al-video">
+  <video controls muted playsinline loop preload="metadata" autoplay>
+    <source src="../assets/clips/board.webm" type="video/webm">
+    <source src="../assets/clips/board.mp4" type="video/mp4">
+  </video>
+</div>
+<p class="al-caption">Dragging an application from <strong>Applied</strong> into <strong>Screening</strong>. The move is logged on the timeline.</p>
+
 **Alfred backfills the application date.** The first time a card reaches a stage
 that implies you actually applied, `appliedAt` is set to that moment if it wasn't
 already — so the funnel and the "applications sent" chart stay honest even if you

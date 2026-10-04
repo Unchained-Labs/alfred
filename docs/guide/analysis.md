@@ -3,6 +3,14 @@
 **Analyze this role** on an application page produces a structured read of how
 you line up against that posting.
 
+<div class="al-video">
+  <video controls muted playsinline loop preload="metadata" autoplay>
+    <source src="../assets/clips/analysis.webm" type="video/webm">
+    <source src="../assets/clips/analysis.mp4" type="video/mp4">
+  </video>
+</div>
+<p class="al-caption">A real analysis: 84/100, skill-by-skill coverage, and the gaps worth closing.</p>
+
 ## The fit score
 
 A single 0–100 number, calibrated against explicit bands rather than left to the

@@ -178,3 +178,31 @@
   background: var(--al-surface);
   font-size: 0.74rem;
 }
+
+/* ==========================================================================
+ * Demo clips
+ * ========================================================================== */
+
+.al-video {
+  margin: 1.4rem 0;
+  border: 1px solid var(--al-border);
+  border-radius: 10px;
+  overflow: hidden;
+  background: #0b0f17;
+  line-height: 0;
+}
+
+.al-video video {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.al-video + .al-caption {
+  margin-top: -0.9rem;
+  margin-bottom: 1.6rem;
+  font-size: 0.68rem;
+  color: var(--al-dim);
+  text-align: center;
+  line-height: 1.5;
+}

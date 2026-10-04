@@ -3,6 +3,14 @@
 Alfred defines one interface and implements it four ways. Switching provider is
 a dropdown; no other behaviour changes.
 
+<div class="al-video">
+  <video controls muted playsinline loop preload="metadata" autoplay>
+    <source src="../assets/clips/providers.webm" type="video/webm">
+    <source src="../assets/clips/providers.mp4" type="video/mp4">
+  </video>
+</div>
+<p class="al-caption">Switching providers in Settings — the rest of Alfred is unaffected.</p>
+
 ```ts title="src/lib/ai/types.ts"
 interface AiProvider {
   generateText(req: GenerateRequest): Promise<TextResult>;
