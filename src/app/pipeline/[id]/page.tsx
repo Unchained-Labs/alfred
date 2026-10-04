@@ -1,3 +1,4 @@
+import { currentUser, requireUser } from "@/lib/auth";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import * as React from "react";
@@ -22,19 +23,23 @@ type Params = { params: Promise<{ id: string }> };
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { id } = await params;
-  const app = getApplication(id);
+  // Metadata runs outside the page render, so it resolves the user itself; an
+  // unauthenticated request simply gets the generic title.
+  const viewer = await currentUser();
+  const app = viewer ? getApplication(viewer.id, id) : undefined;
   return { title: app ? `${app.title} · ${app.company}` : "Application" };
 }
 
 export default async function ApplicationPage({ params }: Params) {
+  const user = await requireUser();
   const { id } = await params;
-  const app = getApplication(id);
+  const app = getApplication(user.id, id);
   if (!app) notFound();
 
-  const analysis = getLatestAnalysis(id);
-  const actionables = listActionables(id);
-  const questions = listQuestions(id);
-  const events = listEvents(id);
+  const analysis = getLatestAnalysis(user.id, id);
+  const actionables = listActionables(user.id, id);
+  const questions = listQuestions(user.id, id);
+  const events = listEvents(user.id, id);
 
   return (
     <div className="mx-auto max-w-7xl p-4 lg:p-6">

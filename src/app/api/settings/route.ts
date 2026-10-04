@@ -1,9 +1,11 @@
+import { requireUser } from "@/lib/auth";
 import { failed, ok, readJson } from "@/lib/api";
 import { getSettings, redactSettings, saveSettings } from "@/lib/settings";
 
 export async function GET() {
   try {
-    return ok({ settings: redactSettings(getSettings()) });
+    const user = await requireUser();
+    return ok({ settings: redactSettings(getSettings(user.id)) });
   } catch (error) {
     return failed(error);
   }
@@ -16,6 +18,7 @@ export async function GET() {
  */
 export async function PUT(request: Request) {
   try {
+    const user = await requireUser();
     const patch = await readJson<Record<string, unknown>>(request);
 
     const ai = patch.ai as Record<string, Record<string, unknown>> | undefined;
@@ -30,7 +33,7 @@ export async function PUT(request: Request) {
       delete mail.password;
     }
 
-    return ok({ settings: redactSettings(saveSettings(patch)) });
+    return ok({ settings: redactSettings(saveSettings(user.id, patch)) });
   } catch (error) {
     return failed(error);
   }

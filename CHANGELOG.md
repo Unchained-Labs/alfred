@@ -10,6 +10,9 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Added
 
+- **Accounts.** Several people can share one Alfred, each with their own pipeline, résumé, prep plans, provider keys and mailbox — nobody sees anyone else's. First run creates an owner; everyone else joins by one-time invitation, as there is no public sign-up. Sessions are server-side with only the token's digest stored, and passwords use scrypt with per-hash parameters.
+- **The Claude Code provider now works in the container** via an opt-in compose override that mounts the host CLI and sign-in. It is a separate file, not a default, because it shares real credentials with the container.
+
 - **Import your CV from a PDF.** Drop a PDF on Settings → You and Alfred extracts the text layer, has your configured provider structure it, and shows you what it found before filling anything in — nothing is saved until you press Save. Scanned CVs are detected and reported rather than silently producing an empty profile; there is no OCR.
 
 - **A demo.** A 58-second walkthrough recorded against the running app — the board with a real drag, a fit analysis, a generated prep plan, the interview questionnaire and the provider options. It plays on the documentation home page, and each guide page carries the clip for its own section. The README leads with a short looping GIF of the strongest beats.
@@ -19,6 +22,8 @@ All notable changes to this project are documented here. The format follows [Kee
 - ESLint (flat config) and Prettier, wired into CI.
 
 ### Fixed
+
+- `mail_messages` was unique on `message_id` alone, so two accounts could never hold the same email. Uniqueness is now per account.
 
 - The documentation site's feature cards rendered with their text spilling outside the card borders. Prettier had collapsed the four-space list indentation that Material for MkDocs needs, so the continuation paragraphs were never nested inside the list item. `docs/` is now excluded from Prettier, which does not understand Material's markdown extensions.
 - The docs home page still advertised three AI providers and omitted Local Claude Code.

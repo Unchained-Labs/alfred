@@ -1,4 +1,5 @@
 import type { ApplicationStage } from "@/db/schema";
+import { requireUser } from "@/lib/auth";
 import { asDate, failed, notFound, ok, readJson } from "@/lib/api";
 import { deleteApplication, updateApplication } from "@/lib/mutations";
 import {
@@ -13,16 +14,17 @@ type Params = { params: Promise<{ id: string }> };
 
 export async function GET(_request: Request, { params }: Params) {
   try {
+    const user = await requireUser();
     const { id } = await params;
-    const application = getApplication(id);
+    const application = getApplication(user.id, id);
     if (!application) return notFound("Application not found.");
 
     return ok({
       application,
-      analysis: getLatestAnalysis(id),
-      actionables: listActionables(id),
-      questions: listQuestions(id),
-      events: listEvents(id),
+      analysis: getLatestAnalysis(user.id, id),
+      actionables: listActionables(user.id, id),
+      questions: listQuestions(user.id, id),
+      events: listEvents(user.id, id),
     });
   } catch (error) {
     return failed(error);
@@ -31,6 +33,7 @@ export async function GET(_request: Request, { params }: Params) {
 
 export async function PATCH(request: Request, { params }: Params) {
   try {
+    const user = await requireUser();
     const { id } = await params;
     const body = await readJson<Record<string, unknown>>(request);
 
@@ -60,7 +63,7 @@ export async function PATCH(request: Request, { params }: Params) {
     if ("appliedAt" in body) patch.appliedAt = asDate(body.appliedAt);
     if ("nextActionAt" in body) patch.nextActionAt = asDate(body.nextActionAt);
 
-    const application = updateApplication(id, patch);
+    const application = updateApplication(user.id, id, patch);
     if (!application) return notFound("Application not found.");
     return ok({ application });
   } catch (error) {
@@ -70,8 +73,12 @@ export async function PATCH(request: Request, { params }: Params) {
 
 export async function DELETE(_request: Request, { params }: Params) {
   try {
+    const user = await requireUser();
     const { id } = await params;
-    deleteApplication(id);
+    const result = deleteApplication(user.id, id);
+    // Scoped delete: zero rows means it is not theirs (or never existed), and
+    // reporting success would imply otherwise.
+    if (result.changes === 0) return notFound("Application not found.");
     return ok({ deleted: true });
   } catch (error) {
     return failed(error);

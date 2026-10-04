@@ -23,17 +23,27 @@ import {
 } from "@/db/schema";
 import { BOARD_STAGES, FUNNEL_STAGES } from "@/lib/stages";
 
+/*
+ * Every function here takes the owner as its first argument and filters on it.
+ * That is deliberate rather than implicit request context: a missing argument
+ * is a type error, so a new call site cannot quietly read another account's
+ * pipeline.
+ */
+
 const DAY = 86_400_000;
+
+/** Rows belonging to this user. Null owners predate accounts and stay hidden. */
+const owned = (userId: string) => eq(applications.userId, userId);
 
 /* ------------------------------------------------------------------ *
  * Applications
  * ------------------------------------------------------------------ */
 
-export function listApplications(options?: {
-  includeArchived?: boolean;
-  stages?: ApplicationStage[];
-}) {
-  const filters = [];
+export function listApplications(
+  userId: string,
+  options?: { includeArchived?: boolean; stages?: ApplicationStage[] },
+) {
+  const filters = [owned(userId)];
   if (!options?.includeArchived) filters.push(eq(applications.archived, false));
   if (options?.stages?.length)
     filters.push(inArray(applications.stage, options.stages));
@@ -41,7 +51,7 @@ export function listApplications(options?: {
   return db
     .select()
     .from(applications)
-    .where(filters.length ? and(...filters) : undefined)
+    .where(and(...filters))
     .orderBy(
       desc(applications.priority),
       applications.boardOrder,
@@ -50,11 +60,25 @@ export function listApplications(options?: {
     .all();
 }
 
-export function getApplication(id: string): Application | undefined {
-  return db.select().from(applications).where(eq(applications.id, id)).get();
+export function getApplication(
+  userId: string,
+  id: string,
+): Application | undefined {
+  return db
+    .select()
+    .from(applications)
+    .where(and(eq(applications.id, id), owned(userId)))
+    .get();
 }
 
-export function getLatestAnalysis(applicationId: string) {
+/** True when this user owns that application — the guard for nested writes. */
+export function ownsApplication(userId: string, applicationId: string): boolean {
+  return Boolean(getApplication(userId, applicationId));
+}
+
+export function getLatestAnalysis(userId: string, applicationId: string) {
+  // analyses has no owner column of its own; ownership comes from the parent.
+  if (!ownsApplication(userId, applicationId)) return null;
   return (
     db
       .select()
@@ -66,13 +90,15 @@ export function getLatestAnalysis(applicationId: string) {
   );
 }
 
-export function listActionables(applicationId?: string) {
+export function listActionables(userId: string, applicationId?: string) {
+  const filters = [eq(actionables.userId, userId)];
+  if (applicationId) filters.push(eq(actionables.applicationId, applicationId));
+
   return db
     .select()
     .from(actionables)
-    .where(applicationId ? eq(actionables.applicationId, applicationId) : undefined)
+    .where(and(...filters))
     .orderBy(
-      // todo first, then by priority, then by the order the AI emitted them
       sql`case ${actionables.status} when 'in_progress' then 0 when 'todo' then 1 when 'done' then 2 else 3 end`,
       desc(actionables.priority),
       actionables.createdAt,
@@ -80,30 +106,32 @@ export function listActionables(applicationId?: string) {
     .all();
 }
 
-export function listQuestions(applicationId: string) {
+export function listQuestions(userId: string, applicationId: string) {
   return db
     .select()
     .from(questions)
-    .where(eq(questions.applicationId, applicationId))
+    .where(
+      and(eq(questions.applicationId, applicationId), eq(questions.userId, userId)),
+    )
     .orderBy(questions.sortOrder, questions.createdAt)
     .all();
 }
 
-export function listEvents(applicationId: string, limit = 50) {
+export function listEvents(userId: string, applicationId: string, limit = 50) {
   return db
     .select()
     .from(events)
-    .where(eq(events.applicationId, applicationId))
+    .where(and(eq(events.applicationId, applicationId), eq(events.userId, userId)))
     .orderBy(desc(events.occurredAt))
     .limit(limit)
     .all();
 }
 
-/** Drives the AI-triage "already in the pipeline" hint. */
-export function listKnownCompanies(): string[] {
+export function listKnownCompanies(userId: string): string[] {
   return db
     .selectDistinct({ company: applications.company })
     .from(applications)
+    .where(owned(userId))
     .all()
     .map((row) => row.company);
 }
@@ -114,11 +142,11 @@ export function listKnownCompanies(): string[] {
 
 export type StageCount = { stage: ApplicationStage; count: number };
 
-export function stageCounts(): StageCount[] {
+export function stageCounts(userId: string): StageCount[] {
   const rows = db
     .select({ stage: applications.stage, total: count() })
     .from(applications)
-    .where(eq(applications.archived, false))
+    .where(and(owned(userId), eq(applications.archived, false)))
     .groupBy(applications.stage)
     .all();
 
@@ -130,19 +158,17 @@ export function stageCounts(): StageCount[] {
 }
 
 /**
- * Funnel depth: how many applications reached *at least* each stage. An
- * application currently at "onsite" counts toward applied/screening/technical
- * too, and a rejection still counts toward every stage it cleared.
- *
- * We only know an application's furthest stage from its own stage-change
- * history, so that is what we read — the current stage alone would under-count
- * everything that was later rejected.
+ * Funnel depth: how many applications reached *at least* each stage. Current
+ * stage alone would under-count everything later rejected, so this reads the
+ * stage-change history.
  */
-export function funnelDepth(): { stage: ApplicationStage; count: number }[] {
+export function funnelDepth(
+  userId: string,
+): { stage: ApplicationStage; count: number }[] {
   const live = db
     .select({ id: applications.id, stage: applications.stage })
     .from(applications)
-    .where(eq(applications.archived, false))
+    .where(and(owned(userId), eq(applications.archived, false)))
     .all();
 
   const reachedRows = db
@@ -151,13 +177,11 @@ export function funnelDepth(): { stage: ApplicationStage; count: number }[] {
       stage: sql<string>`json_extract(${events.metadata}, '$.to')`,
     })
     .from(events)
-    .where(eq(events.type, "stage_change"))
+    .where(and(eq(events.type, "stage_change"), eq(events.userId, userId)))
     .all();
 
   const reached = new Map<string, Set<string>>();
-  for (const app of live) {
-    reached.set(app.id, new Set([app.stage]));
-  }
+  for (const app of live) reached.set(app.id, new Set([app.stage]));
   for (const row of reachedRows) {
     if (!row.applicationId || !row.stage) continue;
     reached.get(row.applicationId)?.add(row.stage);
@@ -179,7 +203,6 @@ export type DashboardStats = {
   interviewing: number;
   offers: number;
   rejections: number;
-  /** Interviews reached / applications sent, as a percentage. */
   responseRate: number | null;
   appliedLast7: number;
   appliedPrev7: number;
@@ -190,9 +213,9 @@ export type DashboardStats = {
   avgFitScore: number | null;
 };
 
-export function dashboardStats(): DashboardStats {
+export function dashboardStats(userId: string): DashboardStats {
   const now = Date.now();
-  const counts = new Map(stageCounts().map((row) => [row.stage, row.count]));
+  const counts = new Map(stageCounts(userId).map((row) => [row.stage, row.count]));
 
   const interviewing =
     (counts.get("screening") ?? 0) +
@@ -204,11 +227,10 @@ export function dashboardStats(): DashboardStats {
     0,
   );
 
-  // "Applied" means the application actually went out, whatever happened after.
   const appliedRows = db
     .select({ appliedAt: applications.appliedAt })
     .from(applications)
-    .where(isNotNull(applications.appliedAt))
+    .where(and(owned(userId), isNotNull(applications.appliedAt)))
     .all();
 
   const appliedLast7 = appliedRows.filter(
@@ -221,13 +243,18 @@ export function dashboardStats(): DashboardStats {
 
   const totalApplied = appliedRows.length;
   const interviewsReached =
-    funnelDepth().find((row) => row.stage === "screening")?.count ?? 0;
+    funnelDepth(userId).find((row) => row.stage === "screening")?.count ?? 0;
 
   const openActionables =
     db
       .select({ total: count() })
       .from(actionables)
-      .where(inArray(actionables.status, ["todo", "in_progress"]))
+      .where(
+        and(
+          eq(actionables.userId, userId),
+          inArray(actionables.status, ["todo", "in_progress"]),
+        ),
+      )
       .get()?.total ?? 0;
 
   const dueSoon =
@@ -236,6 +263,7 @@ export function dashboardStats(): DashboardStats {
       .from(actionables)
       .where(
         and(
+          eq(actionables.userId, userId),
           inArray(actionables.status, ["todo", "in_progress"]),
           isNotNull(actionables.dueAt),
           lte(actionables.dueAt, new Date(now + 3 * DAY)),
@@ -249,6 +277,7 @@ export function dashboardStats(): DashboardStats {
       .from(applications)
       .where(
         and(
+          owned(userId),
           eq(applications.archived, false),
           isNotNull(applications.nextActionAt),
           lte(applications.nextActionAt, new Date(now)),
@@ -261,12 +290,16 @@ export function dashboardStats(): DashboardStats {
     db
       .select({ total: count() })
       .from(mailMessages)
-      .where(eq(mailMessages.status, "pending"))
+      .where(
+        and(eq(mailMessages.userId, userId), eq(mailMessages.status, "pending")),
+      )
       .get()?.total ?? 0;
 
   const fit = db
     .select({ avg: sql<number | null>`avg(${analyses.fitScore})` })
     .from(analyses)
+    .innerJoin(applications, eq(applications.id, analyses.applicationId))
+    .where(owned(userId))
     .get();
 
   return {
@@ -289,8 +322,10 @@ export function dashboardStats(): DashboardStats {
   };
 }
 
-/** Applications sent per day for the last `days` days, oldest first. */
-export function applicationActivity(days = 30): { date: string; count: number }[] {
+export function applicationActivity(
+  userId: string,
+  days = 30,
+): { date: string; count: number }[] {
   const start = new Date();
   start.setHours(0, 0, 0, 0);
   const startMs = start.getTime() - (days - 1) * DAY;
@@ -298,7 +333,7 @@ export function applicationActivity(days = 30): { date: string; count: number }[
   const rows = db
     .select({ appliedAt: applications.appliedAt })
     .from(applications)
-    .where(isNotNull(applications.appliedAt))
+    .where(and(owned(userId), isNotNull(applications.appliedAt)))
     .all();
 
   const buckets = new Map<string, number>();
@@ -313,8 +348,7 @@ export function applicationActivity(days = 30): { date: string; count: number }[
   return [...buckets].map(([date, count]) => ({ date, count }));
 }
 
-/** Everything the user should act on next, newest deadline first. */
-export function upcomingWork(limit = 8) {
+export function upcomingWork(userId: string, limit = 8) {
   const rows = db
     .select({
       actionable: actionables,
@@ -323,7 +357,12 @@ export function upcomingWork(limit = 8) {
     })
     .from(actionables)
     .leftJoin(applications, eq(actionables.applicationId, applications.id))
-    .where(inArray(actionables.status, ["todo", "in_progress"]))
+    .where(
+      and(
+        eq(actionables.userId, userId),
+        inArray(actionables.status, ["todo", "in_progress"]),
+      ),
+    )
     .orderBy(desc(actionables.priority), actionables.dueAt, actionables.createdAt)
     .limit(limit)
     .all();
@@ -335,16 +374,16 @@ export function upcomingWork(limit = 8) {
   }));
 }
 
-export function needsAttention(limit = 6) {
-  const now = new Date();
+export function needsAttention(userId: string, limit = 6) {
   return db
     .select()
     .from(applications)
     .where(
       and(
+        owned(userId),
         eq(applications.archived, false),
         isNotNull(applications.nextActionAt),
-        lte(applications.nextActionAt, now),
+        lte(applications.nextActionAt, new Date()),
         inArray(applications.stage, BOARD_STAGES),
       ),
     )
@@ -353,25 +392,28 @@ export function needsAttention(limit = 6) {
     .all();
 }
 
-export function listMail(status?: "pending" | "linked" | "ignored", limit = 100) {
+export function listMail(
+  userId: string,
+  status?: "pending" | "linked" | "ignored",
+  limit = 100,
+) {
+  const filters = [eq(mailMessages.userId, userId)];
+  if (status) filters.push(eq(mailMessages.status, status));
+
   return db
     .select()
     .from(mailMessages)
-    .where(status ? eq(mailMessages.status, status) : undefined)
+    .where(and(...filters))
     .orderBy(desc(mailMessages.receivedAt))
     .limit(limit)
     .all();
 }
 
-/** Open prep items grouped by kind, for the prep hub's progress read. */
-export function prepProgress() {
+export function prepProgress(userId: string) {
   const rows = db
-    .select({
-      kind: actionables.kind,
-      status: actionables.status,
-      total: count(),
-    })
+    .select({ kind: actionables.kind, status: actionables.status, total: count() })
     .from(actionables)
+    .where(eq(actionables.userId, userId))
     .groupBy(actionables.kind, actionables.status)
     .all();
 

@@ -1,4 +1,4 @@
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { applications, mailMessages } from "@/db/schema";
 import { triageEmail } from "@/lib/ai";
@@ -26,13 +26,14 @@ function normalizeCompany(name: string): string {
     .replace(/[^a-z0-9]/g, "");
 }
 
-function findApplicationByCompany(company: string): string | null {
+function findApplicationByCompany(userId: string, company: string): string | null {
   const needle = normalizeCompany(company);
   if (!needle) return null;
 
   const rows = db
     .select({ id: applications.id, company: applications.company })
     .from(applications)
+    .where(eq(applications.userId, userId))
     .all();
 
   // Prefer an exact normalized match; fall back to containment either way,
@@ -56,10 +57,11 @@ function findApplicationByCompany(company: string): string | null {
  * high confidence. Anything uncertain lands in the inbox as `pending` for the
  * user to resolve — Alfred never silently advances an application on a guess.
  */
-export async function syncMailbox(options?: {
-  triage?: boolean;
-}): Promise<SyncReport> {
-  const settings = getSettings();
+export async function syncMailbox(
+  userId: string,
+  options?: { triage?: boolean },
+): Promise<SyncReport> {
+  const settings = getSettings(userId);
   const report: SyncReport = {
     fetched: 0,
     inserted: 0,
@@ -79,9 +81,12 @@ export async function syncMailbox(options?: {
       .select({ messageId: mailMessages.messageId })
       .from(mailMessages)
       .where(
-        inArray(
-          mailMessages.messageId,
-          fetched.map((mail) => mail.messageId),
+        and(
+          eq(mailMessages.userId, userId),
+          inArray(
+            mailMessages.messageId,
+            fetched.map((mail) => mail.messageId),
+          ),
         ),
       )
       .all()
@@ -96,6 +101,7 @@ export async function syncMailbox(options?: {
     .insert(mailMessages)
     .values(
       fresh.map((mail) => ({
+        userId,
         messageId: mail.messageId,
         folder: settings.mail.folder || "INBOX",
         fromAddress: mail.fromAddress,
@@ -113,11 +119,12 @@ export async function syncMailbox(options?: {
   const shouldTriage = options?.triage ?? settings.mail.autoTriage;
   if (!shouldTriage) return report;
 
-  const knownCompanies = listKnownCompanies();
+  const knownCompanies = listKnownCompanies(userId);
 
   for (const row of inserted) {
     try {
       const { result } = await triageEmail(
+        userId,
         {
           fromName: row.fromName,
           fromAddress: row.fromAddress,
@@ -156,9 +163,9 @@ export async function syncMailbox(options?: {
       // Link only when the model is confident AND the company resolves to
       // something already tracked. Stage changes stay manual.
       if (result.confidence >= 0.75 && result.company) {
-        const applicationId = findApplicationByCompany(result.company);
+        const applicationId = findApplicationByCompany(userId, result.company);
         if (applicationId) {
-          linkMailToApplication(row.id, applicationId);
+          linkMailToApplication(userId, row.id, applicationId);
           report.autoLinked++;
         }
       }

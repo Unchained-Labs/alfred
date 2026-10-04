@@ -12,10 +12,14 @@ import { MobileNav, type NavBadges, Sidebar } from "@/components/shell/sidebar";
 import { ThemeToggle } from "@/components/shell/theme-toggle";
 import { Button } from "@/components/ui/button";
 
+export type ShellUser = { name: string; email: string; role: string };
+
 export function AppShell({
+  user,
   badges,
   children,
 }: {
+  user: ShellUser;
   badges?: NavBadges;
   children: React.ReactNode;
 }) {
@@ -24,7 +28,7 @@ export function AppShell({
 
   return (
     <div className="flex min-h-dvh">
-      <Sidebar badges={badges} />
+      <Sidebar user={user} badges={badges} />
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="border-line bg-page/80 sticky top-0 z-30 flex h-14 shrink-0 items-center gap-2 border-b px-4 backdrop-blur-xl lg:px-6">

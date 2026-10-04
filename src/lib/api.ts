@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { AiError, AiNotConfiguredError } from "@/lib/ai/types";
 import { ConfigError, InputError } from "@/lib/errors";
+import { ForbiddenError, UnauthorizedError } from "@/lib/auth";
 
 export function ok<T>(data: T, init?: number) {
   return NextResponse.json(data, { status: init ?? 200 });
@@ -24,6 +25,18 @@ export function failed(error: unknown) {
     return NextResponse.json(
       { error: error.message, code: "ai_not_configured" },
       { status: 409 },
+    );
+  }
+  if (error instanceof UnauthorizedError) {
+    return NextResponse.json(
+      { error: error.message, code: "unauthorized" },
+      { status: 401 },
+    );
+  }
+  if (error instanceof ForbiddenError) {
+    return NextResponse.json(
+      { error: error.message, code: "forbidden" },
+      { status: 403 },
     );
   }
   if (error instanceof InputError) {

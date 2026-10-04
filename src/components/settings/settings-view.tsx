@@ -12,6 +12,7 @@ import {
   Server,
   Sparkles,
   User,
+  Users,
   Zap,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -19,6 +20,11 @@ import * as React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  People,
+  type InviteRow,
+  type PersonRow,
+} from "@/components/settings/people";
 import { ResumeImport } from "@/components/settings/resume-import";
 import { Field, Input, Select, Switch, Textarea } from "@/components/ui/field";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -109,7 +115,17 @@ function TestBadge({ result }: { result: TestResult | null }) {
   );
 }
 
-export function SettingsView({ initial }: { initial: RedactedSettings }) {
+export function SettingsView({
+  initial,
+  isOwner,
+  people,
+  invites,
+}: {
+  initial: RedactedSettings;
+  isOwner: boolean;
+  people: PersonRow[];
+  invites: InviteRow[];
+}) {
   const router = useRouter();
   const toast = useToast();
 
@@ -254,6 +270,12 @@ export function SettingsView({ initial }: { initial: RedactedSettings }) {
             <Mail className="size-3.5" />
             Mailbox
           </TabsTrigger>
+          {isOwner ? (
+            <TabsTrigger value="people">
+              <Users className="size-3.5" />
+              People
+            </TabsTrigger>
+          ) : null}
         </TabsList>
 
         {/* ---------------- Profile ---------------- */}
@@ -860,6 +882,11 @@ export function SettingsView({ initial }: { initial: RedactedSettings }) {
             </CardBody>
           </Card>
         </TabsContent>
+        {isOwner ? (
+          <TabsContent value="people" className="mt-4">
+            <People people={people} invites={invites} />
+          </TabsContent>
+        ) : null}
       </Tabs>
 
       {/* Sticky save bar — the form is long enough that a footer button would hide. */}

@@ -12,6 +12,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import * as React from "react";
 import { Logo } from "@/components/shell/logo";
+import { SignedInAs } from "@/components/shell/signed-in-as";
+import type { ShellUser } from "@/components/shell/app-shell";
 import { ThemeToggle } from "@/components/shell/theme-toggle";
 import { cn } from "@/lib/utils";
 
@@ -25,7 +27,7 @@ const NAV = [
 
 export type NavBadges = Partial<Record<(typeof NAV)[number]["href"], number>>;
 
-export function Sidebar({ badges }: { badges?: NavBadges }) {
+export function Sidebar({ user, badges }: { user: ShellUser; badges?: NavBadges }) {
   const pathname = usePathname();
 
   const isActive = (href: string) =>
@@ -91,7 +93,8 @@ export function Sidebar({ badges }: { badges?: NavBadges }) {
         })}
       </nav>
 
-      <div className="border-line border-t p-3">
+      <div className="border-line space-y-2 border-t p-3">
+        <SignedInAs user={user} />
         <ThemeToggle />
       </div>
     </aside>

@@ -1,0 +1,44 @@
+# Opt-in: let the container use the Claude Code CLI installed on the host.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.claude-code.yml up -d
+#
+# This is deliberately a separate file rather than a default, because it shares
+# real credentials with the container. Read the trade before using it.
+#
+# WHAT THIS GIVES THE CONTAINER
+#   Your Claude Code sign-in. Anything running in the container can invoke the
+#   CLI as you, and calls are billed to your subscription. Alfred itself denies
+#   every tool and passes prompts on stdin (see src/lib/ai/providers/claude-code.ts),
+#   but the mount is not scoped to Alfred — it is scoped to the container.
+#
+# WHY A BIND MOUNT AND NOT A COPY INTO THE IMAGE
+#   The binary is ~230 MB and version-specific, and the credentials rotate. Baking
+#   either into an image layer would pin a stale version and leave a credential
+#   sitting in the image.
+#
+# IF YOU WOULD RATHER NOT
+#   Use the Anthropic API with a key, or point Alfred at an OpenAI-compatible
+#   endpoint the container can reach. Both are configured in Settings.
+
+services:
+  alfred:
+    volumes:
+      # The CLI itself. Read-only: the container never needs to update it.
+      # ${CLAUDE_BIN} must be the resolved versioned binary, not the symlink in
+      # ~/.local/bin — a symlink would dangle inside the container.
+      - ${CLAUDE_BIN:?set CLAUDE_BIN to the resolved claude binary, e.g. $(readlink -f ~/.local/bin/claude)}:/usr/local/bin/claude:ro
+
+      # The sign-in. Read-write because the CLI maintains state here; it is the
+      # same uid on both sides (1000), so the mode-600 credential file is
+      # readable without loosening anything.
+      - ${CLAUDE_HOME:-~/.claude}:/home/node/.claude
+
+      # The CLI also wants ~/.claude.json and will not start without it. That
+      # file on the host is the real config — project history and all — and the
+      # container has no business writing to it, so it gets its own instead.
+      - ./data/claude-code/config.json:/home/node/.claude.json
+
+    environment:
+      # Belt and braces: the provider defaults to `claude` on PATH, and the
+      # mount puts it there, but being explicit survives a PATH change.
+      ALFRED_CLAUDE_BIN: /usr/local/bin/claude
