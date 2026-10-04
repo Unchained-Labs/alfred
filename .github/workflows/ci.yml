@@ -78,7 +78,8 @@ jobs:
           # --- signed out -------------------------------------------------
           check "GET /            (redirect to login)" 307 \
             "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/)"
-          check "GET /login" 200 \
+          # Before anyone exists, /login sends you to /setup — there is nobody to sign in as.
+          check "GET /login       (-> /setup, no accounts)" 307 \
             "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/login)"
           check "GET /setup       (no accounts yet)" 200 \
             "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/setup)"
@@ -94,6 +95,12 @@ jobs:
             "$(curl -s -o /dev/null -w '%{http_code}' -X POST http://localhost:3000/api/auth/setup \
                -H 'content-type: application/json' \
                -d '{"email":"other@example.com","name":"X","password":"a-long-enough-password"}')"
+
+          # --- signed out again, now that an account exists -----------------
+          check "GET /login       (serves once set up)" 200 \
+            "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/login)"
+          check "GET /setup       (-> /login, closed)" 307 \
+            "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/setup)"
 
           # --- signed in ---------------------------------------------------
           for path in / /pipeline /prep /inbox /settings; do
