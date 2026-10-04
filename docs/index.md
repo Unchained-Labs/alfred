@@ -8,6 +8,16 @@ that role is actually going to ask.
 It runs locally against SQLite. Nothing leaves your machine except the calls you
 configure to an AI provider and, optionally, a read-only IMAP connection.
 
+## See it working
+
+<div class="al-video">
+  <video controls muted playsinline loop preload="metadata" poster="assets/poster.jpg">
+    <source src="assets/alfred-demo.webm" type="video/webm">
+    <source src="assets/alfred-demo.mp4" type="video/mp4">
+  </video>
+</div>
+<p class="al-caption">The full walkthrough — tracking, fit analysis, a generated prep plan, the interview questionnaire, and the provider options.</p>
+
 <div class="grid cards" markdown>
 
 - :material-view-column: **Track**

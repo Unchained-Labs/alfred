@@ -19,6 +19,14 @@ Every item carries a **rationale** explaining why it matters for this posting.
 That's the part worth reading — it's what separates a prep plan from a generic
 list, and it tells you what to drop when you're short on time.
 
+<div class="al-video">
+  <video controls muted playsinline loop preload="metadata" autoplay>
+    <source src="../assets/clips/prep.webm" type="video/webm">
+    <source src="../assets/clips/prep.mp4" type="video/mp4">
+  </video>
+</div>
+<p class="al-caption">A generated prep plan — coding problems with their pattern, concepts targeting the gaps, and a system-design prompt.</p>
+
 Items have a difficulty, an estimated duration, and a priority. The plan is sized
 for one to two weeks, not a month.
 
@@ -51,6 +59,14 @@ can rehearse. Each has:
 - **Your version** — the box that matters. Rewriting the draft in your own words
   is what makes it stick.
 - **A readiness rating**, so you can see what still needs work.
+
+<div class="al-video">
+  <video controls muted playsinline loop preload="metadata" autoplay>
+    <source src="../assets/clips/questions.webm" type="video/webm">
+    <source src="../assets/clips/questions.mp4" type="video/mp4">
+  </video>
+</div>
+<p class="al-caption">A predicted question, what the interviewer is really assessing, and a drafted answer to rewrite in your own words.</p>
 
 Questions are ordered by likelihood combined with how badly a weak answer would
 hurt, and at least two always target the gaps from the analysis — those are the

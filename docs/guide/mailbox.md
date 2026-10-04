@@ -61,6 +61,14 @@ Alfred links an email to an application **only** when both hold:
 Everything else waits in **Needs review**, where you can link it, create a new
 application from it, or ignore it.
 
+<div class="al-video">
+  <video controls muted playsinline loop preload="metadata" autoplay>
+    <source src="../assets/clips/inbox.webm" type="video/webm">
+    <source src="../assets/clips/inbox.mp4" type="video/mp4">
+  </video>
+</div>
+<p class="al-caption">Triaged recruiter mail, classified and matched against the pipeline.</p>
+
 !!! warning "Stage changes are always yours"
 A triaged email can _suggest_ a stage — an interview invitation implies
 screening or technical — but Alfred never applies it. Acting on a
