@@ -22,7 +22,11 @@ export async function GET() {
   } catch (error) {
     // 503, not 500: the app is running and answering, the dependency is not.
     return NextResponse.json(
-      { ok: false, db: "down", error: error instanceof Error ? error.message : String(error) },
+      {
+        ok: false,
+        db: "down",
+        error: error instanceof Error ? error.message : String(error),
+      },
       { status: 503 },
     );
   }
