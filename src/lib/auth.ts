@@ -1,7 +1,7 @@
 import "server-only";
 
 import { randomBytes, createHash } from "node:crypto";
-import { and, eq, isNull, lt, sql } from "drizzle-orm";
+import { and, eq, isNotNull, isNull, lt, sql } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { db } from "@/db";
 import {
@@ -185,6 +185,23 @@ export function findUserByEmail(email: string): User | undefined {
     .from(users)
     .where(eq(users.email, normalizeEmail(email)))
     .get();
+}
+
+/**
+ * Does any account still sign in with a password?
+ *
+ * Decides whether the sign-in screen offers the password form at all. On an
+ * Alfred that only ever had passkeys, that link is an invitation to try a
+ * credential nobody has.
+ */
+export function anyPasswordAccounts(): boolean {
+  return (
+    (db
+      .select({ n: sql<number>`count(*)` })
+      .from(users)
+      .where(isNotNull(users.passwordHash))
+      .get()?.n ?? 0) > 0
+  );
 }
 
 export function listUsers(): User[] {

@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { AuthCard } from "@/components/auth/auth-card";
+import { MailX } from "lucide-react";
+
+import { PasskeyAuth } from "@/components/auth/passkey-auth";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/states";
-import { MailX } from "lucide-react";
-import { currentUser, findUsableInvite, MIN_PASSWORD_LENGTH } from "@/lib/auth";
+import { currentUser, findUsableInvite } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Accept your invitation" };
 export const dynamic = "force-dynamic";
@@ -30,34 +31,15 @@ export default async function InvitePage({ params }: Params) {
     );
   }
 
+  // The address and the role come from the invitation on the server; the
+  // token is all the browser gets to send back.
   return (
-    <AuthCard
-      title="Accept your invitation"
-      intro={`You have been invited to Alfred as ${invite.email}. Your pipeline, résumé and provider keys stay yours — nobody else can see them.`}
-      action="/api/auth/accept"
-      submitLabel="Create my account"
-      fields={[
-        {
-          name: "token",
-          label: "Invitation",
-          defaultValue: token,
-          readOnly: true,
-          type: "hidden",
-        },
-        {
-          name: "name",
-          label: "Your name",
-          placeholder: "Your name",
-          autoComplete: "name",
-        },
-        {
-          name: "password",
-          label: "Choose a password",
-          type: "password",
-          autoComplete: "new-password",
-          hint: `At least ${MIN_PASSWORD_LENGTH} characters.`,
-        },
-      ]}
+    <PasskeyAuth
+      initialPanel="signup"
+      signupAllowed
+      passwordAllowed={false}
+      inviteToken={token}
+      inviteEmail={invite.email}
     />
   );
 }
