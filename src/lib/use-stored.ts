@@ -92,13 +92,3 @@ export function useStoredCount(key: string) {
   const set = React.useCallback((next: number) => setRaw(String(next)), [setRaw]);
   return [value, set] as const;
 }
-
-/** True once mounted on the client. For UI that must not render server-side. */
-const neverChanges = () => () => {};
-export function useMounted(): boolean {
-  return React.useSyncExternalStore(
-    neverChanges,
-    () => true,
-    () => false,
-  );
-}

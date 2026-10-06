@@ -26,7 +26,7 @@ import { EmptyState, ThinkingRows } from "@/components/ui/states";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useToast } from "@/components/ui/toast";
 import type { Actionable, ActionableStatus } from "@/db/schema";
-import { DO_IT_LABEL, exerciseKindFor } from "@/lib/exercises";
+import { DO_IT_LABEL, exerciseKindFor, requiresExercise } from "@/lib/exercises";
 import { ACTIONABLE_META } from "@/lib/stages";
 import { cn } from "@/lib/utils";
 
@@ -236,6 +236,12 @@ export function ActionablesPanel({
     .filter((item) => item.status !== "done")
     .reduce((sum, item) => sum + (item.estMinutes ?? 0), 0);
 
+  // How much of this plan is work that has to be earned, and how much of that
+  // is actually earned. Worth stating plainly: it is the difference between a
+  // plan you have read and a plan you have done.
+  const gated = actionables.filter((item) => requiresExercise(item.kind));
+  const verified = gated.filter((item) => item.verifiedAt).length;
+
   async function generate() {
     setGenerating(true);
     try {
@@ -301,7 +307,7 @@ export function ActionablesPanel({
           </CardTitle>
           <p className="text-ink-muted mt-0.5 text-xs">
             {actionables.length
-              ? `${done} of ${actionables.length} done${totalMinutes ? ` · ~${Math.round(totalMinutes / 60)}h remaining` : ""}`
+              ? `${done} of ${actionables.length} done${gated.length ? ` · ${verified} of ${gated.length} verified` : ""}${totalMinutes ? ` · ~${Math.round(totalMinutes / 60)}h remaining` : ""}`
               : "Coding problems, concepts, system design, and behavioral prep"}
           </p>
         </div>
