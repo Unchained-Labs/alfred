@@ -3,6 +3,7 @@ import {
   count,
   desc,
   eq,
+  gte,
   inArray,
   isNotNull,
   lte,
@@ -392,6 +393,144 @@ export function needsAttention(userId: string, limit = 6) {
     .orderBy(applications.nextActionAt)
     .limit(limit)
     .all();
+}
+
+/**
+ * Everything that happens on a date, in one list.
+ *
+ * Alfred already knew all of this — an interview sits in
+ * `applications.next_action_at`, prep work in `actionables.due_at`, history in
+ * `events.occurred_at` — but nothing ever put the three on the same axis, so
+ * "what is coming up" was a question you answered by reading three pages.
+ *
+ * The window is inclusive of `from` and exclusive of `to`, which is what a
+ * month grid wants: the caller passes the first cell and one past the last.
+ */
+export type CalendarKind = "interview" | "prep" | "history";
+
+export interface CalendarItem {
+  id: string;
+  kind: CalendarKind;
+  /** Midnight-anchored day key, YYYY-MM-DD, in the server's zone. */
+  day: string;
+  at: Date;
+  title: string;
+  detail: string | null;
+  company: string | null;
+  applicationId: string | null;
+  /** Prep only: done items still show, struck through, rather than vanishing. */
+  done?: boolean;
+  stage?: ApplicationStage | null;
+}
+
+const dayKey = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+export function calendarItems(
+  userId: string,
+  from: Date,
+  to: Date,
+): CalendarItem[] {
+  const out: CalendarItem[] = [];
+
+  // Interviews and calls: the thing you actually plan around.
+  const upcoming = db
+    .select()
+    .from(applications)
+    .where(
+      and(
+        owned(userId),
+        eq(applications.archived, false),
+        isNotNull(applications.nextActionAt),
+        gte(applications.nextActionAt, from),
+        lte(applications.nextActionAt, to),
+      ),
+    )
+    .all();
+  for (const a of upcoming) {
+    if (!a.nextActionAt) continue;
+    out.push({
+      id: `app-${a.id}`,
+      kind: "interview",
+      day: dayKey(a.nextActionAt),
+      at: a.nextActionAt,
+      title: a.nextActionLabel || "Next step",
+      detail: a.title,
+      company: a.company,
+      applicationId: a.id,
+      stage: a.stage,
+    });
+  }
+
+  // Prep with a deadline. Completed work is kept rather than hidden: a week
+  // you got through is worth seeing.
+  const due = db
+    .select({ a: actionables, company: applications.company })
+    .from(actionables)
+    .leftJoin(applications, eq(actionables.applicationId, applications.id))
+    .where(
+      and(
+        eq(actionables.userId, userId),
+        isNotNull(actionables.dueAt),
+        gte(actionables.dueAt, from),
+        lte(actionables.dueAt, to),
+      ),
+    )
+    .all();
+  for (const row of due) {
+    const a = row.a;
+    if (!a.dueAt) continue;
+    out.push({
+      id: `act-${a.id}`,
+      kind: "prep",
+      day: dayKey(a.dueAt),
+      at: a.dueAt,
+      title: a.title,
+      detail: a.kind,
+      company: row.company,
+      applicationId: a.applicationId,
+      done: a.status === "done",
+    });
+  }
+
+  // What already happened, so the month reads as a record and not just a plan.
+  const past = db
+    .select({ e: events, company: applications.company })
+    .from(events)
+    .leftJoin(applications, eq(events.applicationId, applications.id))
+    .where(
+      and(
+        eq(events.userId, userId),
+        gte(events.occurredAt, from),
+        lte(events.occurredAt, to),
+      ),
+    )
+    .all();
+  for (const row of past) {
+    out.push({
+      id: `ev-${row.e.id}`,
+      kind: "history",
+      day: dayKey(row.e.occurredAt),
+      at: row.e.occurredAt,
+      title: row.e.title || row.e.type,
+      detail: null,
+      company: row.company,
+      applicationId: row.e.applicationId,
+    });
+  }
+
+  return out.sort((x, y) => x.at.getTime() - y.at.getTime());
+}
+
+/** The next N dated things, for the dashboard and the calendar's side rail. */
+export function agenda(userId: string, days = 30, limit = 12): CalendarItem[] {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const end = new Date(start);
+  end.setDate(end.getDate() + days);
+  return calendarItems(userId, start, end)
+    .filter((i) => i.kind !== "history" && !i.done)
+    .slice(0, limit);
 }
 
 export function listMail(

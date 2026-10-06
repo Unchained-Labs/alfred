@@ -25,6 +25,12 @@ services:
       # replaced on every rebuild and take the job history with it.
       ALFRED_DB_PATH: /data/alfred.db
       NODE_ENV: production
+      # The container is UTC unless told otherwise, and Alfred decides what
+      # "today", "overdue" and "due tomorrow" mean on the SERVER. Anyone east
+      # of UTC therefore gets a few hours every night where the app's today is
+      # their yesterday — a deadline reads as overdue, and work scheduled for
+      # today lands on a date already past. Set this to your own zone.
+      TZ: ${TZ:-UTC}
       # The URL the browser actually shows. Passkeys are bound to this
       # hostname, and behind a reverse proxy the request's own Host is the
       # internal one — so leaving this unset makes passkeys silently not work

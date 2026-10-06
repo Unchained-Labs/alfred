@@ -1,4 +1,4 @@
-import { requireUser } from "@/lib/auth";
+import { requireUserForPage } from "@/lib/auth";
 import type { Metadata } from "next";
 import * as React from "react";
 import { InboxView } from "@/components/inbox/inbox-view";
@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: "Inbox" };
 export const dynamic = "force-dynamic";
 
 export default async function InboxPage() {
-  const user = await requireUser();
+  const user = await requireUserForPage();
   const { mail } = getSettings(user.id);
 
   return (

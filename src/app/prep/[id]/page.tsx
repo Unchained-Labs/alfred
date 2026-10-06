@@ -13,7 +13,7 @@ import { KIND_ICONS } from "@/components/dashboard/up-next";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/states";
-import { currentUser, requireUser } from "@/lib/auth";
+import { currentUser, requireUserForPage } from "@/lib/auth";
 import { exerciseKindFor } from "@/lib/exercises";
 import {
   getActionable,
@@ -21,7 +21,7 @@ import {
   getExerciseByActionable,
   listSubmissions,
 } from "@/lib/queries";
-import { ACTIONABLE_META } from "@/lib/stages";
+import { actionableMeta } from "@/lib/stages";
 
 export const dynamic = "force-dynamic";
 
@@ -49,7 +49,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
  * replacing it does not change the URL.
  */
 export default async function ExercisePage({ params }: Params) {
-  const user = await requireUser();
+  const user = await requireUserForPage();
   const { id } = await params;
 
   const actionable = getActionable(user.id, id);
@@ -62,7 +62,7 @@ export default async function ExercisePage({ params }: Params) {
   const kind = exerciseKindFor(actionable.kind);
   const exercise = getExerciseByActionable(user.id, id);
   const submissions = exercise ? listSubmissions(user.id, exercise.id) : [];
-  const meta = ACTIONABLE_META[actionable.kind];
+  const meta = actionableMeta(actionable.kind);
   const Icon = KIND_ICONS[meta.icon];
 
   return (

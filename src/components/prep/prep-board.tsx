@@ -29,7 +29,7 @@ import {
   type ActionableStatus,
 } from "@/db/schema";
 import { DO_IT_LABEL, exerciseKindFor } from "@/lib/exercises";
-import { ACTIONABLE_META } from "@/lib/stages";
+import { actionableMeta } from "@/lib/stages";
 import { isOverdue, useNow } from "@/lib/use-now";
 import { cn, relativeDay } from "@/lib/utils";
 
@@ -65,6 +65,54 @@ const STATUS_ICON = {
   done: { Icon: CheckSquare, color: "var(--good)", label: "Reopen" },
   skipped: { Icon: Circle, color: "var(--ink-muted)", label: "Reopen" },
 } as const;
+
+/**
+ * What the badge should say.
+ *
+ * "Priority" on every row was the old behaviour and it told you nothing — the
+ * generator sets priority 3 on most of what it writes, so 25 of 25 items wore
+ * the same badge. A date is the thing that actually sorts the work: an
+ * interview on Friday makes Thursday's item urgent and next month's item
+ * irrelevant, and no amount of priority ranking says that.
+ */
+function DueBadge({
+  dueAt,
+  priority,
+  now,
+}: {
+  dueAt: Date | string | null;
+  priority: number;
+  /** Timestamp from useNow(): null until mount, so nothing time-relative
+   *  renders on the server and hydration cannot disagree with itself. */
+  now: number | null;
+}) {
+  if (!dueAt || now === null) {
+    // No date: fall back to the old signal, but only for the top rank, so it
+    // stays rare enough to mean something.
+    return priority === 3 ? <Badge tint="var(--serious)">Priority</Badge> : null;
+  }
+  const due = typeof dueAt === "string" ? new Date(dueAt) : dueAt;
+  const startOfDay = (d: Date) =>
+    new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const days = Math.round(
+    (startOfDay(due) - startOfDay(new Date(now))) / 86_400_000,
+  );
+
+  if (days < 0) return <Badge tint="var(--critical)">Overdue</Badge>;
+  if (days === 0) return <Badge tint="var(--critical)">Due today</Badge>;
+  if (days === 1) return <Badge tint="var(--serious)">Due tomorrow</Badge>;
+  if (days <= 7)
+    return (
+      <Badge tint="var(--serious)">
+        {due.toLocaleDateString(undefined, { weekday: "short" })}
+      </Badge>
+    );
+  return (
+    <Badge tint="var(--ink-muted)">
+      {due.toLocaleDateString(undefined, { day: "numeric", month: "short" })}
+    </Badge>
+  );
+}
 
 export function PrepBoard({ items }: { items: PrepItem[] }) {
   const router = useRouter();
@@ -140,7 +188,7 @@ export function PrepBoard({ items }: { items: PrepItem[] }) {
           reinforcement only. */}
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {presentKinds.slice(0, 4).map((candidate) => {
-          const meta = ACTIONABLE_META[candidate];
+          const meta = actionableMeta(candidate);
           const stats = byKind.get(candidate)!;
           const Icon = KIND_ICONS[meta.icon] ?? CheckSquare;
           return (
@@ -174,7 +222,7 @@ export function PrepBoard({ items }: { items: PrepItem[] }) {
             <TabsTrigger value="all">All</TabsTrigger>
             {presentKinds.map((candidate) => (
               <TabsTrigger key={candidate} value={candidate}>
-                {ACTIONABLE_META[candidate].label}
+                {actionableMeta(candidate).label}
               </TabsTrigger>
             ))}
           </TabsList>
@@ -201,10 +249,13 @@ export function PrepBoard({ items }: { items: PrepItem[] }) {
           />
         </Card>
       ) : (
-        <Card className="overflow-hidden">
-          <ul className="divide-y divide-[var(--border)]">
+        <Card className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          {/* Scrolls here, not on the page. Twenty-five open items made the
+              document 3,100px tall, so the filters you need in order to make
+              the list shorter scrolled away as soon as you started reading. */}
+          <ul className="min-h-0 flex-1 divide-y divide-[var(--border)] overflow-auto">
             {visible.map((item) => {
-              const meta = ACTIONABLE_META[item.kind];
+              const meta = actionableMeta(item.kind);
               const Icon = KIND_ICONS[meta.icon] ?? CheckSquare;
               const status = STATUS_ICON[item.status];
               const done = item.status === "done";
@@ -330,8 +381,12 @@ export function PrepBoard({ items }: { items: PrepItem[] }) {
                     ) : null}
                   </div>
 
-                  {item.priority === 3 && !done ? (
-                    <Badge tint="var(--serious)">Priority</Badge>
+                  {!done ? (
+                    <DueBadge
+                      dueAt={item.dueAt}
+                      priority={item.priority}
+                      now={now}
+                    />
                   ) : null}
                 </li>
               );

@@ -3,6 +3,7 @@ import "server-only";
 import { randomBytes, createHash } from "node:crypto";
 import { and, eq, isNotNull, isNull, lt, sql } from "drizzle-orm";
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { db } from "@/db";
 import {
   actionables,
@@ -131,6 +132,24 @@ export async function currentUser(): Promise<User | null> {
 export async function requireUser(): Promise<User> {
   const user = await currentUser();
   if (!user) throw new UnauthorizedError();
+  return user;
+}
+
+/**
+ * requireUser for a PAGE: sends you to sign in instead of throwing.
+ *
+ * The proxy redirects when there is no session cookie at all, which covers the
+ * common case and hides this one: a cookie that EXISTS but no longer resolves
+ * — expired, revoked, or pointing at a deleted account — sails past the proxy
+ * and then threw UnauthorizedError in the render, which Next turns into a 500
+ * error page. Being logged out for a while should not look like a crash.
+ *
+ * API routes keep the throwing version: a fetch wants 401, not a redirect to
+ * an HTML page it cannot use.
+ */
+export async function requireUserForPage(): Promise<User> {
+  const user = await currentUser();
+  if (!user) redirect("/login");
   return user;
 }
 

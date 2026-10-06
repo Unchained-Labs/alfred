@@ -27,7 +27,7 @@ import { Tooltip } from "@/components/ui/tooltip";
 import { useToast } from "@/components/ui/toast";
 import type { Actionable, ActionableStatus } from "@/db/schema";
 import { DO_IT_LABEL, exerciseKindFor, requiresExercise } from "@/lib/exercises";
-import { ACTIONABLE_META } from "@/lib/stages";
+import { actionableMeta } from "@/lib/stages";
 import { cn } from "@/lib/utils";
 
 const DIFFICULTY_TINT = {
@@ -105,7 +105,7 @@ function ActionableRow({
   onDelete: (id: string) => void;
   busy: boolean;
 }) {
-  const meta = ACTIONABLE_META[item.kind];
+  const meta = actionableMeta(item.kind);
   const Icon = KIND_ICONS[meta.icon] ?? CheckSquare;
   const done = item.status === "done";
   const exerciseKind = exerciseKindFor(item.kind);

@@ -177,3 +177,23 @@ export const PRIORITY_LABELS: Record<number, string> = {
   2: "Normal",
   3: "High",
 };
+
+/**
+ * Metadata for a kind, with a fallback.
+ *
+ * ACTIONABLE_META is a Record keyed by the enum, so an unexpected value reads
+ * as `undefined` and the very next property access throws — which took the
+ * whole Prep page and the dashboard's queue down with a 500 over one row.
+ * Kinds can arrive from a model, and a row that is merely unfamiliar should
+ * render plainly rather than break the page around it.
+ */
+export function actionableMeta(kind: string): ActionableKindMeta {
+  return (
+    ACTIONABLE_META[kind as ActionableKind] ?? {
+      id: "concept" as ActionableKind,
+      label: kind || "Task",
+      icon: "CheckSquare",
+      token: "--kind-concept",
+    }
+  );
+}
