@@ -8,11 +8,23 @@ import {
   applications,
   analyses,
   events,
+  exercises,
+  type ExerciseTest,
   mailMessages,
   type NewActionable,
   questions,
+  type RubricCriterion,
+  submissions,
 } from "@/db/schema";
-import type { ActionablePlan, JobAnalysis, Questionnaire } from "@/lib/ai/schemas";
+import type {
+  ActionablePlan,
+  CodeExercise,
+  JobAnalysis,
+  Questionnaire,
+  WrittenExercise,
+} from "@/lib/ai/schemas";
+import { NotEarnedError } from "@/lib/errors";
+import { requiresExercise } from "@/lib/exercises";
 import { ownsApplication } from "@/lib/queries";
 import { stageLabel } from "@/lib/stages";
 
@@ -376,11 +388,56 @@ export function saveQuestionnaire(
  * Actionables & questions
  * ------------------------------------------------------------------ */
 
+/**
+ * Refuses to let a gated item be called done without a passing submission
+ * behind it.
+ *
+ * This lives in the data layer rather than in the route on purpose. It is the
+ * one invariant the whole exercises feature rests on, and a check in a handler
+ * is a check somebody adds a second handler around. Here, every path that can
+ * write `done` goes through it.
+ *
+ * Returns the row when the change is allowed, throws NotEarnedError when it is
+ * not, and null when the item does not belong to this user.
+ */
+function assertCompletable(userId: string, id: string) {
+  const item = db
+    .select({
+      kind: actionables.kind,
+      title: actionables.title,
+      verifiedAt: actionables.verifiedAt,
+    })
+    .from(actionables)
+    .where(and(eq(actionables.id, id), eq(actionables.userId, userId)))
+    .get();
+
+  if (!item) return null;
+  if (!requiresExercise(item.kind) || item.verifiedAt) return item;
+
+  // One escape hatch, and it is for Alfred's mistakes rather than the
+  // candidate's: when the generated tests reject the generator's own solution,
+  // the check is known-broken and nobody should be held to it.
+  const broken = db
+    .select({ id: exercises.id })
+    .from(exercises)
+    .where(
+      and(eq(exercises.actionableId, id), eq(exercises.selfCheckPassed, false)),
+    )
+    .get();
+  if (broken) return item;
+
+  throw new NotEarnedError(
+    `"${item.title}" is completed by doing it, not by marking it. Open it, do the work, and submit — or skip it if you would rather not.`,
+  );
+}
+
 export function setActionableStatus(
   userId: string,
   id: string,
   status: ActionableStatus,
 ) {
+  if (status === "done" && !assertCompletable(userId, id)) return undefined;
+
   return db
     .update(actionables)
     .set({
@@ -398,6 +455,10 @@ export function updateActionable(
   id: string,
   patch: Partial<NewActionable>,
 ) {
+  // A general patch can carry a status like any other field, so it passes the
+  // same gate — otherwise `{title, status}` would be the way around it.
+  if (patch.status === "done" && !assertCompletable(userId, id)) return undefined;
+
   return (
     db
       .update(actionables)
@@ -520,4 +581,175 @@ export function applicationFromMail(
 
   linkMailToApplication(userId, mailId, created.id);
   return created;
+}
+
+/* ------------------------------------------------------------------ *
+ * Exercises & submissions
+ * ------------------------------------------------------------------ */
+
+type ExerciseMeta = { provider: string; model: string };
+
+/**
+ * Replaces any exercise already attached to this prep item.
+ *
+ * Delete-then-insert rather than an upsert, because the submissions hanging
+ * off the old row were attempts at a DIFFERENT problem. Keeping them would
+ * leave a history that reads like progress against tests that no longer
+ * exist. They cascade, and `verifiedAt` is cleared with them: a verified item
+ * whose evidence has been deleted is exactly the lie this feature removes.
+ */
+function replaceExercise(
+  userId: string,
+  actionableId: string,
+  row: Omit<typeof exercises.$inferInsert, "userId" | "actionableId">,
+) {
+  const owned = db
+    .select({ id: actionables.id })
+    .from(actionables)
+    .where(and(eq(actionables.id, actionableId), eq(actionables.userId, userId)))
+    .get();
+  if (!owned) return undefined;
+
+  db.delete(exercises)
+    .where(
+      and(eq(exercises.actionableId, actionableId), eq(exercises.userId, userId)),
+    )
+    .run();
+
+  db.update(actionables)
+    .set({ verifiedAt: null, updatedAt: new Date() })
+    .where(and(eq(actionables.id, actionableId), eq(actionables.userId, userId)))
+    .run();
+
+  return db
+    .insert(exercises)
+    .values({ ...row, userId, actionableId })
+    .returning()
+    .get();
+}
+
+export function saveCodeExercise(
+  userId: string,
+  actionableId: string,
+  exercise: CodeExercise,
+  meta: ExerciseMeta,
+) {
+  const tests: ExerciseTest[] = exercise.tests.map((test) => ({
+    name: test.name,
+    call: test.call,
+    expect: test.expect,
+    hidden: test.hidden,
+  }));
+
+  return replaceExercise(userId, actionableId, {
+    kind: "code",
+    brief: exercise.brief,
+    language: "python",
+    starterCode: exercise.starterCode,
+    examples: exercise.examples.map((example) => ({
+      input: example.input,
+      output: example.output,
+      note: example.note,
+    })),
+    tests,
+    referenceSolution: exercise.referenceSolution,
+    hints: exercise.hints,
+    rubric: [],
+    provider: meta.provider,
+    model: meta.model,
+  });
+}
+
+export function saveWrittenExercise(
+  userId: string,
+  actionableId: string,
+  exercise: WrittenExercise,
+  meta: ExerciseMeta,
+) {
+  const rubric: RubricCriterion[] = exercise.rubric.map((criterion) => ({
+    id: criterion.id,
+    requirement: criterion.requirement,
+    weight: criterion.weight,
+  }));
+
+  return replaceExercise(userId, actionableId, {
+    kind: "written",
+    brief: exercise.brief,
+    language: "text",
+    examples: [],
+    tests: [],
+    hints: exercise.hints,
+    rubric,
+    provider: meta.provider,
+    model: meta.model,
+  });
+}
+
+/**
+ * Records whether the generator's own solution passes the generator's own
+ * tests. A false here is not the candidate's problem, so it downgrades the
+ * exercise to ungated practice instead of blocking them on a broken check.
+ */
+export function setExerciseSelfCheck(
+  userId: string,
+  exerciseId: string,
+  passed: boolean,
+  detail: string | null,
+) {
+  return db
+    .update(exercises)
+    .set({ selfCheckPassed: passed, selfCheckDetail: detail })
+    .where(and(eq(exercises.id, exerciseId), eq(exercises.userId, userId)))
+    .returning()
+    .get();
+}
+
+/** Every attempt is kept. Progress you can inspect beats a checkbox. */
+export function recordSubmission(
+  userId: string,
+  input: {
+    exerciseId: string;
+    body: string;
+    passed: boolean;
+    results?: unknown;
+    feedback?: string | null;
+    durationMs?: number | null;
+  },
+) {
+  return db
+    .insert(submissions)
+    .values({ ...input, userId })
+    .returning()
+    .get();
+}
+
+/**
+ * The only way an exercise-backed item becomes done. Called after a submission
+ * that actually passed, which is why it sets `verifiedAt` and the status in one
+ * write — they must never disagree.
+ */
+export function markActionableVerified(
+  userId: string,
+  actionableId: string,
+  applicationId: string | null,
+  title: string,
+) {
+  const now = new Date();
+  const updated = db
+    .update(actionables)
+    .set({ status: "done", verifiedAt: now, completedAt: now, updatedAt: now })
+    .where(and(eq(actionables.id, actionableId), eq(actionables.userId, userId)))
+    .returning()
+    .get();
+
+  if (updated && applicationId) {
+    logEvent({
+      userId,
+      applicationId,
+      type: "task",
+      title: `Solved: ${title}`,
+      body: "Completed in Alfred against its own checks.",
+    });
+  }
+  return updated;
 }

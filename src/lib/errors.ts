@@ -13,3 +13,15 @@ export class InputError extends Error {
     this.name = "InputError";
   }
 }
+
+/**
+ * Thrown when a prep item cannot be completed because the work behind it has
+ * not been done. The whole point of exercises is that this path exists: "done"
+ * is a consequence of a passing submission, never a thing you can assert.
+ */
+export class NotEarnedError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "NotEarnedError";
+  }
+}

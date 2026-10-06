@@ -29,10 +29,11 @@ anonymous.
 
 Worth knowing when you assess a report:
 
-- **Alfred is a single-user local app.** It has no authentication and binds to
-  localhost. It is not built to be exposed to a network, and putting it behind a
-  public address would give anyone who reaches it your résumé, your mail and your
-  provider keys.
+- **Alfred is a self-hosted app that binds to localhost.** It has accounts —
+  an owner, and members who join by one-time invitation, with no public sign-up —
+  and every query filters on the signed-in account, so no one sees anyone else's
+  pipeline, résumé, provider keys or mail. It is still built to be reached over a
+  private network or a tunnel rather than published at a public address.
 - **Credentials are stored in plaintext** in `data/alfred.db` — AI provider keys
   and the mailbox password. This is a deliberate trade for a local single-user
   tool, and it means the database file is as sensitive as the credentials in it.
@@ -48,6 +49,14 @@ Worth knowing when you assess a report:
 - **Your data goes to the provider you configure.** Job descriptions, your résumé
   and (with triage on) email bodies are sent to whichever provider is selected.
   A local OpenAI-compatible endpoint keeps all of it on your machine.
+- **Exercise code runs on the server, sandboxed.** Submitting a coding exercise
+  executes your Python in Pyodide — WebAssembly, so no filesystem and no network
+  — in a separate short-lived process started with a bare environment, killed if
+  it does not finish. The JavaScript bridge modules (`js`, `pyodide_js`) are
+  blocked by name, since that is the one route out of the sandbox and into the
+  host process. The code is your own, in your own app; the sandbox is there so
+  that a member of a shared Alfred cannot reach the database or another
+  account's data through it.
 - **Prompt injection is in scope.** Job descriptions and emails are untrusted
   input that reach a model. Alfred constrains every structured operation to a
   schema and never lets a model's output drive an action on its own — a triaged

@@ -17,10 +17,13 @@ import {
   type ApplicationStage,
   applications,
   events,
+  exercises,
   mailMessages,
   questions,
+  submissions,
   TERMINAL_STAGES,
 } from "@/db/schema";
+import { requiresExercise } from "@/lib/exercises";
 import { BOARD_STAGES, FUNNEL_STAGES } from "@/lib/stages";
 
 /*
@@ -425,4 +428,110 @@ export function prepProgress(userId: string) {
     byKind.set(row.kind, entry);
   }
   return byKind;
+}
+
+/**
+ * Every prep item this user owns, with the role it belongs to.
+ *
+ * The /prep page used to run this join inline and without an owner filter,
+ * which showed one account every other account's prep plan. Reading pipelines
+ * through queries.ts — where the owner is a required argument — is what stops
+ * that from being expressible.
+ */
+export function listPrepItems(userId: string) {
+  const rows = db
+    .select({
+      actionable: actionables,
+      company: applications.company,
+      role: applications.title,
+    })
+    .from(actionables)
+    .leftJoin(applications, eq(actionables.applicationId, applications.id))
+    .where(eq(actionables.userId, userId))
+    .orderBy(desc(actionables.priority), actionables.createdAt)
+    .all();
+
+  return rows.map((row) => ({
+    ...row.actionable,
+    company: row.company,
+    role: row.role,
+  }));
+}
+
+/* ------------------------------------------------------------------ *
+ * Exercises
+ * ------------------------------------------------------------------ */
+
+export function getActionable(userId: string, id: string) {
+  return (
+    db
+      .select()
+      .from(actionables)
+      .where(and(eq(actionables.id, id), eq(actionables.userId, userId)))
+      .get() ?? null
+  );
+}
+
+/**
+ * The exercise attached to a prep item, if one has been generated. At most one
+ * per item — the unique index on actionable_id is what makes "the exercise for
+ * this task" a well-defined thing rather than a pile of attempts at a problem.
+ */
+export function getExerciseByActionable(userId: string, actionableId: string) {
+  return (
+    db
+      .select()
+      .from(exercises)
+      .where(
+        and(eq(exercises.actionableId, actionableId), eq(exercises.userId, userId)),
+      )
+      .get() ?? null
+  );
+}
+
+export function getExercise(userId: string, id: string) {
+  return (
+    db
+      .select()
+      .from(exercises)
+      .where(and(eq(exercises.id, id), eq(exercises.userId, userId)))
+      .get() ?? null
+  );
+}
+
+/** Newest first. The attempt history is the evidence, so it is never pruned. */
+export function listSubmissions(userId: string, exerciseId: string, limit = 25) {
+  return db
+    .select()
+    .from(submissions)
+    .where(
+      and(eq(submissions.exerciseId, exerciseId), eq(submissions.userId, userId)),
+    )
+    .orderBy(desc(submissions.createdAt))
+    .limit(limit)
+    .all();
+}
+
+/** How many prep items are gated on an exercise, and how many are cleared. */
+export function exerciseProgress(userId: string, applicationId: string) {
+  const rows = db
+    .select({ kind: actionables.kind, verifiedAt: actionables.verifiedAt })
+    .from(actionables)
+    .where(
+      and(
+        eq(actionables.userId, userId),
+        eq(actionables.applicationId, applicationId),
+      ),
+    )
+    .all();
+  return rows.reduce(
+    (acc, row) => {
+      if (!requiresExercise(row.kind)) return acc;
+      return {
+        gated: acc.gated + 1,
+        verified: acc.verified + (row.verifiedAt ? 1 : 0),
+      };
+    },
+    { gated: 0, verified: 0 },
+  );
 }

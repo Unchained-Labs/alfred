@@ -336,6 +336,12 @@ export const actionables = sqliteTable(
     aiGenerated: integer("ai_generated", { mode: "boolean" })
       .notNull()
       .default(false),
+    /**
+     * Set when a submission actually passed. An actionable backed by an
+     * exercise is completed by doing it, not by saying so — `status` alone is
+     * no longer sufficient evidence for those.
+     */
+    verifiedAt: integer("verified_at", { mode: "timestamp_ms" }),
     completedAt: integer("completed_at", { mode: "timestamp_ms" }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
@@ -346,6 +352,110 @@ export const actionables = sqliteTable(
     index("actionables_kind_idx").on(t.kind),
   ],
 );
+
+/* ------------------------------------------------------------------ *
+ * Exercises — the work itself, done in the app
+ * ------------------------------------------------------------------ */
+
+export const EXERCISE_KINDS = ["code", "written"] as const;
+export type ExerciseKind = (typeof EXERCISE_KINDS)[number];
+
+/** A visible example: what the task shows you before you start. */
+export type ExerciseExample = { input: string; output: string; note?: string };
+
+/**
+ * One test case. `call` is a Python expression evaluated against the
+ * submitted code; `expect` is compared with ==. Kept as data rather than raw
+ * code so a generated test cannot be arbitrary program text.
+ */
+export type ExerciseTest = {
+  name: string;
+  call: string;
+  expect: string;
+  /** Hidden tests are run but not shown until after a pass. */
+  hidden: boolean;
+};
+
+/** One thing a written answer has to do, for the grader to check against. */
+export type RubricCriterion = { id: string; requirement: string; weight: number };
+
+export const exercises = sqliteTable(
+  "exercises",
+  {
+    id: id(),
+    userId: text("user_id").references(() => users.id, { onDelete: "cascade" }),
+    actionableId: text("actionable_id")
+      .notNull()
+      .references(() => actionables.id, { onDelete: "cascade" }),
+    kind: text("kind", { enum: EXERCISE_KINDS }).notNull(),
+
+    /** The task, as markdown. For code, the problem statement. */
+    brief: text("brief").notNull(),
+    /** Currently only "python". */
+    language: text("language").notNull().default("python"),
+    starterCode: text("starter_code"),
+    examples: text("examples", { mode: "json" })
+      .$type<ExerciseExample[]>()
+      .default([]),
+    tests: text("tests", { mode: "json" }).$type<ExerciseTest[]>().default([]),
+    /**
+     * The generator's own solution. Used to verify the tests are satisfiable
+     * before the exercise is offered, and revealed only after a pass.
+     */
+    referenceSolution: text("reference_solution"),
+    /** Ordered hints, revealed one at a time on request. */
+    hints: text("hints", { mode: "json" }).$type<string[]>().default([]),
+
+    /** For written exercises. */
+    rubric: text("rubric", { mode: "json" }).$type<RubricCriterion[]>().default([]),
+
+    /**
+     * Whether the reference solution passes its own tests. Null until checked.
+     * A false here means the generated tests are wrong, and the exercise is
+     * offered as practice without a pass/fail gate rather than blocking you on
+     * a broken check.
+     */
+    selfCheckPassed: integer("self_check_passed", { mode: "boolean" }),
+    selfCheckDetail: text("self_check_detail"),
+
+    provider: text("provider"),
+    model: text("model"),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    uniqueIndex("exercises_actionable_idx").on(t.actionableId),
+    index("exercises_user_idx").on(t.userId),
+  ],
+);
+
+/** Every attempt, so progress is evidence rather than a checkbox. */
+export const submissions = sqliteTable(
+  "submissions",
+  {
+    id: id(),
+    userId: text("user_id").references(() => users.id, { onDelete: "cascade" }),
+    exerciseId: text("exercise_id")
+      .notNull()
+      .references(() => exercises.id, { onDelete: "cascade" }),
+    /** Submitted code, or the written answer. */
+    body: text("body").notNull(),
+    passed: integer("passed", { mode: "boolean" }).notNull().default(false),
+    /** Per-test or per-criterion outcomes. */
+    results: text("results", { mode: "json" }).$type<unknown>(),
+    /** Grader prose for written answers. */
+    feedback: text("feedback"),
+    durationMs: integer("duration_ms"),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    index("submissions_exercise_idx").on(t.exerciseId),
+    index("submissions_user_idx").on(t.userId),
+  ],
+);
+
+export type Exercise = typeof exercises.$inferSelect;
+export type NewExercise = typeof exercises.$inferInsert;
+export type Submission = typeof submissions.$inferSelect;
 
 /* ------------------------------------------------------------------ *
  * Interview questionnaires
