@@ -37,7 +37,7 @@ export default async function InvitePage({ params }: Params) {
     <PasskeyAuth
       initialPanel="signup"
       signupAllowed
-      passwordAllowed={false}
+      passwordAllowed
       inviteToken={token}
       inviteEmail={invite.email}
     />

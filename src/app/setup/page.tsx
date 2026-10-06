@@ -14,11 +14,6 @@ export default async function SetupPage() {
   if (!needsSetup()) redirect("/login");
 
   return (
-    <PasskeyAuth
-      initialPanel="signup"
-      signupAllowed
-      firstRun
-      passwordAllowed={false}
-    />
+    <PasskeyAuth initialPanel="signup" signupAllowed firstRun passwordAllowed />
   );
 }

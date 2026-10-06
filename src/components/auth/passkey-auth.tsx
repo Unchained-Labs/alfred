@@ -7,8 +7,11 @@ import { Logo } from "@/components/shell/logo";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
 
+/** Mirrors the server's rule in src/lib/passwords.ts. */
+const MIN_PASSWORD_LENGTH = 10;
+
 type Mode = "device" | "phone";
-type Panel = "signin" | "signup" | "password";
+type Panel = "signin" | "signup" | "password" | "password-signup";
 
 /**
  * Passkey sign-in and sign-up.
@@ -156,6 +159,32 @@ export function PasskeyAuth({
     }
   }
 
+  /**
+   * Create an account with a password instead of a passkey.
+   *
+   * Passkeys are the better sign-in, but they are not always reachable: the
+   * cross-device QR flow needs working Bluetooth on the machine showing the
+   * code, and when that fails there is otherwise no way in at all. The owner
+   * especially must never be un-creatable.
+   */
+  async function signUpWithPassword(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setBusy("password");
+    setError(null);
+    try {
+      const data = Object.fromEntries(new FormData(event.currentTarget)) as Record<
+        string,
+        string
+      >;
+      const endpoint = inviteToken ? "/api/auth/accept" : "/api/auth/setup";
+      await post(endpoint, inviteToken ? { ...data, token: inviteToken } : data);
+      window.location.href = redirectTo;
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+      setBusy(null);
+    }
+  }
+
   const title = inviteToken
     ? "Accept your invitation"
     : firstRun
@@ -164,7 +193,11 @@ export function PasskeyAuth({
         ? "Create your account"
         : panel === "password"
           ? "Sign in with a password"
-          : "Sign in";
+          : panel === "password-signup"
+            ? firstRun
+              ? "Set up Alfred with a password"
+              : "Create your account with a password"
+            : "Sign in";
 
   const intro = firstRun
     ? "You will be the owner. Your sign-in is a passkey — Face ID, Touch ID or your phone. No password to remember."
@@ -172,7 +205,9 @@ export function PasskeyAuth({
       ? "Your own account, with your own pipeline, résumé and provider keys. Nobody else on this Alfred can see them."
       : panel === "password"
         ? "For accounts created before passkeys. You can add a passkey from Settings afterwards."
-        : "Alfred keeps your pipeline, your résumé and your provider keys to your own account.";
+        : panel === "password-signup"
+          ? "A passkey is the better sign-in, but a password always works. You can add a passkey from Settings later."
+          : "Alfred keeps your pipeline, your résumé and your provider keys to your own account.";
 
   return (
     <main className="relative grid min-h-dvh place-items-center px-4 py-10">
@@ -206,7 +241,52 @@ export function PasskeyAuth({
           </p>
         ) : null}
 
-        {panel === "password" ? (
+        {panel === "password-signup" ? (
+          <form onSubmit={signUpWithPassword} className="mt-5 space-y-3.5">
+            <Field label="Your name">
+              <Input name="name" placeholder="e.g. Alex" autoComplete="name" />
+            </Field>
+            <Field
+              label="Email"
+              hint={
+                inviteToken
+                  ? "This is the address you were invited as."
+                  : "Used to identify your account and match your mailbox."
+              }
+            >
+              <Input
+                name="email"
+                type="email"
+                placeholder="you@example.com"
+                autoComplete="username"
+                defaultValue={inviteEmail ?? ""}
+                readOnly={Boolean(inviteToken)}
+                required
+              />
+            </Field>
+            <Field
+              label="Password"
+              hint={`At least ${MIN_PASSWORD_LENGTH} characters. Length matters more than symbols.`}
+            >
+              <Input
+                name="password"
+                type="password"
+                autoComplete="new-password"
+                minLength={MIN_PASSWORD_LENGTH}
+                required
+              />
+            </Field>
+            <Button
+              type="submit"
+              variant="primary"
+              size="lg"
+              loading={busy === "password"}
+              className="w-full"
+            >
+              {firstRun ? "Create the owner account" : "Create my account"}
+            </Button>
+          </form>
+        ) : panel === "password" ? (
           <form onSubmit={signInWithPassword} className="mt-5 space-y-3.5">
             <Field label="Email">
               <Input name="email" type="email" autoComplete="username" required />
@@ -354,6 +434,36 @@ export function PasskeyAuth({
             <p>
               Sign-up is closed on this Alfred. Ask the owner for an invitation
               link.
+            </p>
+          ) : null}
+          {panel === "signup" && passwordAllowed ? (
+            <p>
+              Passkey not working?{" "}
+              <button
+                type="button"
+                className="text-ink underline underline-offset-2"
+                onClick={() => {
+                  setPanel("password-signup");
+                  setError(null);
+                  setNote(null);
+                }}
+              >
+                Use a password instead
+              </button>
+            </p>
+          ) : null}
+          {panel === "password-signup" ? (
+            <p>
+              <button
+                type="button"
+                className="underline underline-offset-2"
+                onClick={() => {
+                  setPanel("signup");
+                  setError(null);
+                }}
+              >
+                Back to passkeys
+              </button>
             </p>
           ) : null}
           {panel === "signin" && passwordAllowed ? (
