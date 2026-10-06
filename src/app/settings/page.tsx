@@ -1,4 +1,4 @@
-import { requireUser } from "@/lib/auth";
+import { requireUserForPage } from "@/lib/auth";
 import type { Metadata } from "next";
 import * as React from "react";
 import { PageHeader } from "@/components/shell/app-shell";
@@ -12,7 +12,7 @@ export const metadata: Metadata = { title: "Settings" };
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
-  const user = await requireUser();
+  const user = await requireUserForPage();
   return (
     <div className="mx-auto max-w-4xl p-4 lg:p-6">
       <PageHeader

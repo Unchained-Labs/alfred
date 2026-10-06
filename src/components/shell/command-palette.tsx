@@ -2,6 +2,7 @@
 
 import { Dialog as RDialog } from "radix-ui";
 import {
+  CalendarDays,
   Inbox,
   KanbanSquare,
   LayoutDashboard,
@@ -106,6 +107,13 @@ export function CommandPalette({
         group: "Go to",
         Icon: Target,
         run: go("/prep"),
+      },
+      {
+        id: "nav-calendar",
+        label: "Calendar",
+        group: "Go to",
+        Icon: CalendarDays,
+        run: go("/calendar"),
       },
       {
         id: "nav-inbox",

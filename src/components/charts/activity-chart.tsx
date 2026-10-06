@@ -48,6 +48,20 @@ function ActivityTooltip({
 export function ActivityChart({ data }: { data: ActivityPoint[] }) {
   const max = Math.max(...data.map((point) => point.count), 1);
 
+  // A flat zero line across 30 days is indistinguishable from a chart that
+  // failed to load — it rendered as a blank 480px void on a new account, which
+  // reads as broken rather than as empty. Say which it is.
+  const total = data.reduce((sum, point) => sum + point.count, 0);
+  if (total === 0) {
+    return (
+      <div className="grid h-full min-h-44 w-full place-items-center">
+        <p className="text-ink-muted max-w-56 text-center text-xs leading-relaxed">
+          No applications sent in the last 30 days. Send one and it lands here.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="h-full min-h-44 w-full">
       <ResponsiveContainer width="100%" height="100%">

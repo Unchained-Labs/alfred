@@ -1,4 +1,4 @@
-import { currentUser, requireUser } from "@/lib/auth";
+import { currentUser, requireUserForPage } from "@/lib/auth";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import * as React from "react";
@@ -31,7 +31,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 }
 
 export default async function ApplicationPage({ params }: Params) {
-  const user = await requireUser();
+  const user = await requireUserForPage();
   const { id } = await params;
   const app = getApplication(user.id, id);
   if (!app) notFound();

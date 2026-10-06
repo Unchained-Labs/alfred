@@ -16,7 +16,7 @@ import * as React from "react";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/states";
 import type { Actionable } from "@/db/schema";
-import { ACTIONABLE_META } from "@/lib/stages";
+import { actionableMeta } from "@/lib/stages";
 import { isOverdue, useNow } from "@/lib/use-now";
 import { relativeDay } from "@/lib/utils";
 
@@ -52,7 +52,7 @@ export function UpNext({ items }: { items: UpNextItem[] }) {
   return (
     <ul className="divide-y divide-[var(--border)]">
       {items.map((item) => {
-        const meta = ACTIONABLE_META[item.kind];
+        const meta = actionableMeta(item.kind);
         const Icon = KIND_ICONS[meta.icon] ?? CheckSquare;
         const overdue = isOverdue(item.dueAt, now);
 

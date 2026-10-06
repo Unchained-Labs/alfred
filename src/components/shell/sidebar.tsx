@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import {
+  CalendarDays,
   Inbox,
   KanbanSquare,
   LayoutDashboard,
@@ -21,6 +22,7 @@ const NAV = [
   { href: "/", label: "Dashboard", Icon: LayoutDashboard },
   { href: "/pipeline", label: "Pipeline", Icon: KanbanSquare },
   { href: "/prep", label: "Prep", Icon: Target },
+  { href: "/calendar", label: "Calendar", Icon: CalendarDays },
   { href: "/inbox", label: "Inbox", Icon: Inbox },
   { href: "/settings", label: "Settings", Icon: Settings },
 ] as const;

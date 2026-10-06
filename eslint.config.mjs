@@ -9,6 +9,11 @@ export default [
       "drizzle/**",
       "site/**",
       "next-env.d.ts",
+      // A deployment that mounts the Claude Code CLI into the container puts
+      // its HOME here, and that includes the CLI's own bundled JavaScript.
+      // .gitignore already covers it, but ESLint does not read .gitignore, so
+      // without this `npm run lint` fails on somebody else's `require()`.
+      "claude-home/**",
     ],
   },
   ...coreWebVitals,

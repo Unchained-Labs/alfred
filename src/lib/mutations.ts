@@ -1,4 +1,4 @@
-import { and, eq, max, sql } from "drizzle-orm";
+import { and, eq, inArray, max, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   type ActionableStatus,
@@ -187,6 +187,17 @@ export function updateApplication(
     });
   }
 
+  // Moving the interview moves the homework. Only when the date actually
+  // changed: re-staggering on every unrelated edit would overwrite deadlines a
+  // person had deliberately adjusted.
+  if (
+    "nextActionAt" in patch &&
+    (patch.nextActionAt?.getTime() ?? null) !==
+      (before.nextActionAt?.getTime() ?? null)
+  ) {
+    scheduleActionablesFor(userId, id, patch.nextActionAt ?? null);
+  }
+
   return updated;
 }
 
@@ -323,6 +334,17 @@ export function saveActionables(
     ? db.insert(actionables).values(rows).returning().all()
     : [];
 
+  // Freshly generated work gets deadlines straight away when the application
+  // already has an interview booked, so the Prep page is sorted the moment it
+  // is populated rather than after someone edits a date.
+  const app = db
+    .select({ nextActionAt: applications.nextActionAt })
+    .from(applications)
+    .where(eq(applications.id, applicationId))
+    .get();
+  if (app?.nextActionAt)
+    scheduleActionablesFor(userId, applicationId, app.nextActionAt);
+
   logEvent({
     userId,
     applicationId,
@@ -333,6 +355,86 @@ export function saveActionables(
   });
 
   return inserted;
+}
+
+/**
+ * Spread a set of prep items backwards from an interview date.
+ *
+ * Alfred has always had `actionables.due_at` and never filled it, so the
+ * dashboard's "Nothing due soon" was true by construction and the Prep page was
+ * an undifferentiated list of everything, forever. A deadline is the only thing
+ * that makes prep sortable: with an interview on Friday, Thursday's item is
+ * urgent and next month's is noise, and no priority ranking expresses that.
+ *
+ * The rules are deliberately dull. Hardest-first, because the thing you are
+ * most likely to run out of time for should not be the thing you left to the
+ * last evening. Nothing is scheduled on the interview day itself — that day is
+ * for the interview. Nothing is scheduled in the past: if the interview is
+ * sooner than the work fits, everything lands today, which is honest about
+ * being behind rather than quietly inventing a comfortable plan.
+ */
+export function scheduleActionablesFor(
+  userId: string,
+  applicationId: string,
+  interviewAt: Date | null,
+): number {
+  const open = db
+    .select()
+    .from(actionables)
+    .where(
+      and(
+        eq(actionables.userId, userId),
+        eq(actionables.applicationId, applicationId),
+        inArray(actionables.status, ["todo", "in_progress"]),
+      ),
+    )
+    .all();
+  if (open.length === 0) return 0;
+
+  // No date any more: clear the deadlines rather than leave them pointing at
+  // an interview that is not happening.
+  if (!interviewAt) {
+    for (const item of open) {
+      db.update(actionables)
+        .set({ dueAt: null, updatedAt: new Date() })
+        .where(eq(actionables.id, item.id))
+        .run();
+    }
+    return open.length;
+  }
+
+  const startOfDay = (d: Date) =>
+    new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const today = startOfDay(new Date());
+  const lastUsefulDay = startOfDay(interviewAt);
+  lastUsefulDay.setDate(lastUsefulDay.getDate() - 1);
+
+  // Days actually available, at least one.
+  const span = Math.max(
+    1,
+    Math.round((lastUsefulDay.getTime() - today.getTime()) / 86_400_000) + 1,
+  );
+
+  const ordered = [...open].sort((a, b) => {
+    const weight = (x: typeof a) =>
+      (x.difficulty === "hard" ? 0 : x.difficulty === "medium" ? 1 : 2) * 10 -
+      x.priority;
+    return weight(a) - weight(b);
+  });
+
+  const perDay = Math.ceil(ordered.length / span);
+  let changed = 0;
+  ordered.forEach((item, index) => {
+    const offset = Math.min(span - 1, Math.floor(index / perDay));
+    const due = new Date(today);
+    due.setDate(due.getDate() + offset);
+    db.update(actionables)
+      .set({ dueAt: due, updatedAt: new Date() })
+      .where(eq(actionables.id, item.id))
+      .run();
+    changed += 1;
+  });
+  return changed;
 }
 
 export function saveQuestionnaire(
