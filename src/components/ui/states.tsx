@@ -53,8 +53,8 @@ export function EmptyState({
   );
 }
 
-export function Skeleton({ className }: { className?: string }) {
-  return <div className={cn("shimmer rounded-lg", className)} />;
+export function Skeleton({ className, ...props }: React.ComponentProps<"div">) {
+  return <div className={cn("shimmer rounded-lg", className)} {...props} />;
 }
 
 /** Placeholder shown while an AI operation is in flight. */

@@ -41,10 +41,58 @@ finished or added yourself.
 The **Prep** page collects actionables across every application, filtered by
 kind, so you can work the queue rather than the board.
 
-!!! note "Links, not copies"
-Coding items link out to the canonical problem. Alfred stores the reference,
-the pattern and the reasoning — not the problem text, which belongs to
-whoever published it.
+## Doing the work in Alfred
+
+Coding, concept, system design and behavioural items are not checkboxes. Each
+opens a workspace where you do the thing, and Alfred decides whether it is done.
+
+**Solve it** opens a coding problem: a brief, worked examples, a Python editor and
+a test suite.
+
+- **Run samples** runs the visible cases. Fast, repeatable, and the normal way to
+  work — the equivalent of running it locally.
+- **Submit** runs every case, including the hidden ones, and is the only thing
+  that can complete the item.
+
+Hidden tests stay hidden, with one exception: if a hidden case fails, the first
+one is reported in full. A suite that only says "hidden test 9 failed" sends you
+guessing, and one that prints every expected value has no hidden tests at all.
+
+**Answer it** opens a written prompt — a design question posed for the company
+you applied to, a concept to explain, a story to tell — with a rubric behind it.
+Submitting grades the answer against each requirement and tells you which ones
+you met. The rubric is available before you start, folded away, because reading
+it first turns the exercise into filling in a form.
+
+Hints are there for all of them, revealed one at a time rather than all at once.
+
+### Why you can't just click done
+
+An item with an exercise behind it cannot be marked done. The API refuses it,
+so pressing the button harder will not help. `done` is set when a submission
+passes, and it records which one.
+
+You can always **skip** an item. Declining a problem is honest; claiming you
+solved it is not.
+
+!!! note "Generated, and checked before you see it"
+    The problems are written for your role rather than linked from a problem
+    set — so they can carry a test suite, which is what makes checking your
+    work possible.
+
+    Before a coding exercise is offered, Alfred solves it itself and runs its
+    own solution against its own tests. If that fails, it tries once more; if
+    it still fails, you are told the tests are not trustworthy and that item
+    can be completed by hand. You are never held to a check Alfred got wrong.
+
+### Where your code runs
+
+On the server, in a WebAssembly sandbox, in a separate short-lived process with
+no filesystem or network access. Nothing the browser reports about whether you
+passed is trusted — a verdict the page can assert would be worth nothing.
+
+A submission that loops forever is killed, and you are told which case never
+came back.
 
 ## Questionnaires
 

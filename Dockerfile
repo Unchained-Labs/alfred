@@ -79,6 +79,30 @@ COPY --from=builder --chown=node:node /app/.next/static ./.next/static
 # around a native module and miss the compiled .node file, which produces an
 # image that looks correct until the first query.
 COPY --from=builder --chown=node:node /app/node_modules/better-sqlite3 ./node_modules/better-sqlite3
+# The exercise runner, and the Python it runs.
+#
+# runner/python-runner.mjs is spawned as a child process by absolute path, so
+# Next never bundles it and standalone tracing never sees it. Pyodide is reached
+# only from that script — also invisible to tracing — and it is the whole point:
+# without it, generating or submitting a coding exercise fails at runtime while
+# every other page works, which is the worst shape a missing file can take.
+#
+# Both are copied whole. pyodide carries its own .wasm and python_stdlib.zip
+# beside its JavaScript, and taking only what an import graph mentions would
+# leave a package that loads and then cannot start an interpreter.
+COPY --from=builder --chown=node:node /app/runner ./runner
+COPY --from=builder --chown=node:node /app/node_modules/pyodide ./node_modules/pyodide
+
+# And prove it runs, in the image that will ship, while a failure is still a
+# failed build rather than a 502 the first time someone submits an exercise.
+# It boots a real interpreter and checks a real assertion, so a pyodide that
+# copied without its wasm, or a Node that cannot resolve it from runner/, does
+# not get out of this stage.
+RUN node -e "process.stdout.write(JSON.stringify({code:'def ok():\n    return 1\n',tests:[{name:'boots',call:'ok()',expect:'1',hidden:false}]}))" > /tmp/runner-job.json \
+ && node runner/python-runner.mjs < /tmp/runner-job.json | grep -q '"passed":true' \
+ && rm -f /tmp/runner-job.json \
+ && echo "exercise runner verified"
+
 # The migrations themselves. src/app/layout.tsx calls runMigrations(), so EVERY
 # page renders through drizzle reading ./drizzle/meta/_journal.json at a path
 # relative to the working directory. Standalone tracing cannot see it — it is

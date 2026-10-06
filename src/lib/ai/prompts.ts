@@ -268,3 +268,164 @@ say which detail you need instead of guessing.`,
     }Candidate: ${question}`,
   };
 }
+
+/* ------------------------------------------------------------------ *
+ * Exercises
+ * ------------------------------------------------------------------ */
+
+/** The prep item an exercise is being built for. */
+function taskBlock(item: {
+  kind: string;
+  title: string;
+  detail?: string | null;
+  rationale?: string | null;
+  pattern?: string | null;
+  difficulty?: string | null;
+  estMinutes?: number | null;
+}): string {
+  return `<prep_item>
+${field("Kind", item.kind)}${field("Title", item.title)}${field("Detail", item.detail)}${field(
+    "Why it was assigned",
+    item.rationale,
+  )}${field("Pattern", item.pattern)}${field("Difficulty", item.difficulty)}${field(
+    "Time budget",
+    item.estMinutes ? `${item.estMinutes} minutes` : null,
+  )}</prep_item>`;
+}
+
+/**
+ * Turns a prep item into a coding problem the candidate solves in the app.
+ *
+ * The hard constraint is that the tests are MACHINE-CHECKED against the
+ * generator's own solution before the exercise is ever shown. A prompt that
+ * produces a beautiful problem with one sloppy expected value produces an
+ * exercise nobody can pass, so most of this prompt is about the tests.
+ */
+export function codeExercisePrompt(
+  app: Application,
+  profile: UserProfile,
+  item: Parameters<typeof taskBlock>[0],
+) {
+  return {
+    system: `${BUTLER}
+
+Your task: turn the prep item below into a self-contained Python coding problem the
+candidate will solve in an editor, checked by running your tests against their code.
+
+Shape the problem to the role. The pattern named on the item is the point — if it says
+sliding window, the problem must genuinely require a sliding window, and a brute-force
+answer must blow the stated complexity target. Keep it to the time budget: a 30-minute
+item is one function, not a framework.
+
+The tests are executed, so they are the part you cannot be loose about:
+- \`call\` is ONE Python expression, evaluated against the candidate's module. \`expect\`
+  is a Python LITERAL compared with \`==\`. Never put the computation in \`expect\`.
+- The comparison is exact. If the natural answer is order-independent (a set of pairs,
+  a grouping), make the problem REQUIRE a canonical form — "return the groups sorted by
+  first element" — and say so in the brief. Do not emit a test whose correctness depends
+  on dict or set iteration order.
+- Everything must be deterministic: no randomness, no clock, no input(), no file or
+  network access, no printing as the answer. The return value is the answer.
+- For a class or stateful API, each case gets a fresh object inside the expression, e.g.
+  \`(lambda c: [c.put(1,1), c.put(2,2), c.get(1)][-1])(LRUCache(2))\`. Cases never share state.
+- \`starterCode\` must define every name the tests call, with the exact signatures, and
+  include any import the tests rely on. It must parse and import cleanly as given.
+- Cover the happy path, the edges that actually bite (empty, single element, duplicates,
+  negatives, the boundary of the constraint) and at least one case large enough that a
+  quadratic solution would be visibly wrong.
+
+\`referenceSolution\` is run against your own tests before the candidate sees any of
+this. If it fails, the exercise is rejected and your work is wasted — so write the
+solution, then read each expected value back against it rather than from the problem
+statement in your head.
+
+Write the brief as if the candidate cannot see the job posting: state the problem, the
+constraints, and the target complexity. No preamble about why it matters.`,
+    prompt: `${profileBlock(profile)}\n\n${jobBlock(app)}\n\n${taskBlock(item)}\n\nBuild the coding exercise.`,
+  };
+}
+
+/**
+ * Turns a prep item into something the candidate writes an answer to, with a
+ * rubric specific enough that grading it later is a reading task rather than a
+ * judgement call.
+ */
+export function writtenExercisePrompt(
+  app: Application,
+  profile: UserProfile,
+  item: Parameters<typeof taskBlock>[0],
+) {
+  return {
+    system: `${BUTLER}
+
+Your task: turn the prep item below into a prompt the candidate answers in writing, and
+a rubric that decides whether the answer is good enough.
+
+Pose it the way an interviewer at THIS company would — name their product, their scale,
+their constraints. "Design a URL shortener" is a failure; "Design the fan-out that puts
+a new post in forty million feeds" is the job.
+
+The rubric is the contract, so write it for a reader:
+- Each requirement names ONE specific thing the answer must contain — a mechanism, a
+  trade-off acknowledged, a number estimated, a failure mode handled. A grader must be
+  able to point at the sentence that satisfies it.
+- Never grade style. "Clear and well-structured" is not checkable and not the skill.
+- Weight 3 is for the things whose absence means the candidate failed the question.
+- 4 to 6 criteria. Together they describe a strong answer and nothing more.
+
+For a behavioral item, the rubric checks the STAR structure has real content: the stakes,
+the candidate's own action rather than the team's, and a concrete outcome. Draw the
+situation from the candidate's stated background — never invent an employer or a project
+for them.
+
+Set the brief's expectations about length: a few hundred words, not an essay.`,
+    prompt: `${profileBlock(profile)}\n\n${jobBlock(app)}\n\n${taskBlock(item)}\n\nBuild the written exercise.`,
+  };
+}
+
+/** Grades a written answer against the rubric that shipped with the exercise. */
+export function gradeAnswerPrompt(
+  app: Application,
+  brief: string,
+  rubric: { id: string; requirement: string; weight: number }[],
+  answer: string,
+) {
+  const criteria = rubric
+    .map((c) => `- ${c.id} (weight ${c.weight}): ${c.requirement}`)
+    .join("\n");
+
+  return {
+    system: `${BUTLER}
+
+Your task: grade one answer against a fixed rubric, and nothing else.
+
+Judge only what is written. Do not credit something the candidate plainly knows but did
+not say, and do not penalise anything the rubric does not ask for — not length, not
+style, not a different-but-valid approach that still meets the requirement.
+
+Return one verdict per criterion, in the order given, using the ids exactly as given.
+A criterion is met when the answer actually contains it; "gestures at it" is not met.
+
+\`passed\` is true only when every weight-3 criterion is met and most of the rest are.
+Be strict. Passing a thin answer tells the candidate they are ready for an interview
+they will fail, which is the one outcome worse than being told to try again.
+
+The feedback is addressed to the candidate, in the second person. If it did not pass,
+name the specific thing to add. Do not restate the rubric back at them.`,
+    prompt: `${jobBlock(app)}
+
+<question>
+${brief}
+</question>
+
+<rubric>
+${criteria}
+</rubric>
+
+<answer>
+${answer.trim() || "(the candidate submitted nothing)"}
+</answer>
+
+Grade it.`,
+  };
+}

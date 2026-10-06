@@ -1,11 +1,14 @@
 "use client";
 
 import {
+  BadgeCheck,
   CheckSquare,
   Circle,
   CircleDot,
   Clock,
   ExternalLink,
+  PenLine,
+  SquareCode,
   Target,
 } from "lucide-react";
 import Link from "next/link";
@@ -25,6 +28,7 @@ import {
   type ActionableKind,
   type ActionableStatus,
 } from "@/db/schema";
+import { DO_IT_LABEL, exerciseKindFor } from "@/lib/exercises";
 import { ACTIONABLE_META } from "@/lib/stages";
 import { isOverdue, useNow } from "@/lib/use-now";
 import { cn, relativeDay } from "@/lib/utils";
@@ -43,6 +47,14 @@ const DIFFICULTY_TINT = {
 const NEXT_STATUS: Record<ActionableStatus, ActionableStatus> = {
   todo: "in_progress",
   in_progress: "done",
+  done: "todo",
+  skipped: "todo",
+};
+
+/** Without `done`, for items whose completion has to be earned. */
+const NEXT_STATUS_EARNED: Record<ActionableStatus, ActionableStatus> = {
+  todo: "in_progress",
+  in_progress: "todo",
   done: "todo",
   skipped: "todo",
 };
@@ -85,14 +97,18 @@ export function PrepBoard({ items }: { items: PrepItem[] }) {
 
   async function cycle(item: PrepItem) {
     setBusyId(item.id);
-    const next = NEXT_STATUS[item.status];
+    const earned = Boolean(exerciseKindFor(item.kind)) && !item.verifiedAt;
+    const next = (earned ? NEXT_STATUS_EARNED : NEXT_STATUS)[item.status];
     try {
       const response = await fetch(`/api/actionables/${item.id}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ status: next }),
       });
-      if (!response.ok) throw new Error("Could not update the item.");
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error ?? "Could not update the item.");
+      }
       if (next === "done") toast.success("Done", item.title);
       router.refresh();
     } catch (error) {
@@ -193,13 +209,21 @@ export function PrepBoard({ items }: { items: PrepItem[] }) {
               const status = STATUS_ICON[item.status];
               const done = item.status === "done";
               const overdue = !done && isOverdue(item.dueAt, now);
+              const exerciseKind = exerciseKindFor(item.kind);
+              const earned = Boolean(exerciseKind) && !item.verifiedAt;
 
               return (
                 <li
                   key={item.id}
                   className="hover:bg-surface-2 flex items-start gap-3 px-4 py-3 transition-colors"
                 >
-                  <Tooltip content={status.label}>
+                  <Tooltip
+                    content={
+                      earned && item.status === "in_progress"
+                        ? "Back to to-do"
+                        : status.label
+                    }
+                  >
                     <button
                       type="button"
                       onClick={() => cycle(item)}
@@ -280,7 +304,30 @@ export function PrepBoard({ items }: { items: PrepItem[] }) {
                           due {relativeDay(item.dueAt)}
                         </span>
                       ) : null}
+                      {item.verifiedAt ? (
+                        <span
+                          className="inline-flex items-center gap-1 text-[10px] font-medium"
+                          style={{ color: "var(--good)" }}
+                        >
+                          <BadgeCheck className="size-3" />
+                          verified
+                        </span>
+                      ) : null}
                     </div>
+
+                    {exerciseKind ? (
+                      <Link
+                        href={`/prep/${item.id}`}
+                        className="text-brand mt-2 inline-flex items-center gap-1.5 text-[11px] font-medium underline-offset-2 hover:underline"
+                      >
+                        {exerciseKind === "code" ? (
+                          <SquareCode className="size-3.5" />
+                        ) : (
+                          <PenLine className="size-3.5" />
+                        )}
+                        {item.verifiedAt ? "Review it" : DO_IT_LABEL[exerciseKind]}
+                      </Link>
+                    ) : null}
                   </div>
 
                   {item.priority === 3 && !done ? (

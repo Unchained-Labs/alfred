@@ -10,6 +10,12 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Added
 
+- **Prep items you actually do, in the app.** Coding, concept, system-design and behavioural items now open a workspace instead of a checkbox. Coding items come with a brief, worked examples, a Python editor and a test suite: **Run samples** iterates against the visible cases, **Submit** runs every case including the hidden ones. Written items come with a rubric and are graded against it, requirement by requirement. Hints reveal one at a time.
+
+  An item backed by an exercise **cannot be marked done** — the API refuses it, and `done` is set only by a submission that passed. Skipping is still available, because declining a problem is honest and claiming you solved it is not.
+
+  Code runs on the server in a WebAssembly sandbox, in a separate short-lived process with no filesystem or network access, killed if it does not finish. Nothing the browser says about passing is trusted. Exercises are verified before you see them: Alfred solves its own problem against its own tests, retries once if that fails, and if it still fails tells you the tests are untrustworthy and lets you complete the item by hand rather than holding you to a broken check.
+
 - **Accounts.** Several people can share one Alfred, each with their own pipeline, résumé, prep plans, provider keys and mailbox — nobody sees anyone else's. First run creates an owner; everyone else joins by one-time invitation, as there is no public sign-up. Sessions are server-side with only the token's digest stored, and passwords use scrypt with per-hash parameters.
 - **The Claude Code provider now works in the container** via an opt-in compose override that mounts the host CLI and sign-in. It is a separate file, not a default, because it shares real credentials with the container.
 

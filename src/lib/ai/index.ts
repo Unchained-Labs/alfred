@@ -4,10 +4,13 @@ import {
   actionablesPrompt,
   analyzeJobPrompt,
   chatPrompt,
+  codeExercisePrompt,
+  gradeAnswerPrompt,
   mailTriagePrompt,
   parseJobPrompt,
   parseResumePrompt,
   questionnairePrompt,
+  writtenExercisePrompt,
 } from "./prompts";
 import { AgentProvider } from "./providers/agent";
 import { AnthropicProvider } from "./providers/anthropic";
@@ -16,6 +19,10 @@ import { OpenAiCompatProvider } from "./providers/openai-compat";
 import {
   type ActionablePlan,
   actionablePlanSchema,
+  type CodeExercise,
+  codeExerciseSchema,
+  type GradedAnswer,
+  gradedAnswerSchema,
   type JobAnalysis,
   jobAnalysisSchema,
   type MailTriage,
@@ -26,6 +33,8 @@ import {
   parsedResumeSchema,
   type Questionnaire,
   questionnaireSchema,
+  type WrittenExercise,
+  writtenExerciseSchema,
 } from "./schemas";
 import { AiError, type AiProvider, type ProviderConfig } from "./types";
 
@@ -136,6 +145,78 @@ export async function generateQuestionnaire(
     schemaName: "questionnaire",
     task: "generate_questionnaire",
     maxTokens: 32000,
+  });
+  return {
+    result: object,
+    provider: provider.kind,
+    model: model ?? provider.model,
+  };
+}
+
+/** The prep item an exercise is generated from. */
+type ExerciseSource = Parameters<typeof codeExercisePrompt>[2];
+
+export async function generateCodeExercise(
+  userId: string,
+  app: Application,
+  item: ExerciseSource,
+): Promise<AiRun<CodeExercise>> {
+  const provider = resolveProvider(userId);
+  const { system, prompt } = codeExercisePrompt(app, profile(userId), item);
+  const { object, model } = await provider.generateObject({
+    system,
+    prompt,
+    schema: codeExerciseSchema,
+    schemaName: "code_exercise",
+    task: "generate_code_exercise",
+    // A problem statement, a skeleton, a dozen cases and a worked solution.
+    maxTokens: 32000,
+  });
+  return {
+    result: object,
+    provider: provider.kind,
+    model: model ?? provider.model,
+  };
+}
+
+export async function generateWrittenExercise(
+  userId: string,
+  app: Application,
+  item: ExerciseSource,
+): Promise<AiRun<WrittenExercise>> {
+  const provider = resolveProvider(userId);
+  const { system, prompt } = writtenExercisePrompt(app, profile(userId), item);
+  const { object, model } = await provider.generateObject({
+    system,
+    prompt,
+    schema: writtenExerciseSchema,
+    schemaName: "written_exercise",
+    task: "generate_written_exercise",
+    maxTokens: 16000,
+  });
+  return {
+    result: object,
+    provider: provider.kind,
+    model: model ?? provider.model,
+  };
+}
+
+export async function gradeWrittenAnswer(
+  userId: string,
+  app: Application,
+  brief: string,
+  rubric: { id: string; requirement: string; weight: number }[],
+  answer: string,
+): Promise<AiRun<GradedAnswer>> {
+  const provider = resolveProvider(userId);
+  const { system, prompt } = gradeAnswerPrompt(app, brief, rubric, answer);
+  const { object, model } = await provider.generateObject({
+    system,
+    prompt,
+    schema: gradedAnswerSchema,
+    schemaName: "graded_answer",
+    task: "grade_written_answer",
+    maxTokens: 8000,
   });
   return {
     result: object,

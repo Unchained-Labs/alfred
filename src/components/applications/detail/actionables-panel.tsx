@@ -1,16 +1,20 @@
 "use client";
 
 import {
+  BadgeCheck,
   CheckSquare,
   Circle,
   CircleDot,
   Clock,
   ExternalLink,
   ListTodo,
+  PenLine,
   RefreshCw,
   Sparkles,
+  SquareCode,
   Trash2,
 } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 import { ProgressBar } from "@/components/charts/meter";
@@ -22,6 +26,7 @@ import { EmptyState, ThinkingRows } from "@/components/ui/states";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useToast } from "@/components/ui/toast";
 import type { Actionable, ActionableStatus } from "@/db/schema";
+import { DO_IT_LABEL, exerciseKindFor } from "@/lib/exercises";
 import { ACTIONABLE_META } from "@/lib/stages";
 import { cn } from "@/lib/utils";
 
@@ -39,18 +44,37 @@ const NEXT_STATUS: Record<ActionableStatus, ActionableStatus> = {
   skipped: "todo",
 };
 
+/**
+ * The same cycle with `done` removed, for items that have an exercise behind
+ * them. The server would refuse the write anyway; offering it and then showing
+ * an error would just be a worse way of saying the same thing.
+ */
+const NEXT_STATUS_EARNED: Record<ActionableStatus, ActionableStatus> = {
+  todo: "in_progress",
+  in_progress: "todo",
+  done: "todo",
+  skipped: "todo",
+};
+
 function StatusButton({
   status,
   onClick,
   busy,
+  earned,
 }: {
   status: ActionableStatus;
   onClick: () => void;
   busy: boolean;
+  /** True when completion has to come from a passing submission. */
+  earned: boolean;
 }) {
   const config = {
     todo: { Icon: Circle, color: "var(--ink-muted)", label: "Mark in progress" },
-    in_progress: { Icon: CircleDot, color: "var(--warning)", label: "Mark done" },
+    in_progress: {
+      Icon: CircleDot,
+      color: "var(--warning)",
+      label: earned ? "Back to to-do" : "Mark done",
+    },
     done: { Icon: CheckSquare, color: "var(--good)", label: "Reopen" },
     skipped: { Icon: Circle, color: "var(--ink-muted)", label: "Reopen" },
   }[status];
@@ -84,13 +108,18 @@ function ActionableRow({
   const meta = ACTIONABLE_META[item.kind];
   const Icon = KIND_ICONS[meta.icon] ?? CheckSquare;
   const done = item.status === "done";
+  const exerciseKind = exerciseKindFor(item.kind);
+  // Completion is earned until there is a passing submission on record.
+  const earned = Boolean(exerciseKind) && !item.verifiedAt;
+  const cycle = earned ? NEXT_STATUS_EARNED : NEXT_STATUS;
 
   return (
     <li className="group hover:bg-surface-2 flex items-start gap-3 px-5 py-3 transition-colors">
       <StatusButton
         status={item.status}
-        onClick={() => onStatus(item.id, NEXT_STATUS[item.status])}
+        onClick={() => onStatus(item.id, cycle[item.status])}
         busy={busy}
+        earned={earned}
       />
 
       <div className="min-w-0 flex-1">
@@ -146,7 +175,32 @@ function ActionableRow({
               {item.estMinutes}m
             </span>
           ) : null}
+          {item.verifiedAt ? (
+            <span
+              className="inline-flex items-center gap-1 text-[10px] font-medium"
+              style={{ color: "var(--good)" }}
+            >
+              <BadgeCheck className="size-3" />
+              verified
+            </span>
+          ) : null}
         </div>
+
+        {/* The way the item actually gets done. A link rather than a button:
+            it is a place you go to work, and it should be openable in a tab. */}
+        {exerciseKind ? (
+          <Link
+            href={`/prep/${item.id}`}
+            className="text-brand mt-2 inline-flex items-center gap-1.5 text-[11px] font-medium underline-offset-2 hover:underline"
+          >
+            {exerciseKind === "code" ? (
+              <SquareCode className="size-3.5" />
+            ) : (
+              <PenLine className="size-3.5" />
+            )}
+            {item.verifiedAt ? "Review it" : DO_IT_LABEL[exerciseKind]}
+          </Link>
+        ) : null}
       </div>
 
       <button
@@ -212,7 +266,10 @@ export function ActionablesPanel({
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ status }),
       });
-      if (!response.ok) throw new Error("Could not update the item.");
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error ?? "Could not update the item.");
+      }
       router.refresh();
     } catch (error) {
       toast.error("Update failed", error instanceof Error ? error.message : "");

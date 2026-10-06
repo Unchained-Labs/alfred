@@ -134,6 +134,124 @@ export const questionnaireSchema = z.object({
 });
 export type Questionnaire = z.infer<typeof questionnaireSchema>;
 
+/* ------------------------------------------------------------------ *
+ * Exercises — a task you can actually do, and that can be checked
+ * ------------------------------------------------------------------ */
+
+export const exerciseTestSchema = z.object({
+  name: z
+    .string()
+    .describe("Short name for this case, e.g. 'evicts least recently used'"),
+  call: z
+    .string()
+    .describe(
+      "A single Python expression that exercises the candidate's code and evaluates to the value being checked. It may reference anything the starter defines. Example: 'solve([3,1,2])'. For stateful classes, use a helper expression such as '(lambda c: (c.put(1,1), c.get(1))[1])(LRUCache(2))'.",
+    ),
+  expect: z
+    .string()
+    .describe(
+      "A Python literal the call must equal, e.g. '[1,2,3]', '-1', \"'ok'\". Must be a literal, never an expression that recomputes the answer.",
+    ),
+  hidden: z
+    .boolean()
+    .describe("False for the 2-3 cases shown up front; true for the rest."),
+});
+
+export const codeExerciseSchema = z.object({
+  brief: z
+    .string()
+    .describe(
+      "The problem statement as markdown: what to implement, the constraints, and the complexity target. Self-contained — the candidate should not need the original source.",
+    ),
+  starterCode: z
+    .string()
+    .describe(
+      "Runnable Python skeleton with the exact names the tests call, bodies left as `pass` or a TODO. Include any imports the tests need.",
+    ),
+  examples: z
+    .array(
+      z.object({
+        input: z.string(),
+        output: z.string(),
+        note: z
+          .string()
+          .describe("Why this output, in one clause. Empty if obvious."),
+      }),
+    )
+    .describe("2-3 worked examples shown before they start."),
+  tests: z
+    .array(exerciseTestSchema)
+    .describe(
+      "8-12 cases covering the happy path, the edges (empty, single element, duplicates, negatives) and the constraint the problem is really about. 2-3 visible, the rest hidden.",
+    ),
+  referenceSolution: z
+    .string()
+    .describe(
+      "Your own complete, correct Python solution — the same names the tests call. It is run against the tests before the exercise is offered, so it must actually pass.",
+    ),
+  hints: z
+    .array(z.string())
+    .describe(
+      "3-4 hints, revealed one at a time, escalating from a nudge about the approach to naming the data structure. Never the full solution.",
+    ),
+});
+export type CodeExercise = z.infer<typeof codeExerciseSchema>;
+
+export const writtenExerciseSchema = z.object({
+  brief: z
+    .string()
+    .describe(
+      "The prompt as markdown — what to design, argue or prepare, framed as an interviewer would pose it for this specific role.",
+    ),
+  rubric: z
+    .array(
+      z.object({
+        id: z.string().describe("Short slug, e.g. 'idempotency'"),
+        requirement: z
+          .string()
+          .describe(
+            "One specific thing a good answer must do. Checkable by reading the answer — not a vague quality like 'is clear'.",
+          ),
+        weight: z
+          .number()
+          .int()
+          .min(1)
+          .max(3)
+          .describe("3 = the answer fails without it, 1 = a nice-to-have."),
+      }),
+    )
+    .describe("4-6 criteria. Together they define a passing answer."),
+  hints: z
+    .array(z.string())
+    .describe("2-3 nudges toward the areas the rubric cares about."),
+});
+export type WrittenExercise = z.infer<typeof writtenExerciseSchema>;
+
+export const gradedAnswerSchema = z.object({
+  passed: z
+    .boolean()
+    .describe(
+      "True only if every weight-3 criterion is met and most others are. Be strict: passing a weak answer is worse than asking for another pass.",
+    ),
+  criteria: z
+    .array(
+      z.object({
+        id: z.string(),
+        met: z.boolean(),
+        comment: z
+          .string()
+          .describe("One sentence: what they did, or precisely what is missing."),
+      }),
+    )
+    .describe("One entry per rubric criterion, in order."),
+  feedback: z
+    .string()
+    .describe(
+      "2-4 sentences addressed to the candidate. If it did not pass, say exactly what to add. Never restate the rubric verbatim.",
+    ),
+});
+export type GradedAnswer = z.infer<typeof gradedAnswerSchema>;
+
 export const parsedJobSchema = z.object({
   company: z.string().describe("Hiring company name only, no suffixes or taglines"),
   title: z.string().describe("The job title, normalized"),

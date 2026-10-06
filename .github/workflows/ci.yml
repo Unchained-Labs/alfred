@@ -32,6 +32,15 @@ jobs:
         run: npm run format:check
       - name: build
         run: npm run build
+      # The exercise runner is spawned as a child process and imports pyodide
+      # at runtime, so neither typecheck nor build can tell whether it works.
+      # This boots a real interpreter and checks a real assertion.
+      - name: exercise runner executes python
+        run: |
+          node -e "process.stdout.write(JSON.stringify({code:'def ok():\n    return 1\n',tests:[{name:'boots',call:'ok()',expect:'1',hidden:false},{name:'compares',call:'ok() + 1',expect:'3',hidden:true}]}))" > /tmp/job.json
+          node runner/python-runner.mjs < /tmp/job.json | tee /tmp/out.ndjson
+          grep -q '"index":0,"passed":true' /tmp/out.ndjson
+          grep -q '"index":1,"passed":false' /tmp/out.ndjson
 
   migrations:
     name: migrations are committed
@@ -113,6 +122,36 @@ jobs:
           check "POST /api/ai/test (unconfigured)" 409 \
             "$(curl -s -o /dev/null -b /tmp/ck.txt -w '%{http_code}' -X POST http://localhost:3000/api/ai/test \
                -H 'content-type: application/json' -d '{"provider":"agent","config":{"endpoint":""}}')"
+
+          # --- exercises: completion is earned, not asserted ----------------
+          app=$(curl -s -b /tmp/ck.txt -X POST http://localhost:3000/api/applications \
+                  -H 'content-type: application/json' \
+                  -d '{"company":"Acme","title":"Backend Engineer"}' | jq -r .application.id)
+          gated=$(curl -s -b /tmp/ck.txt -X POST http://localhost:3000/api/actionables \
+                  -H 'content-type: application/json' \
+                  -d "{\"applicationId\":\"$app\",\"kind\":\"leetcode\",\"title\":\"Two sum\"}" | jq -r .actionable.id)
+          open=$(curl -s -b /tmp/ck.txt -X POST http://localhost:3000/api/actionables \
+                  -H 'content-type: application/json' \
+                  -d "{\"applicationId\":\"$app\",\"kind\":\"research\",\"title\":\"Read the engineering blog\"}" | jq -r .actionable.id)
+          patch() { # patch <id> <json>
+            curl -s -o /dev/null -b /tmp/ck.txt -w '%{http_code}' \
+              -X PATCH "http://localhost:3000/api/actionables/$1" \
+              -H 'content-type: application/json' -d "$2"
+          }
+          # A coding item has an exercise behind it, so done must be refused —
+          # both on its own and smuggled inside a wider patch.
+          check "PATCH coding -> done   (not earned)" 409 "$(patch "$gated" '{"status":"done"}')"
+          check "PATCH coding -> done   (in a patch)" 409 "$(patch "$gated" '{"title":"Two sum","status":"done"}')"
+          check "PATCH coding -> in_progress" 200 "$(patch "$gated" '{"status":"in_progress"}')"
+          check "PATCH coding -> skipped" 200 "$(patch "$gated" '{"status":"skipped"}')"
+          # Research has nothing to check, so it completes the ordinary way.
+          check "PATCH research -> done (ungated)" 200 "$(patch "$open" '{"status":"done"}')"
+          check "GET /prep/<item> (workspace)" 200 \
+            "$(curl -s -o /dev/null -b /tmp/ck.txt -w '%{http_code}' "http://localhost:3000/prep/$gated")"
+          check "POST /api/exercises/x/run (unknown)" 404 \
+            "$(curl -s -o /dev/null -b /tmp/ck.txt -w '%{http_code}' -X POST \
+               http://localhost:3000/api/exercises/does-not-exist/run \
+               -H 'content-type: application/json' -d '{"code":"x=1"}')"
 
           exit $fail
 

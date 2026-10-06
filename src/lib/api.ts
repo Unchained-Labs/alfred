@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { AiError, AiNotConfiguredError } from "@/lib/ai/types";
-import { ConfigError, InputError } from "@/lib/errors";
+import { ConfigError, InputError, NotEarnedError } from "@/lib/errors";
 import { ForbiddenError, UnauthorizedError } from "@/lib/auth";
 
 export function ok<T>(data: T, init?: number) {
@@ -37,6 +37,12 @@ export function failed(error: unknown) {
     return NextResponse.json(
       { error: error.message, code: "forbidden" },
       { status: 403 },
+    );
+  }
+  if (error instanceof NotEarnedError) {
+    return NextResponse.json(
+      { error: error.message, code: "not_earned" },
+      { status: 409 },
     );
   }
   if (error instanceof InputError) {

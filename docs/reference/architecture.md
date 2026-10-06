@@ -31,12 +31,46 @@ erDiagram
     applications ||--o{ questions : "questionnaire"
     applications ||--o{ analyses : "fit analyses"
     applications ||--o{ mail_messages : "linked mail"
+    actionables ||--o| exercises : "the work itself"
+    exercises ||--o{ submissions : "every attempt"
 ```
 
 `analyses` is append-only — re-running keeps the history, and the application
 page shows the latest. `events` is the timeline, and the conversion funnel is
 derived from it rather than from current stage, so applications that were later
 rejected still count toward every stage they cleared.
+
+## Exercises
+
+An actionable whose kind implies work — coding, concept, system design,
+behavioural — has at most one `exercise`, and `actionables.verified_at` is set
+only by a `submission` that passed. The uniqueness is a database constraint, so
+"the exercise for this task" is a well-defined row rather than the newest of a
+pile, and the gate lives in `mutations.ts` rather than in a route handler:
+every path that can write `done` goes through one function, because a check in
+a handler is a check somebody adds a second handler around.
+
+Python runs in `runner/python-runner.mjs`, spawned per submission as a separate
+process:
+
+```mermaid
+flowchart LR
+    S["submit route"] -->|"code + tests, stdin"| R["runner process"]
+    R -->|"Pyodide (wasm)"| P["Python"]
+    R -->|"NDJSON, one line per case"| S
+    S -->|"all cases passed"| V["verified_at"]
+```
+
+It is a child process because Pyodide executes Python on the calling thread,
+so an infinite loop in a half-finished solution would wedge the event loop and
+take the server with it. A process can be killed, which also caps a runaway
+wasm heap and keeps the ~150MB transient rather than resident. Results stream
+back one line per case, so a kill still reports everything that finished and
+names the case that hung.
+
+The file lives outside `src/` and is copied verbatim into the image: Next
+rewrites what it bundles, and a spawn target has to survive as a real file at a
+real path.
 
 ## Reads and writes
 
