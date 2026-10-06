@@ -6,9 +6,16 @@ build/
 .env.local
 *.tsbuildinfo
 next-env.d.ts
+site/
+
+# The database and its SQLite sidecars.
 data/*.db
 data/*.db-shm
 data/*.db-wal
+
+# Claude Code rewrites this constantly, and it carries account metadata
+# (email, plan, organisation UUID). It belongs in a volume, not in git.
+data/claude-code/
+
 .DS_Store
 npm-debug.log*
-site/

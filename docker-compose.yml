@@ -25,6 +25,11 @@ services:
       # replaced on every rebuild and take the job history with it.
       ALFRED_DB_PATH: /data/alfred.db
       NODE_ENV: production
+      # The URL the browser actually shows. Passkeys are bound to this
+      # hostname, and behind a reverse proxy the request's own Host is the
+      # internal one — so leaving this unset makes passkeys silently not work
+      # rather than fail loudly. Set it to your tailnet or public URL.
+      ALFRED_PUBLIC_URL: ${ALFRED_PUBLIC_URL:-}
       # All optional: the same values can be set in Settings, which stores them
       # in the database. Environment wins where both are present.
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
