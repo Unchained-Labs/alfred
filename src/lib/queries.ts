@@ -23,7 +23,6 @@ import {
   submissions,
   TERMINAL_STAGES,
 } from "@/db/schema";
-import { requiresExercise } from "@/lib/exercises";
 import { BOARD_STAGES, FUNNEL_STAGES } from "@/lib/stages";
 
 /*
@@ -510,28 +509,4 @@ export function listSubmissions(userId: string, exerciseId: string, limit = 25) 
     .orderBy(desc(submissions.createdAt))
     .limit(limit)
     .all();
-}
-
-/** How many prep items are gated on an exercise, and how many are cleared. */
-export function exerciseProgress(userId: string, applicationId: string) {
-  const rows = db
-    .select({ kind: actionables.kind, verifiedAt: actionables.verifiedAt })
-    .from(actionables)
-    .where(
-      and(
-        eq(actionables.userId, userId),
-        eq(actionables.applicationId, applicationId),
-      ),
-    )
-    .all();
-  return rows.reduce(
-    (acc, row) => {
-      if (!requiresExercise(row.kind)) return acc;
-      return {
-        gated: acc.gated + 1,
-        verified: acc.verified + (row.verifiedAt ? 1 : 0),
-      };
-    },
-    { gated: 0, verified: 0 },
-  );
 }

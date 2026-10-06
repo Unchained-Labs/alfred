@@ -100,9 +100,3 @@ export function asGradeReport(value: unknown): GradeReport | null {
   if (!value || typeof value !== "object") return null;
   return "criteria" in value ? (value as GradeReport) : null;
 }
-
-export function visibleOutcomes(report: RunReport, revealHidden: boolean) {
-  return revealHidden
-    ? report.outcomes
-    : report.outcomes.filter((outcome) => !outcome.hidden);
-}
