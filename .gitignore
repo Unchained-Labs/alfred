@@ -19,3 +19,14 @@ data/claude-code/
 
 .DS_Store
 npm-debug.log*
+
+# Local deployment, never this repo's business.
+#
+# docker-compose.override.yml is Compose's documented way to add machine-local
+# config; it is read automatically and is different on every box.
+docker-compose.override.yml
+
+# A home directory for a mounted CLI. This one matters: it holds an OAuth
+# CREDENTIAL. Ignored so that `git add -A` on a box that mounts the Claude Code
+# CLI into the container cannot commit someone's sign-in.
+claude-home/
