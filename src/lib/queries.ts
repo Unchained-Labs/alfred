@@ -19,6 +19,7 @@ import {
   applications,
   events,
   exercises,
+  handbooks,
   mailMessages,
   questions,
   submissions,
@@ -648,4 +649,24 @@ export function listSubmissions(userId: string, exerciseId: string, limit = 25) 
     .orderBy(desc(submissions.createdAt))
     .limit(limit)
     .all();
+}
+
+/* ------------------------------------------------------------------ *
+ * Learning handbooks
+ * ------------------------------------------------------------------ */
+
+/** At most one per application — the unique index makes that a fact. */
+export function getHandbook(userId: string, applicationId: string) {
+  return (
+    db
+      .select()
+      .from(handbooks)
+      .where(
+        and(
+          eq(handbooks.applicationId, applicationId),
+          eq(handbooks.userId, userId),
+        ),
+      )
+      .get() ?? null
+  );
 }

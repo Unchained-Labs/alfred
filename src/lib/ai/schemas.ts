@@ -349,3 +349,210 @@ export const mailTriageSchema = z.object({
     .describe("Any deadline stated in the email as an ISO 8601 date, else null"),
 });
 export type MailTriage = z.infer<typeof mailTriageSchema>;
+
+/* ------------------------------------------------------------------ *
+ * Learning handbook
+ *
+ * Two schemas, because it is generated in two calls. One call producing the
+ * whole handbook would be a single point of truncation: a plan that dies at
+ * token 31,000 loses the drills with it, and two minutes of work with it.
+ *
+ * Note what is NOT here: no polymorphic "block" union. Part bodies are
+ * MARKDOWN, which already expresses headings, lists, tables, code and
+ * emphasis, and which the renderer turns into HTML with everything escaped.
+ * A union of block kinds would have to survive `tighten()` in the JSON Schema
+ * converter, which marks every property required — so each block would carry
+ * every other kind's fields, empty. Markdown is both smaller and more
+ * expressive than the schema that would replace it.
+ * ------------------------------------------------------------------ */
+
+const NOTE_TONES = ["say", "trap", "why", "tip"] as const;
+
+export const handbookNoteSchema = z.object({
+  tone: z
+    .enum(NOTE_TONES)
+    .describe(
+      "say = ready-made phrasing the candidate can adapt out loud. trap = a mistake people actually make. why = how a general topic connects to THIS company. tip = practical advice for preparing.",
+    ),
+  title: z.string().describe("Three or four words. The label on the box."),
+  body: z.string().describe("One or two sentences. Markdown allowed."),
+});
+
+/** A part before its body is written: enough to navigate and to plan with. */
+export const handbookPartStubSchema = z.object({
+  id: z
+    .string()
+    .describe(
+      "Short lowercase slug, letters and hyphens only, unique across parts. Used as the anchor, e.g. 'the-write-path'.",
+    ),
+  title: z.string().describe("The part's heading, as a reader would scan it."),
+  short: z
+    .string()
+    .describe("Two or three words for the navigation rail, e.g. 'The ledger'."),
+  minutes: z
+    .number()
+    .int()
+    .min(3)
+    .max(45)
+    .describe("Honest reading time for the part, in minutes."),
+  emphasis: z
+    .enum(["must", "leadership", "company", "optional"])
+    .describe(
+      "must = cannot walk in without it. leadership = people and delivery. company = specific to this employer. optional = useful depth.",
+    ),
+  tldr: z
+    .array(z.string())
+    .describe(
+      "Exactly three lines. Someone who reads only these has the gist of the part and can stop. Never 'this part covers X' — state the substance: a number, a name, a mechanism.",
+    ),
+  intent: z
+    .string()
+    .describe(
+      "One sentence to the writer of this part, not to the reader: what this part must teach and what it must not repeat from the others.",
+    ),
+});
+
+export const handbookOutlineSchema = z.object({
+  title: z
+    .string()
+    .describe(
+      "The handbook's own title, naming the company or the role, e.g. 'The Ledger Interview Handbook'.",
+    ),
+  eyebrow: z
+    .string()
+    .describe(
+      "One line above the title: who it is for, the role, the company. Separated by middots.",
+    ),
+  lede: z
+    .string()
+    .describe(
+      "Two or three sentences telling the candidate what this is and how to use it. Plain, not promotional.",
+    ),
+  routes: z
+    .array(
+      z.object({
+        label: z
+          .string()
+          .describe("A time budget, e.g. '10 minutes', 'One evening'."),
+        detail: z.string().describe("What that route covers, in one clause."),
+        parts: z
+          .array(z.string())
+          .describe("Part ids to read on this route, in order."),
+      }),
+    )
+    .describe(
+      "Two to four reading routes, shortest first. Someone with ten minutes before a call must have somewhere to go.",
+    ),
+  parts: z
+    .array(handbookPartStubSchema)
+    .describe(
+      "Five to eight parts, ordered as they should be read: the company and the role, then the substance they will be tested on, then this employer's hard problems, then the interview itself. Each part earns its place — five strong parts beat eight with filler.",
+    ),
+});
+export type HandbookOutline = z.infer<typeof handbookOutlineSchema>;
+
+/** One part's prose, written against its own stub. */
+export const handbookPartBodySchema = z.object({
+  body: z
+    .string()
+    .describe(
+      "The part itself, as markdown: ## and ### headings, paragraphs, bullet and numbered lists, pipe tables, fenced code where code genuinely helps, **bold** and `inline code`. Three hundred to seven hundred words. Specific to this role and company — generic advice is a failure.",
+    ),
+  notes: z
+    .array(handbookNoteSchema)
+    .describe("Nought to three callouts. Use them sparingly."),
+  cards: z
+    .array(z.object({ title: z.string(), body: z.string() }))
+    .describe(
+      "Nought to six short cards, for things that are genuinely a set of peers — options, principles, people to meet. Not a dumping ground.",
+    ),
+});
+export type HandbookPartBody = z.infer<typeof handbookPartBodySchema>;
+
+/**
+ * A part as it is stored: the stub, plus the body once it has been written.
+ *
+ * The body is Partial because a handbook is filled in one part at a time and
+ * is readable before every part exists. A reader who opens it mid-generation
+ * sees the finished parts and a note on the rest, rather than an error.
+ */
+export type HandbookPart = z.infer<typeof handbookPartStubSchema> &
+  Partial<HandbookPartBody>;
+
+export type HandbookPlan = Omit<HandbookOutline, "parts"> & {
+  parts: HandbookPart[];
+};
+
+export const handbookDrillsSchema = z.object({
+  flashcards: z
+    .array(
+      z.object({
+        category: z
+          .string()
+          .describe("Two or three words, reused across cards so they group."),
+        question: z
+          .string()
+          .describe("As an interviewer would actually ask it, out loud."),
+        answer: z
+          .array(z.string())
+          .describe(
+            "Three to five bullets a strong answer covers. Not a script — the points it must hit.",
+          ),
+      }),
+    )
+    .describe(
+      "Twenty to thirty cards across the technical ground, the company and the behavioural questions.",
+    ),
+  glossary: z
+    .array(z.object({ term: z.string(), definition: z.string() }))
+    .describe(
+      "Fifteen to forty terms: every acronym and piece of jargon this role's interview could use, defined in one or two lines. Include the ones that mean two different things.",
+    ),
+  stories: z
+    .array(
+      z.object({
+        prompt: z
+          .string()
+          .describe(
+            "The story to prepare, e.g. 'A system you took to production'.",
+          ),
+        hint: z.string().describe("One line on what a good version contains."),
+        tags: z
+          .array(z.string())
+          .describe("One or two words each, e.g. 'ownership', 'conflict'."),
+      }),
+    )
+    .describe(
+      "Eight to twelve prompts covering the behavioural ground this specific loop will probe. The candidate writes the answers themselves.",
+    ),
+  asks: z
+    .array(
+      z.object({
+        audience: z
+          .string()
+          .describe(
+            "Who to ask, e.g. 'The hiring manager', 'Engineers on the panel'.",
+          ),
+        questions: z.array(z.string()),
+      }),
+    )
+    .describe(
+      "Questions for the candidate to ask, grouped by who they are for. Questions that show they already think like someone doing the job.",
+    ),
+  checklist: z
+    .array(
+      z.object({
+        phase: z.enum(["before", "day", "after"]),
+        items: z.array(z.string()),
+      }),
+    )
+    .describe(
+      "Practical, checkable things. The day before, the day itself, and afterwards.",
+    ),
+  sources: z
+    .array(z.object({ label: z.string(), url: z.string() }))
+    .describe(
+      "Canonical URLs only — official documentation or the company's own pages — and only ones you are certain exist. An empty array is the correct answer when unsure; a plausible invented link is worse than no link.",
+    ),
+});
+export type HandbookDrills = z.infer<typeof handbookDrillsSchema>;

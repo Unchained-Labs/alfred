@@ -16,6 +16,14 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Added
 
+- **Learning handbooks.** One button on an application produces a self-contained HTML study guide for that role: five to eight taught parts, each opening with a three-line TL;DR, plus flashcards, a filterable glossary, a story bank, questions to ask and a checklist. It opens in its own tab and downloads as one file that works offline, keeping your progress, the cards you know and your drafted stories in whichever browser you opened it in.
+
+  Alfred stores the **content**, never the rendered page, so the template can improve without anyone regenerating anything.
+
+  It is built a part at a time — the spine, then each part in its own pass, then the practice material. The first version asked for the whole plan in one response and it truncated: the Claude Code CLI has no flag to raise its output budget and says nothing when it clips. Providers cap output in different places, so the fix was not a bigger number but never asking for more than a page at a time. Progress is therefore real rather than a spinner, and a failure halfway costs one part instead of the document.
+
+  Everything generated is escaped on the way into the page — there is no raw-HTML path, and a new offline CI check renders a fixture containing a script tag and a `javascript:` URL to keep it that way.
+
 - **Prep items you actually do, in the app.** Coding, concept, system-design and behavioural items now open a workspace instead of a checkbox. Coding items come with a brief, worked examples, a Python editor and a test suite: **Run samples** iterates against the visible cases, **Submit** runs every case including the hidden ones. Written items come with a rubric and are graded against it, requirement by requirement. Hints reveal one at a time.
 
   An item backed by an exercise **cannot be marked done** — the API refuses it, and `done` is set only by a submission that passed. Skipping is still available, because declining a problem is honest and claiming you solved it is not.

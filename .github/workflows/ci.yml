@@ -35,6 +35,11 @@ jobs:
       # The exercise runner is spawned as a child process and imports pyodide
       # at runtime, so neither typecheck nor build can tell whether it works.
       # This boots a real interpreter and checks a real assertion.
+      # The handbook renderer turns provider output into a page the user opens,
+      # so what matters is that markdown becomes the right elements and that
+      # nothing from the content lands as markup. Deterministic and offline.
+      - name: handbook renders and escapes its content
+        run: npm run check:handbook
       - name: exercise runner executes python
         run: |
           node -e "process.stdout.write(JSON.stringify({code:'def ok():\n    return 1\n',tests:[{name:'boots',call:'ok()',expect:'1',hidden:false},{name:'compares',call:'ok() + 1',expect:'3',hidden:true}]}))" > /tmp/job.json

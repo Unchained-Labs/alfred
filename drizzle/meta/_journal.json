@@ -36,6 +36,13 @@
       "when": 1791303830059,
       "tag": "0004_clear_quasimodo",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1791553185056,
+      "tag": "0005_bored_stranger",
+      "breakpoints": true
     }
   ]
 }
