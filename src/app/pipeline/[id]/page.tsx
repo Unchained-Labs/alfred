@@ -6,11 +6,13 @@ import { ActionablesPanel } from "@/components/applications/detail/actionables-p
 import { AnalysisPanel } from "@/components/applications/detail/analysis-panel";
 import { AskAlfred } from "@/components/applications/detail/ask-alfred";
 import { DetailHeader } from "@/components/applications/detail/detail-header";
+import { HandbookPanel } from "@/components/applications/detail/handbook-panel";
 import { QuestionnairePanel } from "@/components/applications/detail/questionnaire-panel";
 import { Timeline } from "@/components/applications/detail/timeline";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   getApplication,
+  getHandbook,
   getLatestAnalysis,
   listActionables,
   listEvents,
@@ -40,6 +42,7 @@ export default async function ApplicationPage({ params }: Params) {
   const actionables = listActionables(user.id, id);
   const questions = listQuestions(user.id, id);
   const events = listEvents(user.id, id);
+  const handbook = getHandbook(user.id, id);
 
   return (
     <div className="mx-auto max-w-7xl p-4 lg:p-6">
@@ -58,6 +61,21 @@ export default async function ApplicationPage({ params }: Params) {
             hasAnalysis={Boolean(analysis)}
           />
           <QuestionnairePanel applicationId={id} questions={questions} />
+          <HandbookPanel
+            applicationId={id}
+            hasDescription={Boolean(app.description?.trim())}
+            handbook={
+              handbook
+                ? {
+                    id: handbook.id,
+                    title: handbook.title,
+                    parts: handbook.parts,
+                    createdAt: handbook.createdAt,
+                    model: handbook.model,
+                  }
+                : null
+            }
+          />
         </div>
 
         <div className="space-y-4">

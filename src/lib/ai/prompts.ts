@@ -429,3 +429,150 @@ ${answer.trim() || "(the candidate submitted nothing)"}
 Grade it.`,
   };
 }
+
+/* ------------------------------------------------------------------ *
+ * Learning handbook
+ * ------------------------------------------------------------------ */
+
+function prepBlock(actionables: { kind: string; title: string }[]): string {
+  if (!actionables.length) return "";
+  const lines = actionables
+    .slice(0, 24)
+    .map((a) => `- [${a.kind}] ${a.title}`)
+    .join("\n");
+  return `\n<existing_prep_plan>\nThe candidate already has these prep items. The handbook should TEACH what they need to do them, not restate them as a list:\n${lines}\n</existing_prep_plan>\n`;
+}
+
+/**
+ * The handbook's spine: title, reading routes, and a stub per part.
+ *
+ * Deliberately small. Each part's prose is a separate call, because a single
+ * response holding six taught parts is a single point of truncation — and the
+ * first version of this was exactly that, and it truncated. Providers cap
+ * output in different places and some of them say nothing when they do.
+ */
+export function handbookOutlinePrompt(
+  app: Application,
+  profile: UserProfile,
+  analysis: Analysis | null,
+  actionables: { kind: string; title: string }[],
+) {
+  return {
+    system: `${BUTLER}
+
+Your task: plan a study handbook this candidate will actually read before this
+interview. You are writing the SPINE only — titles, the three-line summaries,
+and a note to yourself about what each part must teach. The prose comes later.
+
+Order the parts the way they should be read:
+- What this company actually does and makes money from, in plain words, and
+  what has visibly changed about it lately. Then the role as it really is.
+- Then the substance they will be TESTED on. This is the bulk of the handbook.
+- Then this employer's hard problems, framed as an engineer would.
+- Then the interview itself and what to say.
+
+Five to eight parts. Five strong parts beat eight with filler. Each \`intent\`
+is instructions to whoever writes that part: what it must cover, and what it
+must leave to the others, so the finished handbook does not say the same thing
+four times.
+
+The three TL;DR lines are the part in miniature, for someone who stops there.
+Make them specific — a number, a name, a mechanism.
+
+Do not invent facts about the company.`,
+    prompt: `${profileBlock(profile)}\n\n${jobBlock(app)}\n\n${analysisBlock(analysis)}${prepBlock(actionables)}\n\nPlan the handbook.`,
+  };
+}
+
+/** One part's prose, written against the outline so parts do not repeat. */
+export function handbookPartPrompt(
+  app: Application,
+  profile: UserProfile,
+  analysis: Analysis | null,
+  part: {
+    title: string;
+    tldr: string[];
+    intent: string;
+    emphasis: string;
+    minutes: number;
+  },
+  siblings: string[],
+) {
+  return {
+    system: `${BUTLER}
+
+Your task: write ONE part of a study handbook. The handbook's other parts are
+listed so you do not cover their ground — stay inside yours.
+
+Write to someone intelligent who has not done this exact job:
+- Define jargon on first use. Short paragraphs.
+- Be concrete about THIS posting. Name their product, their scale, their stack.
+- Use a pipe table when the content is genuinely tabular — a comparison, a
+  protocol list, a set of thresholds. A table carries more per line than prose.
+- Use fenced code only where code is the clearest explanation, and keep it short.
+- TEACH. A part that says "revise distributed systems" is worthless; this part
+  should contain the revision.
+- Three hundred to seven hundred words. Do not pad to fill the budget.
+
+The three TL;DR lines are already written and are shown above your part. Deliver
+on them; do not restate them.
+
+Where you are reasoning from the posting rather than from knowledge, say so in
+the text — "the posting implies", "worth confirming". A confident invented
+detail is the one failure that costs the candidate the room.`,
+    prompt: `${profileBlock(profile)}
+
+${jobBlock(app)}
+
+${analysisBlock(analysis)}
+
+<other_parts_do_not_cover_these>
+${siblings.map((t) => `- ${t}`).join("\n")}
+</other_parts_do_not_cover_these>
+
+<your_part>
+Title: ${part.title}
+Emphasis: ${part.emphasis}
+Reading time to aim for: ${part.minutes} minutes
+What this part must teach: ${part.intent}
+Its TL;DR, already written:
+${part.tldr.map((l) => `- ${l}`).join("\n")}
+</your_part>
+
+Write this part.`,
+  };
+}
+
+/** The practice material: cards, glossary, stories, questions, checklist. */
+export function handbookDrillsPrompt(
+  app: Application,
+  profile: UserProfile,
+  analysis: Analysis | null,
+  partTitles: string[],
+) {
+  const outline = partTitles.map((t, i) => `${i + 1}. ${t}`).join("\n");
+  return {
+    system: `${BUTLER}
+
+Your task: the practice material that sits behind a study handbook you have
+already written. The handbook's parts are listed below — cover the same ground,
+at the level of individual recall rather than explanation.
+
+- **Flashcards** are for active recall. The question is what an interviewer says;
+  the answer is the three to five points a strong reply hits. Never a one-word
+  answer, never an essay. Spread them across the parts rather than clustering on
+  the first topic.
+- **Glossary** is for the moment a term appears and the candidate blanks. One or
+  two lines each. Include terms that collide — where the same acronym means two
+  different things in two fields, say both, because that confusion is the one
+  that shows.
+- **Stories** are prompts only. Do not write the candidate's experience for them;
+  name the story to prepare and what a good version must contain.
+- **Questions to ask** should make the candidate sound like someone already doing
+  the job: about constraints, bottlenecks, what breaks, what they would own.
+  Nothing a careful reading of the careers page would answer.
+- **Checklist** is logistics and nerves, not revision.
+- **Sources** must be canonical and real, or absent. Empty is a correct answer.`,
+    prompt: `${profileBlock(profile)}\n\n${jobBlock(app)}\n\n${analysisBlock(analysis)}\n\n<handbook_parts>\n${outline}\n</handbook_parts>\n\nWrite the practice material.`,
+  };
+}

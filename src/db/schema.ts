@@ -607,6 +607,42 @@ export const settings = sqliteTable(
 );
 
 /* ------------------------------------------------------------------ *
+ * Learning handbooks
+ * ------------------------------------------------------------------ */
+
+/**
+ * A generated study handbook for one application.
+ *
+ * Only the CONTENT is stored, never the rendered HTML. The template is code and
+ * improves on its own schedule; re-rendering is microseconds while regenerating
+ * costs two provider calls and a couple of minutes, so a stored page would mean
+ * every template fix needed a re-generation to reach anybody.
+ */
+export const handbooks = sqliteTable(
+  "handbooks",
+  {
+    id: id(),
+    userId: text("user_id").references(() => users.id, { onDelete: "cascade" }),
+    applicationId: text("application_id")
+      .notNull()
+      .references(() => applications.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    /** The validated plan and drills, exactly as the schemas define them. */
+    content: text("content", { mode: "json" }).$type<unknown>().notNull(),
+    /** How many parts it holds — enough to describe it without parsing content. */
+    parts: integer("parts").notNull().default(0),
+    provider: text("provider"),
+    model: text("model"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    uniqueIndex("handbooks_application_idx").on(t.applicationId),
+    index("handbooks_user_idx").on(t.userId),
+  ],
+);
+
+/* ------------------------------------------------------------------ *
  * Inferred types
  * ------------------------------------------------------------------ */
 
@@ -627,3 +663,5 @@ export type Session = typeof sessions.$inferSelect;
 export type Invite = typeof invites.$inferSelect;
 export type MailMessage = typeof mailMessages.$inferSelect;
 export type NewMailMessage = typeof mailMessages.$inferInsert;
+export type Handbook = typeof handbooks.$inferSelect;
+export type NewHandbook = typeof handbooks.$inferInsert;

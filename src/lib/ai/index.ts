@@ -5,6 +5,9 @@ import {
   analyzeJobPrompt,
   chatPrompt,
   codeExercisePrompt,
+  handbookDrillsPrompt,
+  handbookOutlinePrompt,
+  handbookPartPrompt,
   gradeAnswerPrompt,
   mailTriagePrompt,
   parseJobPrompt,
@@ -23,6 +26,12 @@ import {
   codeExerciseSchema,
   type GradedAnswer,
   gradedAnswerSchema,
+  type HandbookDrills,
+  handbookDrillsSchema,
+  type HandbookOutline,
+  handbookOutlineSchema,
+  type HandbookPartBody,
+  handbookPartBodySchema,
   type JobAnalysis,
   jobAnalysisSchema,
   type MailTriage,
@@ -217,6 +226,93 @@ export async function gradeWrittenAnswer(
     schemaName: "graded_answer",
     task: "grade_written_answer",
     maxTokens: 8000,
+  });
+  return {
+    result: object,
+    provider: provider.kind,
+    model: model ?? provider.model,
+  };
+}
+
+export async function generateHandbookOutline(
+  userId: string,
+  app: Application,
+  analysis: Analysis | null,
+  actionables: { kind: string; title: string }[],
+): Promise<AiRun<HandbookOutline>> {
+  const provider = resolveProvider(userId);
+  const { system, prompt } = handbookOutlinePrompt(
+    app,
+    profile(userId),
+    analysis,
+    actionables,
+  );
+  const { object, model } = await provider.generateObject({
+    system,
+    prompt,
+    schema: handbookOutlineSchema,
+    schemaName: "handbook_outline",
+    task: "generate_handbook_outline",
+    maxTokens: 8000,
+  });
+  return {
+    result: object,
+    provider: provider.kind,
+    model: model ?? provider.model,
+  };
+}
+
+export async function generateHandbookPart(
+  userId: string,
+  app: Application,
+  analysis: Analysis | null,
+  part: Parameters<typeof handbookPartPrompt>[3],
+  siblings: string[],
+): Promise<AiRun<HandbookPartBody>> {
+  const provider = resolveProvider(userId);
+  const { system, prompt } = handbookPartPrompt(
+    app,
+    profile(userId),
+    analysis,
+    part,
+    siblings,
+  );
+  const { object, model } = await provider.generateObject({
+    system,
+    prompt,
+    schema: handbookPartBodySchema,
+    schemaName: "handbook_part",
+    task: "generate_handbook_part",
+    // One part of prose. Bounded on purpose: see handbookOutlinePrompt.
+    maxTokens: 12000,
+  });
+  return {
+    result: object,
+    provider: provider.kind,
+    model: model ?? provider.model,
+  };
+}
+
+export async function generateHandbookDrills(
+  userId: string,
+  app: Application,
+  analysis: Analysis | null,
+  partTitles: string[],
+): Promise<AiRun<HandbookDrills>> {
+  const provider = resolveProvider(userId);
+  const { system, prompt } = handbookDrillsPrompt(
+    app,
+    profile(userId),
+    analysis,
+    partTitles,
+  );
+  const { object, model } = await provider.generateObject({
+    system,
+    prompt,
+    schema: handbookDrillsSchema,
+    schemaName: "handbook_drills",
+    task: "generate_handbook_drills",
+    maxTokens: 16000,
   });
   return {
     result: object,

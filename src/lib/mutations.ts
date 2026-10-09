@@ -10,6 +10,7 @@ import {
   events,
   exercises,
   type ExerciseTest,
+  handbooks,
   mailMessages,
   type NewActionable,
   questions,
@@ -854,4 +855,100 @@ export function markActionableVerified(
     });
   }
   return updated;
+}
+
+/* ------------------------------------------------------------------ *
+ * Learning handbooks
+ * ------------------------------------------------------------------ */
+
+/**
+ * Starts a handbook: writes the outline and nothing else.
+ *
+ * Delete-then-insert so a rebuild cannot leave half of an old handbook behind,
+ * and so the row's id changes — the id namespaces the reader's localStorage,
+ * so a rebuilt handbook starts with clean progress instead of inheriting ticks
+ * that belonged to different parts.
+ */
+export function startHandbook(
+  userId: string,
+  applicationId: string,
+  input: {
+    title: string;
+    content: unknown;
+    parts: number;
+    provider: string;
+    model: string;
+  },
+) {
+  const owned = db
+    .select({ id: applications.id })
+    .from(applications)
+    .where(and(eq(applications.id, applicationId), eq(applications.userId, userId)))
+    .get();
+  if (!owned) return undefined;
+
+  db.delete(handbooks)
+    .where(
+      and(eq(handbooks.applicationId, applicationId), eq(handbooks.userId, userId)),
+    )
+    .run();
+
+  return db
+    .insert(handbooks)
+    .values({ ...input, userId, applicationId })
+    .returning()
+    .get();
+}
+
+/**
+ * Replaces a handbook's content wholesale.
+ *
+ * Used for each incremental step. The caller reads the row, writes one part or
+ * the drills into the content it holds, and hands the whole thing back — which
+ * keeps the merge logic in one place beside the schema rather than spread
+ * across SQL.
+ */
+export function updateHandbookContent(
+  userId: string,
+  applicationId: string,
+  content: unknown,
+  done?: { title?: string },
+) {
+  return db
+    .update(handbooks)
+    .set({
+      content,
+      ...(done?.title ? { title: done.title } : {}),
+      updatedAt: new Date(),
+    })
+    .where(
+      and(eq(handbooks.applicationId, applicationId), eq(handbooks.userId, userId)),
+    )
+    .returning()
+    .get();
+}
+
+/** Logged once, when the last step lands, so the timeline gets one entry. */
+export function logHandbookBuilt(
+  userId: string,
+  applicationId: string,
+  title: string,
+  parts: number,
+) {
+  logEvent({
+    userId,
+    applicationId,
+    type: "ai",
+    title: `Built a ${parts}-part learning handbook`,
+    body: title,
+  });
+}
+
+export function deleteHandbook(userId: string, applicationId: string) {
+  return db
+    .delete(handbooks)
+    .where(
+      and(eq(handbooks.applicationId, applicationId), eq(handbooks.userId, userId)),
+    )
+    .run();
 }

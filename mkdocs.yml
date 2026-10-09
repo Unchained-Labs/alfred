@@ -100,6 +100,7 @@ nav:
       - Tracking applications: guide/tracking.md
       - Fit analysis: guide/analysis.md
       - Prep plans & questionnaires: guide/prep.md
+      - Learning handbooks: guide/handbooks.md
       - Mailbox: guide/mailbox.md
   - Reference:
       - AI providers: reference/ai-providers.md
