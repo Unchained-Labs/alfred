@@ -10,6 +10,7 @@ import {
 import { Logo } from "@/components/shell/logo";
 import { MobileNav, type NavBadges, Sidebar } from "@/components/shell/sidebar";
 import { ThemeToggle } from "@/components/shell/theme-toggle";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 export type ShellUser = { name: string; email: string; role: string };
@@ -82,13 +83,21 @@ export function PageHeader({
   title,
   description,
   actions,
+  className,
 }: {
   title: string;
   description?: string;
   actions?: React.ReactNode;
+  /** For pages that manage their own vertical rhythm, e.g. a full-height one. */
+  className?: string;
 }) {
   return (
-    <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+    <div
+      className={cn(
+        "mb-6 flex flex-wrap items-end justify-between gap-3",
+        className,
+      )}
+    >
       <div className="min-w-0">
         <h1 className="font-display text-ink text-2xl font-bold tracking-tight">
           {title}
