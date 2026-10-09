@@ -16,12 +16,28 @@ It opens in its own tab, because it is a whole document rather than a panel, and
 | ------- | ---------- |
 | **Reading routes** | Two to four paths through it — ten minutes, an evening, everything — so there is somewhere to go when you are short on time. |
 | **Parts** | Five to eight taught sections, each opening with a three-line TL;DR. Tables, worked examples and code where code is the clearest explanation. |
+| **Diagrams** | Animated where a topic has a shape — a path a request takes, layers of a system, a retry loop that closes on itself. Layer diagrams are clickable. |
 | **Callouts** | *Say it like this* for phrasing you can adapt out loud, *Trap* for the mistakes people make, *Why it matters here* for the link back to this employer. |
 | **Practice cards** | Twenty to thirty recall cards, grouped by topic, with the points a strong answer hits. Mark them off as they stick. |
 | **Glossary** | Every acronym the loop could use, filterable — including the ones that mean two different things. |
 | **Story bank** | Prompts only. Alfred will not invent your experience; you write the answers and they save in the browser. |
 | **Questions to ask** | Grouped by who you are talking to. |
 | **Checklist** | The day before, the day itself, afterwards. |
+
+## It teaches the prep plan
+
+The handbook and the prep plan are not two lists of the same thing. The prep
+plan is the to-do list; **the handbook is where the knowledge lives**.
+
+When Alfred plans the handbook it allocates every prep item to exactly one
+part, and that part is then responsible for teaching the substance behind it —
+the pattern behind a coding problem and how to recognise it, the concept
+itself, how to work through a design prompt, what a strong version of a story
+contains. A part that said "revise consistent hashing" would have failed; the
+part is where consistent hashing gets explained.
+
+So you should be able to close the handbook and answer on the topic from what
+you just read, rather than being sent somewhere else to learn it.
 
 ## Reading it
 
@@ -32,7 +48,10 @@ The top bar carries the tools:
 - **Focus** shows one part at a time, with Next and Previous.
 - A **25-minute timer**, because one part per sprint is a good pace.
 - **Light and dark**, and **Print**, which lays it out for paper or PDF with the
-  card answers shown.
+  card answers shown and the animations stilled.
+
+Diagrams animate by default and stop entirely if your system asks for reduced
+motion.
 
 Ticking **I've got this** fills the progress bar at the top. Progress, the cards
 you know, your checklist and your drafted stories all save in whichever browser

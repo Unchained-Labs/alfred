@@ -165,6 +165,55 @@ th{font:500 .69rem/1.3 var(--f-mono);letter-spacing:.07em;text-transform:upperca
 tr:last-child td{border-bottom:0}
 td:first-child{font-weight:700}
 
+/* diagrams */
+.dgm{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;margin:22px 0;
+  box-shadow:var(--shadow)}
+.dgm-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 12px;align-items:baseline;
+  margin-bottom:8px}
+.dgm-title{font-family:var(--f-display);font-weight:600;font-size:1.26rem;line-height:1.1}
+.dgm-tag{font-family:var(--f-mono);font-size:.64rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.dgm-cap{font-size:.86rem;color:var(--muted);margin:9px 0 0;max-width:none}
+.dgm-scroll{overflow-x:auto}
+.dgm-scroll svg{display:block;width:100%;height:auto;color:var(--ink)}
+.dgm-box{fill:var(--surface-2);stroke:var(--ink);stroke-width:1.1}
+.dgm-l{font:600 13px var(--f-mono);fill:var(--ink)}
+.dgm-s{font:10px var(--f-mono);fill:var(--muted)}
+.dgm-e{font:10px var(--f-mono);fill:var(--muted)}
+.dgm-line{stroke:var(--ink);stroke-width:1.4;fill:none}
+.dgm-back{stroke:var(--rule);stroke-width:1.3;fill:none;stroke-dasharray:5 4}
+.dgm-be{font:10px var(--f-mono);fill:var(--rule)}
+.dgm-ring{fill:none;stroke:var(--line-strong);stroke-width:1.2;stroke-dasharray:3 5}
+
+/* The travelling dot: one keyframe pair, positioned by custom properties the
+   markup sets per diagram, so the geometry stays in the renderer. */
+.dgm-dot{fill:var(--rule);animation:dgm-travel 4.5s linear infinite}
+@keyframes dgm-travel{
+  0%{transform:translateX(var(--dgm-from));opacity:0}
+  6%{opacity:1}
+  94%{opacity:1}
+  100%{transform:translateX(var(--dgm-to));opacity:0}
+}
+.dgm-sweep{animation:dgm-spin 7s linear infinite}
+.dgm-sweep-l{stroke:var(--rule);stroke-width:1.6;opacity:.65}
+@keyframes dgm-spin{to{transform:rotate(360deg)}}
+
+/* stack */
+.dgm-stack{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:13px;align-items:start}
+.dgm-layers{display:grid;gap:4px}
+.dgm-layer{display:grid;grid-template-columns:2.2em 1fr;gap:8px;align-items:center;text-align:left;
+  padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);
+  font:700 .9rem/1.2 var(--f-body);cursor:pointer;animation:dgm-slide .4s ease both}
+.dgm-layer .n{font-family:var(--f-mono);font-size:.7rem;color:var(--muted)}
+.dgm-layer:hover{border-color:var(--rule)}
+.dgm-layer[aria-selected="true"]{border-color:var(--rule);background:var(--brand-wash);
+  box-shadow:inset 3px 0 0 var(--rule)}
+@keyframes dgm-slide{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:none}}
+.dgm-panel{border:1px solid var(--line);border-radius:8px;padding:12px 14px;background:var(--surface-2);
+  font-size:.91rem}
+.dgm-panel h4{margin:0 0 5px;font-family:var(--f-display);font-size:1.24rem;font-weight:600}
+.dgm-panel p{margin:0;max-width:none}
+@media (max-width:620px){.dgm-stack{grid-template-columns:1fr}}
+
 /* cards */
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:11px;margin:18px 0}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:13px 15px;min-width:0}
@@ -251,6 +300,8 @@ td:first-child{font-weight:700}
   main{max-width:none;padding:0}
   .part{page-break-inside:avoid;border-top:1px solid #ccc}
   .fc[data-face="q"] .a{display:block}
+  .dgm-dot,.dgm-sweep{display:none}
+  .dgm-panel[hidden]{display:block!important}
   a{color:#000;text-decoration:underline}
 }
 @media (prefers-reduced-motion:reduce){

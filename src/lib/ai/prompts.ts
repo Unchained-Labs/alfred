@@ -434,13 +434,44 @@ Grade it.`,
  * Learning handbook
  * ------------------------------------------------------------------ */
 
-function prepBlock(actionables: { kind: string; title: string }[]): string {
-  if (!actionables.length) return "";
-  const lines = actionables
-    .slice(0, 24)
-    .map((a) => `- [${a.kind}] ${a.title}`)
+type PrepItem = {
+  kind: string;
+  title: string;
+  detail?: string | null;
+  rationale?: string | null;
+  pattern?: string | null;
+  difficulty?: string | null;
+};
+
+/**
+ * The prep plan, in full, because the handbook has to TEACH it.
+ *
+ * Titles alone are not enough: "Design the ledger write path" tells the writer
+ * nothing about why it was assigned, and a handbook built from titles produces
+ * a reading list instead of an explanation.
+ */
+function prepBlock(items: PrepItem[]): string {
+  if (!items.length) return "";
+  const lines = items
+    .slice(0, 30)
+    .map((item) => {
+      const bits = [
+        item.pattern ? `pattern: ${item.pattern}` : "",
+        item.difficulty ? `difficulty: ${item.difficulty}` : "",
+        item.detail ? `detail: ${item.detail}` : "",
+        item.rationale ? `assigned because: ${item.rationale}` : "",
+      ].filter(Boolean);
+      return `- [${item.kind}] ${item.title}${bits.length ? `\n    ${bits.join("\n    ")}` : ""}`;
+    })
     .join("\n");
-  return `\n<existing_prep_plan>\nThe candidate already has these prep items. The handbook should TEACH what they need to do them, not restate them as a list:\n${lines}\n</existing_prep_plan>\n`;
+
+  return `\n<prep_plan>
+These are the prep items the candidate has been given. The handbook must TEACH
+the substance behind every one of them — the pattern behind a coding problem,
+the concept itself, how to approach a design prompt, how to structure a story.
+The handbook is where the knowledge lives; the prep plan is only the to-do list.
+${lines}
+</prep_plan>\n`;
 }
 
 /**
@@ -455,26 +486,41 @@ export function handbookOutlinePrompt(
   app: Application,
   profile: UserProfile,
   analysis: Analysis | null,
-  actionables: { kind: string; title: string }[],
+  actionables: PrepItem[],
 ) {
   return {
     system: `${BUTLER}
 
 Your task: plan a study handbook this candidate will actually read before this
 interview. You are writing the SPINE only — titles, the three-line summaries,
-and a note to yourself about what each part must teach. The prose comes later.
+a note to yourself about what each part must teach, and which prep items it is
+responsible for. The prose comes later.
+
+THE HANDBOOK IS THE KNOWLEDGE, NOT A READING LIST
+
+Everything the candidate needs to know goes inside it. A part that says "revise
+consistent hashing" or "read their engineering blog" has failed — the part is
+where consistent hashing gets explained. Plan parts that can be TAUGHT in prose:
+mechanisms, trade-offs, worked examples, the vocabulary.
+
+COVER THE PREP PLAN
+
+If a prep plan is given below, every item in it must appear in exactly one
+part's \`covers\`, copied verbatim. Group them where they share substance — four
+sliding-window problems are one part about sliding windows, not four parts.
+A part may cover several items; an item may not be covered twice or left out.
 
 Order the parts the way they should be read:
 - What this company actually does and makes money from, in plain words, and
   what has visibly changed about it lately. Then the role as it really is.
-- Then the substance they will be TESTED on. This is the bulk of the handbook.
+- Then the substance they will be TESTED on. This is the bulk of the handbook,
+  and it is where the prep plan's technical items get taught.
 - Then this employer's hard problems, framed as an engineer would.
 - Then the interview itself and what to say.
 
-Five to eight parts. Five strong parts beat eight with filler. Each \`intent\`
-is instructions to whoever writes that part: what it must cover, and what it
-must leave to the others, so the finished handbook does not say the same thing
-four times.
+Five to eight parts. Each \`intent\` is instructions to whoever writes that part:
+what it must explain, and what it must leave to the others, so the finished
+handbook does not say the same thing four times.
 
 The three TL;DR lines are the part in miniature, for someone who stops there.
 Make them specific — a number, a name, a mechanism.
@@ -497,25 +543,70 @@ export function handbookPartPrompt(
     minutes: number;
   },
   siblings: string[],
+  covers: PrepItem[],
 ) {
+  const assignment = covers.length
+    ? `\n<prep_items_this_part_must_teach>
+Each of these was assigned to the candidate. Teach the substance behind it in
+your prose — not a pointer to it, not a summary of the task. If it is a coding
+problem, explain the pattern, when it applies, how to recognise it, and the
+complexity. If it is a concept, explain the concept. If it is a design prompt,
+work through how to approach it. If it is a story, explain what a strong one
+contains and why.
+${covers
+  .map((item) => {
+    const bits = [
+      item.pattern ? `pattern: ${item.pattern}` : "",
+      item.difficulty ? `difficulty: ${item.difficulty}` : "",
+      item.detail ? `detail: ${item.detail}` : "",
+      item.rationale ? `assigned because: ${item.rationale}` : "",
+    ].filter(Boolean);
+    return `- [${item.kind}] ${item.title}${bits.length ? `\n    ${bits.join("\n    ")}` : ""}`;
+  })
+  .join("\n")}
+</prep_items_this_part_must_teach>\n`
+    : "";
+
   return {
     system: `${BUTLER}
 
 Your task: write ONE part of a study handbook. The handbook's other parts are
 listed so you do not cover their ground — stay inside yours.
 
-Write to someone intelligent who has not done this exact job:
-- Define jargon on first use. Short paragraphs.
-- Be concrete about THIS posting. Name their product, their scale, their stack.
-- Use a pipe table when the content is genuinely tabular — a comparison, a
-  protocol list, a set of thresholds. A table carries more per line than prose.
-- Use fenced code only where code is the clearest explanation, and keep it short.
-- TEACH. A part that says "revise distributed systems" is worthless; this part
-  should contain the revision.
-- Three hundred to seven hundred words. Do not pad to fill the budget.
+EXPLAIN. DO NOT POINT.
 
-The three TL;DR lines are already written and are shown above your part. Deliver
-on them; do not restate them.
+This part is where the knowledge lives. The candidate should be able to close
+the handbook and answer questions on this topic from what they just read.
+
+- Banned: "read up on X", "research their blog", "familiarise yourself with Y",
+  "practise Z". If X is worth knowing, explain X here.
+- Teach mechanisms, not vocabulary lists. Why it works, what it costs, when it
+  breaks, what the alternative is and why you would not pick it.
+- Work at least one thing through concretely — a worked example, a sequence of
+  steps, a small schema, a short calculation.
+- Define jargon on first use. Short paragraphs. Write to someone intelligent who
+  has not done this exact job.
+- Use a pipe table when the content is genuinely tabular — a comparison, a set
+  of thresholds, a protocol list. A table carries more per line than prose.
+- Use fenced code only where code is the clearest explanation, and keep it short.
+- Tips about interview technique are a garnish. At most one, and never instead
+  of explaining the thing.
+
+DRAW IT WHEN IT HAS A SHAPE
+
+If this part explains a path something takes, layers of a system, or a loop that
+returns to its start, include a diagram. You describe it as data — nodes, edges,
+a kind — and it is drawn and animated for you. One diagram is usually right; two
+is the maximum; none is correct for a part that is genuinely a set of unrelated
+facts. A diagram of a list is decoration.
+
+LENGTH
+
+Four hundred to nine hundred words. Long enough to actually teach; do not pad to
+reach it.
+
+The three TL;DR lines are already written and shown above your part. Deliver on
+them; do not restate them.
 
 Where you are reasoning from the posting rather than from knowledge, say so in
 the text — "the posting implies", "worth confirming". A confident invented
@@ -538,7 +629,7 @@ What this part must teach: ${part.intent}
 Its TL;DR, already written:
 ${part.tldr.map((l) => `- ${l}`).join("\n")}
 </your_part>
-
+${assignment}
 Write this part.`,
   };
 }

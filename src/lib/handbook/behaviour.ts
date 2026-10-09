@@ -209,6 +209,21 @@ $("#t-print").addEventListener("click", function(){ window.print(); });
   show();
 })();
 
+/* ---------- stack diagrams ---------- */
+(function(){
+  $$("[data-stack]").forEach(function(stack){
+    var layers = $$(".dgm-layer", stack);
+    var panels = $$(".dgm-panel", stack);
+    layers.forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var i = btn.getAttribute("data-layer");
+        layers.forEach(function(b){ b.setAttribute("aria-selected", String(b === btn)); });
+        panels.forEach(function(p){ p.hidden = p.getAttribute("data-panel") !== i; });
+      });
+    });
+  });
+})();
+
 /* ---------- glossary filter ---------- */
 (function(){
   var input = $("#gl-find"), list = $("#gl"); if (!input || !list) return;

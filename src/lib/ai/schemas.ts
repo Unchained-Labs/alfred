@@ -379,6 +379,56 @@ export const handbookNoteSchema = z.object({
 });
 
 /** A part before its body is written: enough to navigate and to plan with. */
+/**
+ * A diagram described as data, not as markup.
+ *
+ * The renderer draws and animates it. A model cannot emit SVG here and must
+ * not be able to: everything generated is escaped on the way into the page, so
+ * raw markup would arrive as visible angle brackets even if it were safe — and
+ * it would not be safe. Describing the shape instead means every diagram in
+ * every handbook is drawn by the same code, animates consistently, and honours
+ * the reader's reduced-motion setting.
+ */
+export const handbookDiagramSchema = z.object({
+  kind: z
+    .enum(["flow", "stack", "cycle"])
+    .describe(
+      "flow = stages something passes through, drawn left to right with a travelling dot (a request path, a build pipeline, a data flow). stack = layers of a system, drawn top to bottom and clickable (a protocol stack, a service's tiers, levels of abstraction). cycle = a loop that returns to its start, drawn as a ring with a sweep (a retry loop, a feedback loop, a state cycle).",
+    ),
+  title: z.string().describe("What the diagram shows. A few words."),
+  caption: z
+    .string()
+    .describe(
+      "One or two sentences on what to notice in it — the thing a reader would miss. Not a restatement of the labels.",
+    ),
+  nodes: z
+    .array(
+      z.object({
+        label: z.string().describe("Two or three words. It has to fit in a box."),
+        sub: z
+          .string()
+          .describe(
+            "One short line under the label — a latency, a protocol, a failure mode. Empty string if there is nothing worth adding.",
+          ),
+      }),
+    )
+    .describe("Three to six nodes. More than six stops being readable."),
+  edges: z
+    .array(
+      z.object({
+        from: z.number().int().describe("Index into nodes, from zero."),
+        to: z.number().int().describe("Index into nodes, from zero."),
+        label: z
+          .string()
+          .describe("What crosses this edge. Two or three words, or empty."),
+      }),
+    )
+    .describe(
+      "For `flow` and `cycle`: one entry per connection, in order, and LABEL THEM — the arrows are drawn either way, so an unlabelled edge wastes half of what the diagram could say. A label names what crosses: 'POST /transfers', 'at-least-once', 'blocks on row lock'. For `flow` you may also add ONE backwards edge (a `to` lower than its `from`), drawn as a dashed arc returning over the top — that is the feedback path people forget. For `stack`, always empty.",
+    ),
+});
+export type HandbookDiagram = z.infer<typeof handbookDiagramSchema>;
+
 export const handbookPartStubSchema = z.object({
   id: z
     .string()
@@ -409,6 +459,11 @@ export const handbookPartStubSchema = z.object({
     .string()
     .describe(
       "One sentence to the writer of this part, not to the reader: what this part must teach and what it must not repeat from the others.",
+    ),
+  covers: z
+    .array(z.string())
+    .describe(
+      "The exact titles of the prep items this part is responsible for TEACHING, copied verbatim from the prep plan. Every prep item must appear under exactly one part. Empty only if the handbook has no prep plan to work from.",
     ),
 });
 
@@ -458,13 +513,20 @@ export const handbookPartBodySchema = z.object({
     .describe(
       "The part itself, as markdown: ## and ### headings, paragraphs, bullet and numbered lists, pipe tables, fenced code where code genuinely helps, **bold** and `inline code`. Three hundred to seven hundred words. Specific to this role and company — generic advice is a failure.",
     ),
+  diagrams: z
+    .array(handbookDiagramSchema)
+    .describe(
+      "Nought to two diagrams. Include one whenever this part explains something with a shape — a path a request takes, layers of a system, a loop that retries. A diagram of a list of unrelated facts is decoration; leave it out.",
+    ),
   notes: z
     .array(handbookNoteSchema)
-    .describe("Nought to three callouts. Use them sparingly."),
+    .describe(
+      "Nought to three callouts, and they are the garnish, not the meal — the explanation belongs in the body.",
+    ),
   cards: z
     .array(z.object({ title: z.string(), body: z.string() }))
     .describe(
-      "Nought to six short cards, for things that are genuinely a set of peers — options, principles, people to meet. Not a dumping ground.",
+      "Nought to six short cards, for things that are genuinely a set of peers — options to compare, principles, people to meet. Not a dumping ground.",
     ),
 });
 export type HandbookPartBody = z.infer<typeof handbookPartBodySchema>;
