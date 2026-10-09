@@ -63,9 +63,7 @@ export function FitGauge({
       </svg>
       <div className="absolute inset-0 grid place-items-center text-center">
         <div>
-          <p className="text-ink text-2xl leading-none font-semibold tracking-tight">
-            {score}
-          </p>
+          <p className="figure text-ink text-3xl">{score}</p>
           <p className="text-ink-muted mt-0.5 text-[10px]">/ 100</p>
         </div>
       </div>

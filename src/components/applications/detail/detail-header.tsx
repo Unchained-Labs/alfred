@@ -108,7 +108,7 @@ export function DetailHeader({ app }: { app: Application }) {
           </span>
 
           <div className="min-w-0 flex-1">
-            <h1 className="text-ink text-lg font-semibold tracking-tight">
+            <h1 className="font-display text-ink text-xl font-bold tracking-tight">
               {app.title}
             </h1>
             <p className="text-ink-2 mt-0.5 text-sm">

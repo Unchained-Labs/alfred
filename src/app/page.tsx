@@ -114,9 +114,7 @@ export default async function DashboardPage() {
                     { label: "Sent total", value: stats.totalApplied },
                   ].map((item) => (
                     <div key={item.label}>
-                      <p className="tnum text-ink text-lg leading-none font-semibold">
-                        {item.value}
-                      </p>
+                      <p className="figure text-ink text-2xl">{item.value}</p>
                       <p className="text-ink-muted mt-1 text-[11px]">
                         {item.label}
                       </p>
