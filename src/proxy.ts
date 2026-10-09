@@ -37,8 +37,17 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Everything except static assets and the icons Next serves itself.
+  /*
+   * Everything except static assets and the icons Next serves itself.
+   *
+   * `fonts/` and the font extensions are listed because files under public/ do
+   * NOT bypass this proxy — only `_next/*` does. Without them a signed-out
+   * request for a woff2 is answered with a redirect to /login, so the login
+   * page is the one page in the app guaranteed to render in a fallback face.
+   * That reads as a styling choice rather than a bug, which is what makes it
+   * worth a line of comment.
+   */
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|gif|mp4|webm)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|fonts/|.*\\.(?:svg|png|jpg|gif|mp4|webm|woff2?|ttf|otf)$).*)",
   ],
 };

@@ -1,82 +1,103 @@
+/* Material loads the text and code faces itself (mkdocs.yml); the display
+ * face for headings is not a theme option, so it is imported here. The
+ * documentation site is public and online, so a CDN is fine — unlike the
+ * app, which self-hosts because its container may have no internet. */
+@import url("https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&display=swap");
+
 /* ==========================================================================
- * Alfred docs theme — slate blue.
+ * Alfred docs theme — oxblood on parchment.
  *
- * Every colour here was measured rather than chosen by eye. The previous
- * ochre failed four of six WCAG checks; worst was dark-mode header text at
- * 1.96:1, which is effectively unreadable. These clear 4.5:1 everywhere:
+ * Every colour here was measured rather than chosen by eye, and the numbers
+ * are the reason the file reads this way rather than "navy-ish". All clear
+ * 4.5:1:
  *
  *            header text on primary   link on page   accent on page
- *   light            11.50:1             6.70:1          5.17:1
- *   dark             17.28:1             8.06:1         10.90:1
+ *   light             9.25:1             8.25:1          6.81:1
+ *   dark             17.76:1             9.50:1          8.05:1
+ *
+ * These match src/app/globals.css: the app and the documentation are one
+ * brand, and a visitor who clicks through should not feel the seam.
  * ========================================================================== */
 
 :root,
 [data-md-color-scheme="default"] {
-  --md-primary-fg-color: #1e3a5f;
-  --md-primary-fg-color--light: #2b4a6f;
-  --md-primary-fg-color--dark: #16293f;
+  --md-primary-fg-color: #7a2e35;
+  --md-primary-fg-color--light: #93383f;
+  --md-primary-fg-color--dark: #5e2329;
   --md-primary-bg-color: #ffffff;
-  --md-primary-bg-color--light: #d8e2ef;
+  --md-primary-bg-color--light: #eccfd1;
 
-  --md-accent-fg-color: #2563eb;
-  --md-accent-fg-color--transparent: rgb(37 99 235 / 0.1);
+  --md-accent-fg-color: #a2333f;
+  --md-accent-fg-color--transparent: rgb(162 51 63 / 0.1);
 
-  /* Links must not inherit the primary, or they read as muddy navy on white. */
-  --md-typeset-a-color: #1d4ed8;
+  /* A touch darker than the accent: link text is small and sits on white. */
+  --md-typeset-a-color: #8a2f38;
 
-  /* Default footer is near-black and clashes with the navy header. */
-  --md-footer-bg-color: #16293f;
-  --md-footer-bg-color--dark: #0f1b2d;
+  --md-footer-bg-color: #5e2329;
+  --md-footer-bg-color--dark: #431a1e;
 
-  --al-surface: #f6f8fa;
-  --al-border: #d8dee6;
-  --al-dim: #5b6775;
+  --al-surface: #f6f3ef;
+  --al-border: #e2d9cf;
+  --al-dim: #6f655e;
 }
 
 [data-md-color-scheme="slate"] {
-  --md-hue: 222;
+  /* Material tints its slate surfaces from this hue; 15 keeps them warm so
+   * they sit with the parchment side of the brand instead of going blue. */
+  --md-hue: 15;
 
-  --md-default-bg-color: #0b0f17;
-  --md-default-fg-color: #e9eef6;
-  --md-default-fg-color--light: #c2cbd8;
-  --md-default-fg-color--lighter: #8d99a9;
-  --md-default-fg-color--lightest: #3a4454;
+  --md-default-bg-color: #141010;
+  --md-default-fg-color: #ede6e1;
+  --md-default-fg-color--light: #cfc5be;
+  --md-default-fg-color--lighter: #9d928a;
+  --md-default-fg-color--lightest: #473b37;
 
-  --md-code-bg-color: #141a24;
-  --md-code-fg-color: #c2cbd8;
+  --md-code-bg-color: #1c1715;
+  --md-code-fg-color: #cfc5be;
 
-  --md-primary-fg-color: #0f1b2d;
-  --md-primary-fg-color--light: #1e3a5f;
-  --md-primary-fg-color--dark: #0a121e;
+  --md-primary-fg-color: #1c1715;
+  --md-primary-fg-color--light: #7a2e35;
+  --md-primary-fg-color--dark: #141010;
   --md-primary-bg-color: #ffffff;
-  --md-primary-bg-color--light: #c2cbd8;
+  --md-primary-bg-color--light: #cfc5be;
 
-  --md-accent-fg-color: #93c5fd;
-  --md-accent-fg-color--transparent: rgb(147 197 253 / 0.1);
+  --md-accent-fg-color: #e0959c;
+  --md-accent-fg-color--transparent: rgb(224 149 156 / 0.1);
 
-  --md-typeset-a-color: #7aa7f0;
+  --md-typeset-a-color: #e8a7ad;
 
-  --md-footer-bg-color: #0a121e;
-  --md-footer-bg-color--dark: #070d16;
+  --md-footer-bg-color: #141010;
+  --md-footer-bg-color--dark: #0e0b0b;
 
-  --al-surface: #141a24;
-  --al-border: #263142;
-  --al-dim: #8d99a9;
+  --al-surface: #1c1715;
+  --al-border: #302724;
+  --al-dim: #9d928a;
 }
 
 /* ==========================================================================
  * Typography
  * ========================================================================== */
 
+/* The display face, matching the app. Condensed, so it carries a heavier
+ * weight and a larger size without shouting. */
+.md-typeset h1,
+.md-typeset h2 {
+  font-family: "Barlow Condensed", "Arial Narrow", sans-serif;
+}
+
 .md-typeset h1 {
-  font-weight: 650;
-  letter-spacing: -0.02em;
+  font-weight: 700;
+  font-size: 2.3rem;
+  line-height: 1.05;
+  letter-spacing: -0.005em;
   color: var(--md-default-fg-color);
 }
 
 .md-typeset h2 {
   font-weight: 600;
-  letter-spacing: -0.01em;
+  font-size: 1.65rem;
+  line-height: 1.1;
+  letter-spacing: 0;
   margin-top: 2.2em;
   padding-top: 0.6em;
   border-top: 1px solid var(--al-border);

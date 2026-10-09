@@ -6,6 +6,12 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Changed
 
+- **Rebranded again, to oxblood on parchment.** Slate blue was correct and dull — and it was dull for a structural reason worth writing down: blue is the pipeline stage ramp, a validated ordinal encoding, so the brand had to retreat to a near-neutral navy to avoid impersonating the board. Moving the brand to a hue the data does not own frees it to have character. Deep claret on a warm paper ground, measured at OKLab dE 18.2 from the nearest chip it can sit beside.
+
+  The brand is now **asymmetric between modes, on purpose**. On dark the stage ramp inverts so progress reads as brightness, which parks a near-white blue at the top and squeezes the whole light warm band; every mid claret measured between dE 5.8 and 12.5 of `series-8`, `serious` or `critical`, and a button that reads as an error badge is worse than a dull button. So on dark the claret moves from figure to ground — surfaces carry a red cast and washes tint the active states, while marks use warm parchment. Series, stage and status values are byte-identical and were re-validated against the warmer surfaces.
+
+- **Real typefaces, self-hosted.** Barlow Condensed for headings, Atkinson Hyperlegible for body, IBM Plex Mono for labels and figures. 179 KB of woff2 committed rather than linked, because the container may run on a site with no internet and a webfont that 404s falls back mid-layout. All three are OFL; the licences ship beside them.
+
 - **Rebranded from amber to slate blue.** The old ochre failed four of six WCAG contrast checks — worst was dark-mode header text at 1.96:1, which is effectively unreadable. The replacement clears 4.5:1 on every surface in both modes. Chart colours are untouched: those are validated encodings, not branding.
 
 ### Added
@@ -28,6 +34,8 @@ All notable changes to this project are documented here. The format follows [Kee
 - ESLint (flat config) and Prettier, wired into CI.
 
 ### Fixed
+
+- Static files under `public/` do not bypass the auth proxy — only `_next/*` does — so a signed-out request for a font was answered with a redirect to `/login`. The login page was therefore the one page in the app guaranteed to render in a fallback face, which reads as a styling choice rather than a bug. Found by checking the status code of every font file rather than by looking at the page.
 
 - `mail_messages` was unique on `message_id` alone, so two accounts could never hold the same email. Uniqueness is now per account.
 

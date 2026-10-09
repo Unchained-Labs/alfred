@@ -90,7 +90,9 @@ export function PageHeader({
   return (
     <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
       <div className="min-w-0">
-        <h1 className="text-ink text-xl font-semibold tracking-tight">{title}</h1>
+        <h1 className="font-display text-ink text-2xl font-bold tracking-tight">
+          {title}
+        </h1>
         {description ? (
           <p className="text-ink-muted mt-1 text-sm">{description}</p>
         ) : null}

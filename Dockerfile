@@ -71,9 +71,10 @@ RUN mkdir -p /data && chown -R node:node /data
 
 COPY --from=builder --chown=node:node /app/.next/standalone ./
 COPY --from=builder --chown=node:node /app/.next/static ./.next/static
-# No `COPY /app/public`: this app has no public/ directory, and COPY fails the
-# build on a missing source rather than skipping it. Add it back the day a
-# public/ appears.
+# public/ holds the self-hosted fonts. Next does not bundle or trace static
+# files, so without this line the app builds and serves while every page falls
+# back to a system face — the one failure mode that looks like a design choice.
+COPY --from=builder --chown=node:node /app/public ./public
 #
 # The native module, copied whole. Standalone tracing can take the JavaScript
 # around a native module and miss the compiled .node file, which produces an
