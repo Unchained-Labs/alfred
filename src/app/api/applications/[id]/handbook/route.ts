@@ -99,6 +99,10 @@ export async function POST(request: Request, { params }: Params) {
       const actionables = listActionables(user.id, id).map((a) => ({
         kind: a.kind,
         title: a.title,
+        detail: a.detail,
+        rationale: a.rationale,
+        pattern: a.pattern,
+        difficulty: a.difficulty,
       }));
       const run = await generateHandbookOutline(
         user.id,
@@ -140,6 +144,23 @@ export async function POST(request: Request, { params }: Params) {
         .filter((_, i) => i !== index)
         .map((p) => `${p.title} — ${p.intent}`);
 
+      // The outline named the prep items this part teaches, by title. Match
+      // them back to the real rows so the writer gets each one's detail and
+      // the reason it was assigned — a title alone produces a reading list.
+      const wanted = new Set(
+        (part.covers ?? []).map((t) => t.trim().toLowerCase()),
+      );
+      const covers = listActionables(user.id, id)
+        .filter((a) => wanted.has(a.title.trim().toLowerCase()))
+        .map((a) => ({
+          kind: a.kind,
+          title: a.title,
+          detail: a.detail,
+          rationale: a.rationale,
+          pattern: a.pattern,
+          difficulty: a.difficulty,
+        }));
+
       const run = await generateHandbookPart(
         user.id,
         app,
@@ -152,6 +173,7 @@ export async function POST(request: Request, { params }: Params) {
           minutes: part.minutes,
         },
         siblings,
+        covers,
       );
 
       const parts = [...content.plan.parts];

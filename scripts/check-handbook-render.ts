@@ -42,12 +42,35 @@ const content: HandbookContent = {
         minutes: 8,
         emphasis: "company",
         intent: "Fixture.",
+        covers: [],
         tldr: [
           "Stripe moves money and records every movement in a double-entry ledger.",
           "The team owns the write path at 40k writes/sec on Postgres.",
           "Idempotency is the product, not a feature.",
         ],
         body: `## What they actually do\n\nStripe's ledger records **every movement of money**. A payment debits one account and credits another as one balanced transaction.\n\n### The scale that shapes the design\n\n| Property | Figure | Why it matters |\n|---|---|---|\n| Peak writes | 40k/sec | Rules out a single balance row per account |\n| p99 target | <100ms | Rules out synchronous fan-out |\n| Durability | Postgres | System of record, not a cache |\n\nSome things to hold onto:\n\n- A duplicate must *never* double-move money.\n- A lost write must never be silent.\n- Hot merchants take thousands of writes/sec against one balance.\n\n\`\`\`sql\nINSERT INTO idempotency_keys (merchant_id, key, request_hash)\nVALUES ($1, $2, $3)\nON CONFLICT (merchant_id, key) DO NOTHING;\n\`\`\`\n\n> The posting leads on idempotency and exactly-once under retries. Worth confirming how much is enforced in the database.`,
+        diagrams: [
+          {
+            kind: "flow",
+            title: "The write path",
+            caption:
+              "The dashed arc is the part people forget: what the caller learns on a replay.",
+            nodes: [
+              { label: "Client", sub: "retries at 2s" },
+              { label: "API node", sub: "idempotency key" },
+              { label: "Postgres", sub: "one transaction" },
+              { label: "Outbox", sub: "same commit" },
+            ],
+            edges: [
+              { from: 0, to: 1, label: "POST" },
+              { from: 1, to: 2, label: "INSERT" },
+              { from: 2, to: 3, label: "event" },
+              { from: 3, to: 0, label: "stored response" },
+              // Deliberately out of range: must be dropped, never drawn.
+              { from: 9, to: 2, label: "NONSENSE-EDGE" },
+            ],
+          },
+        ],
         notes: [
           {
             tone: "say",
@@ -83,12 +106,36 @@ const content: HandbookContent = {
         minutes: 14,
         emphasis: "must",
         intent: "Fixture.",
+        covers: [],
         tldr: [
           "One transaction: key row plus entries.",
           "Replays return the stored response; in-flight returns 409.",
           "Balances are derived, never a single updated row.",
         ],
         body: `## The transaction\n\nOne Postgres transaction does all of it. The uniqueness is enforced by the **database**, not by a prior read.\n\n1. Insert the idempotency key, \`ON CONFLICT DO NOTHING\`.\n2. If the insert took the row, insert the balanced entries.\n3. Commit.\n\nIf the insert did not take the row, this is a replay.`,
+        diagrams: [
+          {
+            kind: "stack",
+            title: "Where each guarantee lives",
+            caption:
+              "Push determinism down. The layer that must be certain is the one holding the constraint.",
+            nodes: [
+              {
+                label: "Client",
+                sub: "Retries. Assumes nothing about what committed.",
+              },
+              {
+                label: "Service",
+                sub: "Scopes the key, compares the request hash.",
+              },
+              {
+                label: "Postgres",
+                sub: "The unique constraint. This is the arbiter.",
+              },
+            ],
+            edges: [],
+          },
+        ],
         notes: [],
         cards: [],
       },
@@ -99,12 +146,33 @@ const content: HandbookContent = {
         minutes: 12,
         emphasis: "leadership",
         intent: "Fixture.",
+        covers: [],
         tldr: [
           "Hot accounts serialise on one lock unless balances are sharded.",
           "Crash windows: commit-then-crash, and DB-then-Kafka.",
           "Retention of keys bounds how long a retry stays safe.",
         ],
         body: `## Hot accounts\n\nA large merchant taking thousands of writes/sec will **serialise on one balance row** if you \`SELECT FOR UPDATE\` it. That is what destroys the p99.\n\n- Append-only entries, balance derived from a snapshot plus the tail.\n- Or shard the balance row into N sub-rows and sum them.`,
+        diagrams: [
+          {
+            kind: "cycle",
+            title: "The retry loop",
+            caption:
+              "A timeout is not a failure, it is an unknown — and the loop must close on the same key.",
+            nodes: [
+              { label: "Send", sub: "key K1" },
+              { label: "Timeout", sub: "at 2s" },
+              { label: "Retry", sub: "same key" },
+              { label: "Replay", sub: "stored response" },
+            ],
+            edges: [
+              { from: 0, to: 1, label: "no answer" },
+              { from: 1, to: 2, label: "" },
+              { from: 2, to: 3, label: "conflict" },
+              { from: 3, to: 0, label: "" },
+            ],
+          },
+        ],
         notes: [
           {
             tone: "tip",
@@ -121,12 +189,14 @@ const content: HandbookContent = {
         minutes: 9,
         emphasis: "must",
         intent: "Fixture.",
+        covers: [],
         tldr: [
           "Four stages over about three weeks.",
           "The design round is the one that decides it.",
           "Lead with the mechanism, then the trade-off.",
         ],
         body: `## Stages\n\n| Stage | Who | What they test |\n|---|---|---|\n| Screen | Recruiter | Logistics, motivation |\n| Design | Senior engineer | The write path |\n| Coding | Two engineers | Clean, tested code |\n| Values | Hiring manager | How you work |`,
+        diagrams: [],
         notes: [],
         cards: [],
       },
@@ -313,6 +383,37 @@ const checks: [string, boolean][] = [
   ["js inlined", html.includes("alfred:hb:")],
   ["handbook id namespaced", html.includes('data-handbook="hb-fixture-0001"')],
   ["noindex", html.includes('name="robots" content="noindex"')],
+  // Diagrams: drawn from data, animated, and hostile input dropped.
+  ["3 diagrams framed", (html.match(/<figure class="dgm">/g) ?? []).length === 3],
+  [
+    "flow nodes drawn",
+    html.includes(">API node<") && html.includes(">one transaction<"),
+  ],
+  [
+    "flow travelling dots",
+    (html.match(/<circle class="dgm-dot"/g) ?? []).length === 3,
+  ],
+  [
+    "feedback arc drawn",
+    (html.match(/<path class="dgm-back"/g) ?? []).length === 1,
+  ],
+  ["out-of-range edge dropped", !html.includes("nonsense")],
+  [
+    "stack drawn and interactive",
+    html.includes("data-stack") && html.includes('data-layer="0"'),
+  ],
+  ["stack first layer selected", html.includes('aria-selected="true"')],
+  [
+    "cycle drawn with a sweep",
+    html.includes('<circle class="dgm-ring"') &&
+      html.includes('<g class="dgm-sweep"'),
+  ],
+  [
+    "svg diagrams have accessible labels",
+    (html.match(/<svg [^>]*role="img"/g) ?? []).length === 2,
+  ],
+  ["diagram css inlined", html.includes("@keyframes dgm-travel")],
+  ["stack script inlined", html.includes("[data-stack]")],
 ];
 let bad = 0;
 for (const [name, pass] of checks) {

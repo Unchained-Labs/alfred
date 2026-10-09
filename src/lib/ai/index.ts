@@ -238,7 +238,7 @@ export async function generateHandbookOutline(
   userId: string,
   app: Application,
   analysis: Analysis | null,
-  actionables: { kind: string; title: string }[],
+  actionables: Parameters<typeof handbookOutlinePrompt>[3],
 ): Promise<AiRun<HandbookOutline>> {
   const provider = resolveProvider(userId);
   const { system, prompt } = handbookOutlinePrompt(
@@ -268,6 +268,7 @@ export async function generateHandbookPart(
   analysis: Analysis | null,
   part: Parameters<typeof handbookPartPrompt>[3],
   siblings: string[],
+  covers: Parameters<typeof handbookPartPrompt>[5],
 ): Promise<AiRun<HandbookPartBody>> {
   const provider = resolveProvider(userId);
   const { system, prompt } = handbookPartPrompt(
@@ -276,6 +277,7 @@ export async function generateHandbookPart(
     analysis,
     part,
     siblings,
+    covers,
   );
   const { object, model } = await provider.generateObject({
     system,

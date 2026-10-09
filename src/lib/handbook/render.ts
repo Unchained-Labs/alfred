@@ -1,4 +1,5 @@
 import type { HandbookDrills, HandbookPlan } from "@/lib/ai/schemas";
+import { renderDiagrams } from "./diagrams";
 import { escapeHtml, inlineMarkdown, renderMarkdown, slug } from "./markdown";
 import { HANDBOOK_CSS } from "./styles";
 import { HANDBOOK_JS } from "./behaviour";
@@ -111,6 +112,8 @@ export function renderHandbook(
       <p class="hidden-note">Body hidden. Turn off “TL;DR only” to read the part.</p>`
         : "";
 
+      const diagrams = renderDiagrams(p.diagrams);
+
       const notes = (p.notes ?? [])
         .map(
           (n) =>
@@ -140,6 +143,7 @@ export function renderHandbook(
         ? renderMarkdown(p.body)
         : `<p class="caveat">This part has not been written yet. Rebuild the handbook to fill it in.</p>`
     }
+    ${diagrams}
     ${notes}
     ${cards}
   </div>

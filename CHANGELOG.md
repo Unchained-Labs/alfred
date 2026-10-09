@@ -16,6 +16,16 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Added
 
+- **Handbooks now teach the prep plan, and draw it.** Three changes, in response to the handbook reading more like a reading list than a textbook.
+
+  Alfred allocates **every prep item to exactly one part**, and that part is responsible for teaching the substance behind it — the pattern behind a coding problem and how to recognise it, the concept itself, how to work through a design prompt, what a strong story contains. The part prompt now receives each item's detail and the reason it was assigned, because a title alone produces a pointer rather than an explanation.
+
+  "Read up on X", "familiarise yourself with Y" and "research their blog" are now explicitly banned: if X is worth knowing, the part explains X. Interview tips are capped at one per part and never stand in for explaining the thing. Parts run 400–900 words instead of 300–700.
+
+  And **diagrams**, described as data and drawn by Alfred: a `flow` of stages with dots travelling along it and a dashed arc for the feedback path people forget, a clickable `stack` of layers, and a `cycle` for a loop that closes on itself. A model cannot emit SVG here and must not be able to — it describes nodes, edges and a kind, and the geometry is computed in one place, so every diagram animates consistently and all of them stop under `prefers-reduced-motion`. Out-of-range edge indices are dropped rather than trusted into a path.
+
+  Measured on a real posting with a six-item prep plan: all six items covered exactly once, 7,260 words across 7 parts (up from 5,900), 8 diagrams, and no "go and read X" phrasing anywhere.
+
 - **A Jobs tab.** Every job in one sortable table — open, closed and archived — searchable across company, role, location, seniority, source, contact and tags, and filterable by stage. The board answers "what do I do next" and hides what is closed; this answers "what have I got". Each row carries its latest fit score and how much of its prep is done.
 
 - **Learning handbooks.** One button on an application produces a self-contained HTML study guide for that role: five to eight taught parts, each opening with a three-line TL;DR, plus flashcards, a filterable glossary, a story bank, questions to ask and a checklist. It opens in its own tab and downloads as one file that works offline, keeping your progress, the cards you know and your drafted stories in whichever browser you opened it in.
