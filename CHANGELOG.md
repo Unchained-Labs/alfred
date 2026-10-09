@@ -16,6 +16,8 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Added
 
+- **A Jobs tab.** Every job in one sortable table — open, closed and archived — searchable across company, role, location, seniority, source, contact and tags, and filterable by stage. The board answers "what do I do next" and hides what is closed; this answers "what have I got". Each row carries its latest fit score and how much of its prep is done.
+
 - **Learning handbooks.** One button on an application produces a self-contained HTML study guide for that role: five to eight taught parts, each opening with a three-line TL;DR, plus flashcards, a filterable glossary, a story bank, questions to ask and a checklist. It opens in its own tab and downloads as one file that works offline, keeping your progress, the cards you know and your drafted stories in whichever browser you opened it in.
 
   Alfred stores the **content**, never the rendered page, so the template can improve without anyone regenerating anything.
@@ -42,6 +44,10 @@ All notable changes to this project are documented here. The format follows [Kee
 - ESLint (flat config) and Prettier, wired into CI.
 
 ### Fixed
+
+- **The Prep page overflowed the viewport.** It is laid out as a fixed-height column whose list is supposed to scroll inside itself, but `PrepBoard`'s root element between the two was a block, not a flex container — so the `flex-1 min-h-0` on the list had no flex parent to resolve against, the list grew to its content, and the page grew with it. The chain has to be flex the whole way down or none of it works. The list also has a height floor now, so a wrapped filter row on a short screen scrolls the page rather than crushing the rows to nothing.
+
+- The phone's bottom navigation had no overflow guarantee, and a seventh item would not have fitted: seven equal columns leave about 50px each, which is less than "Dashboard" needs in the body face. The bar now uses short labels and every item truncates, so no label can widen the viewport.
 
 - Static files under `public/` do not bypass the auth proxy — only `_next/*` does — so a signed-out request for a font was answered with a redirect to `/login`. The login page was therefore the one page in the app guaranteed to render in a fallback face, which reads as a styling choice rather than a bug. Found by checking the status code of every font file rather than by looking at the page.
 

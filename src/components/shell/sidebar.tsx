@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import {
+  Briefcase,
   CalendarDays,
   Inbox,
   KanbanSquare,
@@ -18,13 +19,19 @@ import type { ShellUser } from "@/components/shell/app-shell";
 import { ThemeToggle } from "@/components/shell/theme-toggle";
 import { cn } from "@/lib/utils";
 
+/*
+ * `short` is for the phone's bottom bar, where seven equal columns leave about
+ * 50px each — not enough for "Dashboard" in a body face this wide. The sidebar
+ * uses the full label; only the bar substitutes.
+ */
 const NAV = [
-  { href: "/", label: "Dashboard", Icon: LayoutDashboard },
-  { href: "/pipeline", label: "Pipeline", Icon: KanbanSquare },
+  { href: "/", label: "Dashboard", short: "Home", Icon: LayoutDashboard },
+  { href: "/pipeline", label: "Pipeline", short: "Board", Icon: KanbanSquare },
+  { href: "/jobs", label: "Jobs", Icon: Briefcase },
   { href: "/prep", label: "Prep", Icon: Target },
-  { href: "/calendar", label: "Calendar", Icon: CalendarDays },
+  { href: "/calendar", label: "Calendar", short: "Cal", Icon: CalendarDays },
   { href: "/inbox", label: "Inbox", Icon: Inbox },
-  { href: "/settings", label: "Settings", Icon: Settings },
+  { href: "/settings", label: "Settings", short: "More", Icon: Settings },
 ] as const;
 
 export type NavBadges = Partial<Record<(typeof NAV)[number]["href"], number>>;
@@ -111,7 +118,8 @@ export function MobileNav({ badges }: { badges?: NavBadges }) {
 
   return (
     <nav className="border-line bg-surface/85 fixed inset-x-0 bottom-0 z-40 flex border-t pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden">
-      {NAV.map(({ href, label, Icon }) => {
+      {NAV.map((item) => {
+        const { href, label, Icon } = item;
         const active = isActive(href);
         const badge = badges?.[href];
         return (
@@ -119,11 +127,16 @@ export function MobileNav({ badges }: { badges?: NavBadges }) {
             key={href}
             href={href}
             aria-current={active ? "page" : undefined}
-            className="relative flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[10px] font-medium"
+            aria-label={label}
+            // min-w-0 and truncate are the guarantee: whatever the label and
+            // whatever the face, seven of these can never widen the viewport.
+            className="relative flex min-w-0 flex-1 flex-col items-center gap-0.5 px-0.5 py-2.5 text-[10px] font-medium"
             style={{ color: active ? "var(--brand)" : "var(--ink-muted)" }}
           >
-            <Icon className="size-4.5" />
-            {label}
+            <Icon className="size-4.5 shrink-0" />
+            <span className="w-full truncate text-center">
+              {"short" in item ? item.short : label}
+            </span>
             {badge ? (
               <span
                 className="absolute top-1.5 right-[calc(50%-1.25rem)] size-1.5 rounded-full"

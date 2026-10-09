@@ -183,10 +183,20 @@ export function PrepBoard({ items }: { items: PrepItem[] }) {
   );
 
   return (
-    <div className="space-y-4">
+    /*
+     * A flex column that fills the page's remaining height, because the list
+     * below scrolls inside itself rather than growing the document.
+     *
+     * This root used to be `space-y-4` — a block. The page is `h-dvh
+     * flex-col` and the list Card asks for `flex-1 min-h-0`, but with a block
+     * in between there was no flex parent for that to resolve against, so the
+     * list grew to its content and pushed the page past the viewport. The
+     * chain has to be flex the whole way down or none of it works.
+     */
+    <div className="flex min-h-0 flex-1 flex-col gap-4">
       {/* Per-kind progress. Each tile names its kind in text, so the tint is
           reinforcement only. */}
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid shrink-0 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {presentKinds.slice(0, 4).map((candidate) => {
           const meta = actionableMeta(candidate);
           const stats = byKind.get(candidate)!;
@@ -216,7 +226,7 @@ export function PrepBoard({ items }: { items: PrepItem[] }) {
         })}
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-3">
         <Tabs value={kind} onValueChange={(value) => setKind(value as never)}>
           <TabsList className="flex-wrap">
             <TabsTrigger value="all">All</TabsTrigger>
@@ -249,7 +259,10 @@ export function PrepBoard({ items }: { items: PrepItem[] }) {
           />
         </Card>
       ) : (
-        <Card className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        /* min-h-48 is a floor, not decoration: on a short viewport a tall
+           filter row would otherwise squeeze this to nothing. With a floor the
+           page scrolls instead, which is the lesser evil. */
+        <Card className="flex min-h-48 flex-1 flex-col overflow-hidden">
           {/* Scrolls here, not on the page. Twenty-five open items made the
               document 3,100px tall, so the filters you need in order to make
               the list shorter scrolled away as soon as you started reading. */}

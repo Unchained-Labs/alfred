@@ -15,6 +15,7 @@ export default async function PrepPage() {
   return (
     <div className="mx-auto flex h-dvh max-w-7xl flex-col gap-4 p-4 lg:p-6">
       <PageHeader
+        className="mb-0 shrink-0"
         title="Prep"
         description="Every actionable Alfred generated, across all your applications."
       />

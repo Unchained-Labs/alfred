@@ -670,3 +670,66 @@ export function getHandbook(userId: string, applicationId: string) {
       .get() ?? null
   );
 }
+
+/* ------------------------------------------------------------------ *
+ * Jobs table
+ * ------------------------------------------------------------------ */
+
+/**
+ * Every job this user owns, with its latest fit score and prep counts.
+ *
+ * Three queries rather than one per row: the Jobs page shows all of them at
+ * once, including the archived ones, so an N+1 here would be N+1 over the
+ * whole pipeline.
+ */
+export function listJobsWithContext(userId: string) {
+  const rows = listApplications(userId, { includeArchived: true });
+
+  const ids = rows.map((row) => row.id);
+
+  // `analyses` carries no owner of its own — it is scoped through its
+  // application — so it is restricted to this user's ids rather than read
+  // whole and filtered afterwards.
+  const scores = new Map<string, number>();
+  if (ids.length) {
+    for (const row of db
+      .select({
+        applicationId: analyses.applicationId,
+        fitScore: analyses.fitScore,
+      })
+      .from(analyses)
+      .where(inArray(analyses.applicationId, ids))
+      .orderBy(desc(analyses.createdAt))
+      .all()) {
+      // Newest first, so the first one seen per application is the latest.
+      if (!scores.has(row.applicationId)) {
+        scores.set(row.applicationId, row.fitScore);
+      }
+    }
+  }
+
+  const prep = new Map<string, { total: number; done: number }>();
+  for (const row of db
+    .select({
+      applicationId: actionables.applicationId,
+      status: actionables.status,
+      total: count(),
+    })
+    .from(actionables)
+    .where(eq(actionables.userId, userId))
+    .groupBy(actionables.applicationId, actionables.status)
+    .all()) {
+    if (!row.applicationId) continue;
+    const entry = prep.get(row.applicationId) ?? { total: 0, done: 0 };
+    entry.total += row.total;
+    if (row.status === "done") entry.done += row.total;
+    prep.set(row.applicationId, entry);
+  }
+
+  return rows.map((app) => ({
+    ...app,
+    fitScore: scores.get(app.id) ?? null,
+    prepTotal: prep.get(app.id)?.total ?? 0,
+    prepDone: prep.get(app.id)?.done ?? 0,
+  }));
+}
