@@ -22,6 +22,10 @@ import {
   type EventType,
   exercises,
   handbooks,
+  type JobHitStatus,
+  jobBoards,
+  jobHits,
+  jobSearches,
   mailMessages,
   questions,
   submissions,
@@ -896,4 +900,64 @@ export function goingQuiet(userId: string, afterDays = 10, limit = 5) {
     .filter((app) => app.lastMovedAt.getTime() <= cutoff)
     .sort((a, b) => a.lastMovedAt.getTime() - b.lastMovedAt.getTime())
     .slice(0, limit);
+}
+
+/* ------------------------------------------------------------------ *
+ * Job discovery
+ * ------------------------------------------------------------------ */
+
+export function listJobSearches(userId: string) {
+  return db
+    .select()
+    .from(jobSearches)
+    .where(eq(jobSearches.userId, userId))
+    .orderBy(desc(jobSearches.active), jobSearches.createdAt)
+    .all();
+}
+
+export function listJobBoards(userId: string) {
+  return db
+    .select()
+    .from(jobBoards)
+    .where(eq(jobBoards.userId, userId))
+    .orderBy(jobBoards.label)
+    .all();
+}
+
+/** New hits first; newest posting first within that. */
+export function listJobHits(
+  userId: string,
+  options?: { status?: JobHitStatus; searchId?: string; limit?: number },
+) {
+  const filters = [eq(jobHits.userId, userId)];
+  if (options?.status) filters.push(eq(jobHits.status, options.status));
+  if (options?.searchId) filters.push(eq(jobHits.searchId, options.searchId));
+
+  return db
+    .select()
+    .from(jobHits)
+    .where(and(...filters))
+    .orderBy(desc(jobHits.postedAt), desc(jobHits.firstSeenAt))
+    .limit(options?.limit ?? 200)
+    .all();
+}
+
+export function countNewJobHits(userId: string): number {
+  return (
+    db
+      .select({ total: count() })
+      .from(jobHits)
+      .where(and(eq(jobHits.userId, userId), eq(jobHits.status, "new")))
+      .get()?.total ?? 0
+  );
+}
+
+export function getJobHit(userId: string, id: string) {
+  return (
+    db
+      .select()
+      .from(jobHits)
+      .where(and(eq(jobHits.id, id), eq(jobHits.userId, userId)))
+      .get() ?? null
+  );
 }

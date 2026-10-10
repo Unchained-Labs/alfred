@@ -11,6 +11,11 @@ import {
   exercises,
   type ExerciseTest,
   handbooks,
+  type JobHitStatus,
+  jobBoards,
+  jobHits,
+  jobSearches,
+  type NewJobSearch,
   mailMessages,
   type NewActionable,
   questions,
@@ -28,14 +33,12 @@ import { NotEarnedError } from "@/lib/errors";
 import { requiresExercise } from "@/lib/exercises";
 import { ownsApplication } from "@/lib/queries";
 import { stageLabel } from "@/lib/stages";
-
 /*
  * Like queries.ts, every entry point takes the owner explicitly. Writes that
  * target an existing row verify ownership first and return undefined when it
  * does not match, so a guessed id reads as "not found" rather than acting on
  * another account's data.
  */
-
 /** Stages whose entry implies the application was actually submitted. */
 const SUBMITTED_STAGES: ApplicationStage[] = [
   "applied",
@@ -46,7 +49,6 @@ const SUBMITTED_STAGES: ApplicationStage[] = [
   "accepted",
   "rejected",
 ];
-
 function logEvent(input: {
   userId: string;
   applicationId: string;
@@ -68,7 +70,6 @@ function logEvent(input: {
     })
     .run();
 }
-
 function nextBoardOrder(userId: string, stage: ApplicationStage): number {
   const row = db
     .select({ top: max(applications.boardOrder) })
@@ -77,11 +78,9 @@ function nextBoardOrder(userId: string, stage: ApplicationStage): number {
     .get();
   return (row?.top ?? 0) + 1;
 }
-
 /* ------------------------------------------------------------------ *
  * Applications
  * ------------------------------------------------------------------ */
-
 export type ApplicationInput = {
   company: string;
   title: string;
@@ -104,17 +103,14 @@ export type ApplicationInput = {
   nextActionLabel?: string | null;
   source?: string;
 };
-
 export function createApplication(
   userId: string,
   input: ApplicationInput,
 ): Application {
   const stage = input.stage ?? "wishlist";
-
   // Entering a submitted stage without an explicit date means "today".
   const appliedAt =
     input.appliedAt ?? (SUBMITTED_STAGES.includes(stage) ? new Date() : null);
-
   const created = db
     .insert(applications)
     .values({
@@ -128,7 +124,6 @@ export function createApplication(
     })
     .returning()
     .get();
-
   logEvent({
     userId,
     applicationId: created.id,
@@ -136,10 +131,8 @@ export function createApplication(
     title: `Tracking ${created.title} at ${created.company}`,
     metadata: { to: stage, source: created.source },
   });
-
   return created;
 }
-
 export function updateApplication(
   userId: string,
   id: string,
@@ -151,9 +144,7 @@ export function updateApplication(
     .where(and(eq(applications.id, id), eq(applications.userId, userId)))
     .get();
   if (!before) return undefined;
-
   const stageChanged = patch.stage != null && patch.stage !== before.stage;
-
   // Backfill appliedAt the first time an application reaches a submitted stage.
   const appliedAt =
     patch.appliedAt !== undefined
@@ -163,7 +154,6 @@ export function updateApplication(
           SUBMITTED_STAGES.includes(patch.stage!)
         ? new Date()
         : before.appliedAt;
-
   const updated = db
     .update(applications)
     .set({
@@ -177,7 +167,6 @@ export function updateApplication(
     .where(eq(applications.id, id))
     .returning()
     .get();
-
   if (stageChanged) {
     logEvent({
       userId,
@@ -187,7 +176,6 @@ export function updateApplication(
       metadata: { from: before.stage, to: patch.stage },
     });
   }
-
   // Moving the interview moves the homework. Only when the date actually
   // changed: re-staggering on every unrelated edit would overwrite deadlines a
   // person had deliberately adjusted.
@@ -198,10 +186,8 @@ export function updateApplication(
   ) {
     scheduleActionablesFor(userId, id, patch.nextActionAt ?? null);
   }
-
   return updated;
 }
-
 export function moveApplication(
   userId: string,
   id: string,
@@ -214,12 +200,10 @@ export function moveApplication(
     .where(and(eq(applications.id, id), eq(applications.userId, userId)))
     .get();
   if (!before) return undefined;
-
   const appliedAt =
     before.appliedAt == null && SUBMITTED_STAGES.includes(stage)
       ? new Date()
       : before.appliedAt;
-
   const updated = db
     .update(applications)
     .set({
@@ -231,7 +215,6 @@ export function moveApplication(
     .where(eq(applications.id, id))
     .returning()
     .get();
-
   if (before.stage !== stage) {
     logEvent({
       userId,
@@ -241,17 +224,14 @@ export function moveApplication(
       metadata: { from: before.stage, to: stage },
     });
   }
-
   return updated;
 }
-
 export function deleteApplication(userId: string, id: string) {
   return db
     .delete(applications)
     .where(and(eq(applications.id, id), eq(applications.userId, userId)))
     .run();
 }
-
 export function addNote(userId: string, applicationId: string, body: string) {
   if (!ownsApplication(userId, applicationId)) return;
   logEvent({
@@ -266,11 +246,9 @@ export function addNote(userId: string, applicationId: string, body: string) {
     .where(and(eq(applications.id, applicationId), eq(applications.userId, userId)))
     .run();
 }
-
 /* ------------------------------------------------------------------ *
  * AI results → rows
  * ------------------------------------------------------------------ */
-
 export function saveAnalysis(
   userId: string,
   applicationId: string,
@@ -283,7 +261,6 @@ export function saveAnalysis(
     .values({ applicationId, ...analysis, provider, model })
     .returning()
     .get();
-
   logEvent({
     userId,
     applicationId,
@@ -292,10 +269,8 @@ export function saveAnalysis(
     body: analysis.verdict,
     metadata: { provider, model, fitScore: analysis.fitScore },
   });
-
   return saved;
 }
-
 export function saveActionables(
   userId: string,
   applicationId: string,
@@ -314,7 +289,6 @@ export function saveActionables(
       ),
     )
     .run();
-
   const rows: NewActionable[] = plan.items.map((item) => ({
     userId,
     applicationId,
@@ -330,11 +304,9 @@ export function saveActionables(
     tags: item.tags,
     aiGenerated: true,
   }));
-
   const inserted = rows.length
     ? db.insert(actionables).values(rows).returning().all()
     : [];
-
   // Freshly generated work gets deadlines straight away when the application
   // already has an interview booked, so the Prep page is sorted the moment it
   // is populated rather than after someone edits a date.
@@ -345,7 +317,6 @@ export function saveActionables(
     .get();
   if (app?.nextActionAt)
     scheduleActionablesFor(userId, applicationId, app.nextActionAt);
-
   logEvent({
     userId,
     applicationId,
@@ -354,10 +325,8 @@ export function saveActionables(
     body: plan.overview,
     metadata: { provider, model },
   });
-
   return inserted;
 }
-
 /**
  * Spread a set of prep items backwards from an interview date.
  *
@@ -391,7 +360,6 @@ export function scheduleActionablesFor(
     )
     .all();
   if (open.length === 0) return 0;
-
   // No date any more: clear the deadlines rather than leave them pointing at
   // an interview that is not happening.
   if (!interviewAt) {
@@ -403,26 +371,22 @@ export function scheduleActionablesFor(
     }
     return open.length;
   }
-
   const startOfDay = (d: Date) =>
     new Date(d.getFullYear(), d.getMonth(), d.getDate());
   const today = startOfDay(new Date());
   const lastUsefulDay = startOfDay(interviewAt);
   lastUsefulDay.setDate(lastUsefulDay.getDate() - 1);
-
   // Days actually available, at least one.
   const span = Math.max(
     1,
     Math.round((lastUsefulDay.getTime() - today.getTime()) / 86_400_000) + 1,
   );
-
   const ordered = [...open].sort((a, b) => {
     const weight = (x: typeof a) =>
       (x.difficulty === "hard" ? 0 : x.difficulty === "medium" ? 1 : 2) * 10 -
       x.priority;
     return weight(a) - weight(b);
   });
-
   const perDay = Math.ceil(ordered.length / span);
   let changed = 0;
   ordered.forEach((item, index) => {
@@ -437,7 +401,6 @@ export function scheduleActionablesFor(
   });
   return changed;
 }
-
 export function saveQuestionnaire(
   userId: string,
   applicationId: string,
@@ -454,14 +417,12 @@ export function saveQuestionnaire(
       ),
     )
     .run();
-
   const existing = db
     .select({ max: max(questions.sortOrder) })
     .from(questions)
     .where(eq(questions.applicationId, applicationId))
     .get();
   const offset = (existing?.max ?? -1) + 1;
-
   const rows = questionnaire.questions.map((question, index) => ({
     userId,
     applicationId,
@@ -471,11 +432,9 @@ export function saveQuestionnaire(
     suggestedAnswer: question.suggestedAnswer,
     sortOrder: offset + index,
   }));
-
   const inserted = rows.length
     ? db.insert(questions).values(rows).returning().all()
     : [];
-
   logEvent({
     userId,
     applicationId,
@@ -483,14 +442,11 @@ export function saveQuestionnaire(
     title: `Drafted ${inserted.length} interview questions`,
     metadata: { provider, model },
   });
-
   return inserted;
 }
-
 /* ------------------------------------------------------------------ *
  * Actionables & questions
  * ------------------------------------------------------------------ */
-
 /**
  * Refuses to let a gated item be called done without a passing submission
  * behind it.
@@ -513,10 +469,8 @@ function assertCompletable(userId: string, id: string) {
     .from(actionables)
     .where(and(eq(actionables.id, id), eq(actionables.userId, userId)))
     .get();
-
   if (!item) return null;
   if (!requiresExercise(item.kind) || item.verifiedAt) return item;
-
   // One escape hatch, and it is for Alfred's mistakes rather than the
   // candidate's: when the generated tests reject the generator's own solution,
   // the check is known-broken and nobody should be held to it.
@@ -528,19 +482,16 @@ function assertCompletable(userId: string, id: string) {
     )
     .get();
   if (broken) return item;
-
   throw new NotEarnedError(
     `"${item.title}" is completed by doing it, not by marking it. Open it, do the work, and submit — or skip it if you would rather not.`,
   );
 }
-
 export function setActionableStatus(
   userId: string,
   id: string,
   status: ActionableStatus,
 ) {
   if (status === "done" && !assertCompletable(userId, id)) return undefined;
-
   return db
     .update(actionables)
     .set({
@@ -552,7 +503,6 @@ export function setActionableStatus(
     .returning()
     .get();
 }
-
 export function updateActionable(
   userId: string,
   id: string,
@@ -561,7 +511,6 @@ export function updateActionable(
   // A general patch can carry a status like any other field, so it passes the
   // same gate — otherwise `{title, status}` would be the way around it.
   if (patch.status === "done" && !assertCompletable(userId, id)) return undefined;
-
   return (
     db
       .update(actionables)
@@ -572,7 +521,6 @@ export function updateActionable(
       .get()
   );
 }
-
 export function createActionable(userId: string, input: NewActionable) {
   return db
     .insert(actionables)
@@ -580,14 +528,12 @@ export function createActionable(userId: string, input: NewActionable) {
     .returning()
     .get();
 }
-
 export function deleteActionable(userId: string, id: string) {
   return db
     .delete(actionables)
     .where(and(eq(actionables.id, id), eq(actionables.userId, userId)))
     .run();
 }
-
 export function answerQuestion(
   userId: string,
   id: string,
@@ -600,11 +546,9 @@ export function answerQuestion(
     .returning()
     .get();
 }
-
 /* ------------------------------------------------------------------ *
  * Mail linking
  * ------------------------------------------------------------------ */
-
 export function linkMailToApplication(
   userId: string,
   mailId: string,
@@ -619,12 +563,10 @@ export function linkMailToApplication(
   if (!mail) return undefined;
   // Linking writes an event onto the application, so the caller must own both.
   if (!ownsApplication(userId, applicationId)) return undefined;
-
   db.update(mailMessages)
     .set({ applicationId, status: "linked" })
     .where(and(eq(mailMessages.id, mailId), eq(mailMessages.userId, userId)))
     .run();
-
   logEvent({
     userId,
     applicationId,
@@ -638,18 +580,15 @@ export function linkMailToApplication(
     },
     occurredAt: mail.receivedAt,
   });
-
   if (options?.advanceToStage) {
     moveApplication(userId, applicationId, options.advanceToStage);
   }
-
   return db
     .select()
     .from(mailMessages)
     .where(and(eq(mailMessages.id, mailId), eq(mailMessages.userId, userId)))
     .get();
 }
-
 export function ignoreMail(userId: string, mailId: string) {
   return db
     .update(mailMessages)
@@ -658,7 +597,6 @@ export function ignoreMail(userId: string, mailId: string) {
     .returning()
     .get();
 }
-
 /** Creates an application straight from a triaged email. */
 export function applicationFromMail(
   userId: string,
@@ -670,7 +608,6 @@ export function applicationFromMail(
     .where(and(eq(mailMessages.id, mailId), eq(mailMessages.userId, userId)))
     .get();
   if (!mail?.detectedCompany) return undefined;
-
   const created = createApplication(userId, {
     company: mail.detectedCompany,
     title: mail.detectedTitle ?? "Unknown role",
@@ -681,17 +618,13 @@ export function applicationFromMail(
     notes: mail.snippet,
     appliedAt: mail.receivedAt,
   });
-
   linkMailToApplication(userId, mailId, created.id);
   return created;
 }
-
 /* ------------------------------------------------------------------ *
  * Exercises & submissions
  * ------------------------------------------------------------------ */
-
 type ExerciseMeta = { provider: string; model: string };
-
 /**
  * Replaces any exercise already attached to this prep item.
  *
@@ -712,25 +645,21 @@ function replaceExercise(
     .where(and(eq(actionables.id, actionableId), eq(actionables.userId, userId)))
     .get();
   if (!owned) return undefined;
-
   db.delete(exercises)
     .where(
       and(eq(exercises.actionableId, actionableId), eq(exercises.userId, userId)),
     )
     .run();
-
   db.update(actionables)
     .set({ verifiedAt: null, updatedAt: new Date() })
     .where(and(eq(actionables.id, actionableId), eq(actionables.userId, userId)))
     .run();
-
   return db
     .insert(exercises)
     .values({ ...row, userId, actionableId })
     .returning()
     .get();
 }
-
 export function saveCodeExercise(
   userId: string,
   actionableId: string,
@@ -743,7 +672,6 @@ export function saveCodeExercise(
     expect: test.expect,
     hidden: test.hidden,
   }));
-
   return replaceExercise(userId, actionableId, {
     kind: "code",
     brief: exercise.brief,
@@ -762,7 +690,6 @@ export function saveCodeExercise(
     model: meta.model,
   });
 }
-
 export function saveWrittenExercise(
   userId: string,
   actionableId: string,
@@ -774,7 +701,6 @@ export function saveWrittenExercise(
     requirement: criterion.requirement,
     weight: criterion.weight,
   }));
-
   return replaceExercise(userId, actionableId, {
     kind: "written",
     brief: exercise.brief,
@@ -787,7 +713,6 @@ export function saveWrittenExercise(
     model: meta.model,
   });
 }
-
 /**
  * Records whether the generator's own solution passes the generator's own
  * tests. A false here is not the candidate's problem, so it downgrades the
@@ -806,7 +731,6 @@ export function setExerciseSelfCheck(
     .returning()
     .get();
 }
-
 /** Every attempt is kept. Progress you can inspect beats a checkbox. */
 export function recordSubmission(
   userId: string,
@@ -825,7 +749,6 @@ export function recordSubmission(
     .returning()
     .get();
 }
-
 /**
  * The only way an exercise-backed item becomes done. Called after a submission
  * that actually passed, which is why it sets `verifiedAt` and the status in one
@@ -844,7 +767,6 @@ export function markActionableVerified(
     .where(and(eq(actionables.id, actionableId), eq(actionables.userId, userId)))
     .returning()
     .get();
-
   if (updated && applicationId) {
     logEvent({
       userId,
@@ -856,11 +778,9 @@ export function markActionableVerified(
   }
   return updated;
 }
-
 /* ------------------------------------------------------------------ *
  * Learning handbooks
  * ------------------------------------------------------------------ */
-
 /**
  * Starts a handbook: writes the outline and nothing else.
  *
@@ -886,20 +806,17 @@ export function startHandbook(
     .where(and(eq(applications.id, applicationId), eq(applications.userId, userId)))
     .get();
   if (!owned) return undefined;
-
   db.delete(handbooks)
     .where(
       and(eq(handbooks.applicationId, applicationId), eq(handbooks.userId, userId)),
     )
     .run();
-
   return db
     .insert(handbooks)
     .values({ ...input, userId, applicationId })
     .returning()
     .get();
 }
-
 /**
  * Replaces a handbook's content wholesale.
  *
@@ -927,7 +844,6 @@ export function updateHandbookContent(
     .returning()
     .get();
 }
-
 /** Logged once, when the last step lands, so the timeline gets one entry. */
 export function logHandbookBuilt(
   userId: string,
@@ -943,12 +859,123 @@ export function logHandbookBuilt(
     body: title,
   });
 }
-
 export function deleteHandbook(userId: string, applicationId: string) {
   return db
     .delete(handbooks)
     .where(
       and(eq(handbooks.applicationId, applicationId), eq(handbooks.userId, userId)),
     )
+    .run();
+}
+/* ------------------------------------------------------------------ *
+ * Job discovery
+ * ------------------------------------------------------------------ */
+export function createJobSearch(
+  userId: string,
+  input: Omit<NewJobSearch, "userId">,
+) {
+  return db
+    .insert(jobSearches)
+    .values({ ...input, userId })
+    .returning()
+    .get();
+}
+export function updateJobSearch(
+  userId: string,
+  id: string,
+  patch: Partial<Omit<NewJobSearch, "userId">>,
+) {
+  return (
+    db
+      .update(jobSearches)
+      // The owner is never patchable, whatever the caller sends.
+      .set({ ...patch, userId, updatedAt: new Date() })
+      .where(and(eq(jobSearches.id, id), eq(jobSearches.userId, userId)))
+      .returning()
+      .get()
+  );
+}
+export function deleteJobSearch(userId: string, id: string) {
+  return db
+    .delete(jobSearches)
+    .where(and(eq(jobSearches.id, id), eq(jobSearches.userId, userId)))
+    .run();
+}
+export function createJobBoard(
+  userId: string,
+  input: { provider: "greenhouse" | "ashby"; slug: string; label: string },
+) {
+  return (
+    db
+      .insert(jobBoards)
+      .values({ ...input, userId })
+      // Watching the same board twice is a no-op rather than an error.
+      .onConflictDoNothing()
+      .returning()
+      .get()
+  );
+}
+export function deleteJobBoard(userId: string, id: string) {
+  return db
+    .delete(jobBoards)
+    .where(and(eq(jobBoards.id, id), eq(jobBoards.userId, userId)))
+    .run();
+}
+export function setJobHitStatus(userId: string, id: string, status: JobHitStatus) {
+  return db
+    .update(jobHits)
+    .set({ status })
+    .where(and(eq(jobHits.id, id), eq(jobHits.userId, userId)))
+    .returning()
+    .get();
+}
+/**
+ * Turns a discovered posting into a tracked application.
+ *
+ * The hit is kept and linked rather than consumed: it is the record of where
+ * the job came from, and deleting it would let the same posting be discovered
+ * again on the next run.
+ */
+export function saveJobHitAsApplication(userId: string, hitId: string) {
+  const hit = db
+    .select()
+    .from(jobHits)
+    .where(and(eq(jobHits.id, hitId), eq(jobHits.userId, userId)))
+    .get();
+  if (!hit) return undefined;
+  if (hit.applicationId) {
+    const existing = db
+      .select()
+      .from(applications)
+      .where(
+        and(
+          eq(applications.id, hit.applicationId),
+          eq(applications.userId, userId),
+        ),
+      )
+      .get();
+    if (existing) return { hit, application: existing, created: false };
+  }
+  const application = createApplication(userId, {
+    company: hit.company,
+    title: hit.title,
+    location: hit.location,
+    jobUrl: hit.url,
+    description: hit.snippet,
+    source: hit.source,
+    stage: "wishlist",
+    tags: hit.tags ?? [],
+  });
+  db.update(jobHits)
+    .set({ status: "saved", applicationId: application.id })
+    .where(eq(jobHits.id, hit.id))
+    .run();
+  return { hit, application, created: true };
+}
+/** Clears hits you have already acted on, so the list stays a to-do list. */
+export function clearDismissedJobHits(userId: string) {
+  return db
+    .delete(jobHits)
+    .where(and(eq(jobHits.userId, userId), eq(jobHits.status, "dismissed")))
     .run();
 }

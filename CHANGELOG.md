@@ -16,6 +16,16 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Added
 
+- **Alfred finds jobs now.** A **search** is a standing query — a job title, optionally a place — that gets re-run on a schedule, with anything new waiting on **Jobs → Discover** until you track or dismiss it. Tracking one turns it into an application at wishlist stage, ready for a fit analysis and a prep plan.
+
+  Three sources, all keyless. **Watched boards** read an employer's own applicant tracking system (Greenhouse or Ashby) — the primary record rather than an aggregator's copy, and the high-signal option. **Remotive** and **Arbeitnow** are free feeds for remote and European roles; Remotive's free endpoint turns out to return a rotating sample of about seventeen postings and to ignore its own `search` parameter, so it is a bonus rather than coverage, and the docs say so.
+
+  Adding a board checks it answers and has open roles _before_ saving, because a mistyped identifier otherwise fails silently — the board never contributes anything and nothing explains why. A board that later stops answering is marked failing, with the reason.
+
+  The **daily scan** is a timer in the server process rather than an external cron, so there is nothing extra to install: it checks every fifteen minutes for a search that has gone twenty hours without running. Twenty rather than twenty-four so a daily rhythm does not drift later each day. Off in development, where a restart would refetch every board; `POST /api/discovery/run` is the same code path for anyone who prefers their own cron.
+
+  Matching is deliberate. Commas are alternatives and every word within one must appear, so "backend engineer" cannot match "Engineer, Facilities". An **unknown never disqualifies**: a posting with no stated location still answers a located search, and one with no stated salary still answers a salary floor, because hiding a job you wanted is a worse failure than showing one you did not. A posting is added once even when two sources carry it.
+
 - **The dashboard shows your jobs.** It opened with numbers, a funnel and a prep queue, but never the applications themselves — which is the first thing you actually want to see. **In play** now lists your live applications furthest-along first, each with its fit score, how much prep is left and whether anything is scheduled, and links through to the full Jobs table.
 
 - **Going quiet.** The application nobody scheduled anything for is the one that gets lost, and "Needs a nudge" could never surface it because it needs a date to already exist. The dashboard now flags applications with _nothing scheduled_ where nothing has happened for over ten days, each with a one-click **Chase in 3d** that sets the follow-up.

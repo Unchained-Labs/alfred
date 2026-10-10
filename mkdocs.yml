@@ -97,6 +97,7 @@ nav:
       - Docker: getting-started/docker.md
   - Guide:
       - Accounts: guide/accounts.md
+      - Finding jobs: guide/discovery.md
       - Tracking applications: guide/tracking.md
       - Fit analysis: guide/analysis.md
       - Prep plans & questionnaires: guide/prep.md

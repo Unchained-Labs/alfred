@@ -1,0 +1,77 @@
+{
+  "greenhouse": {
+    "jobs": [
+      {
+        "id": 8143930,
+        "title": "Anaplan Support Analyst",
+        "absolute_url": "https://job-boards.greenhouse.io/monzo/jobs/8143930",
+        "location": {
+          "name": "Cardiff, London or Remote (UK)"
+        },
+        "company_name": "Monzo",
+        "first_published": "2026-08-24T09:04:42-04:00",
+        "updated_at": "2026-09-25T05:17:09-04:00"
+      }
+    ]
+  },
+  "remotive": {
+    "jobs": [
+      {
+        "id": 2091045,
+        "title": "Tier III Service Desk Engineer",
+        "url": "https://remotive.com/remote-jobs/information-technology/tier-iii-service-desk-engineer-2091045",
+        "company_name": "Unio Digital",
+        "candidate_required_location": "Worldwide",
+        "salary": "",
+        "publication_date": "2026-10-07T01:11:09",
+        "tags": [
+          "azure",
+          "cisco",
+          "security",
+          "video",
+          "documentation",
+          "hardware",
+          "helpdesk",
+          "onboarding",
+          "MSP",
+          "ticketing",
+          "Microsoft 365",
+          "IT systems"
+        ],
+        "description": "<p class=\"MsoNormal\" style=\"margin: 0in 0in 8pt; line-height: 15.6933px; color: #000000;\">Uni\u00f3 Digital is an Arizona-based managed service provider (MSP) delivering Managed IT Services, Low Voltage Cabling, Access Control, Video Surveillance, and Intrusion Services. We believe technology should be i"
+      }
+    ]
+  },
+  "ashby": {
+    "jobs": [
+      {
+        "id": "1fc309c8-da20-4ff2-84c7-8b863ece2b0a",
+        "title": "Software Engineer, Developer Platform",
+        "jobUrl": "https://jobs.ashbyhq.com/notion/1fc309c8-da20-4ff2-84c7-8b863ece2b0a",
+        "applyUrl": "https://jobs.ashbyhq.com/notion/1fc309c8-da20-4ff2-84c7-8b863ece2b0a/application",
+        "location": "San Francisco, California",
+        "isRemote": true,
+        "isListed": true,
+        "publishedAt": "2026-08-24T14:44:49.699+00:00",
+        "department": "Engineering",
+        "workplaceType": "Hybrid",
+        "descriptionPlain": "WHO WE ARE\n\nNotion is the collaborative AI workspace where teams and agents think together https://www.youtube.com/watch?v=vkpYpWfEK5s. We're building one place where your knowledge, projects, meetings, and AI tools live side by side, so work is faster, clearer, and less fragmented. Millions of indi"
+      }
+    ]
+  },
+  "arbeitnow": {
+    "data": [
+      {
+        "slug": "kulinarischer-leiterin-in-teilzeit30h-vollzeit40h-fur-unser-tagesbistro-lilo-kitchen-munich-359748",
+        "title": "Kulinarische:r Leiter:in (M/W/D) In Teilzeit(30H)/Vollzeit(40H) F\u00fcr Unser Tagesbistro \u201eLilo Kitchen\u201c",
+        "url": "https://www.arbeitnow.com/jobs/companies/pretty-good-people-gmbh/kulinarischer-leiterin-in-teilzeit30h-vollzeit40h-fur-unser-tagesbistro-lilo-kitchen-munich-359748",
+        "company_name": "Pretty Good People GmbH",
+        "location": "Munich",
+        "remote": false,
+        "created_at": 1791617441,
+        "tags": ["Management", "Team Leader"],
+        "description": "<p>Gutes Essen ist mehr als nur Nahrungsaufnahme \u2013 es ist ein Erlebnis.</p>\n<p>Du brennst f\u00fcr frische Zutaten, hast ein Auge f\u00fcrs Detail und liebst es, G\u00e4ste mit kreativen, leckeren Konzepten gl\u00fccklich zu machen? Du suchst keine 08/15-K\u00fcche, sondern willst als Kulinarische:r Leiter:in bei Lilo Kitch"
+      }
+    ]
+  }
+}
