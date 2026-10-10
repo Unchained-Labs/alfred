@@ -5,7 +5,9 @@ import {
   ArrowRight,
   Briefcase,
   CalendarClock,
+  EarOff,
   Handshake,
+  Layers,
   Target,
   TrendingUp,
 } from "lucide-react";
@@ -14,6 +16,8 @@ import * as React from "react";
 import { ActivityChart } from "@/components/charts/activity-chart";
 import { Funnel } from "@/components/charts/funnel";
 import { StatTile } from "@/components/charts/stat-tile";
+import { GoingQuiet } from "@/components/dashboard/going-quiet";
+import { InPlay } from "@/components/dashboard/in-play";
 import { SetupNudge } from "@/components/dashboard/setup-nudge";
 import { UpNext } from "@/components/dashboard/up-next";
 import { PageHeader } from "@/components/shell/app-shell";
@@ -25,6 +29,8 @@ import {
   applicationActivity,
   dashboardStats,
   funnelDepth,
+  goingQuiet,
+  jobsInPlay,
   needsAttention,
   upcomingWork,
 } from "@/lib/queries";
@@ -56,6 +62,9 @@ export default async function DashboardPage() {
   const activity = applicationActivity(user.id, 30);
   const queue = upcomingWork(user.id, 7);
   const attention = needsAttention(user.id, 5);
+  const inPlay = jobsInPlay(user.id, 6);
+  const QUIET_AFTER_DAYS = 10;
+  const quiet = goingQuiet(user.id, QUIET_AFTER_DAYS, 5);
   const settings = getSettings(user.id);
 
   const providerReady = providerIsConfigured(settings.ai);
@@ -100,9 +109,7 @@ export default async function DashboardPage() {
               <div className="relative p-5">
                 <p className="label-eyebrow">Live pipeline</p>
                 {/* The one hero figure on this view. */}
-                <p className="text-ink mt-2 text-6xl leading-none font-semibold tracking-tight">
-                  {stats.active}
-                </p>
+                <p className="figure text-ink mt-2 text-6xl">{stats.active}</p>
                 <p className="text-ink-muted mt-1.5 text-sm">
                   {stats.active === 1 ? "application" : "applications"} in play
                 </p>
@@ -144,6 +151,31 @@ export default async function DashboardPage() {
               </CardBody>
             </Card>
           </div>
+
+          {/* The jobs themselves. Ahead of the charts on purpose: a chart is
+              context, a job is the thing you came to look at. */}
+          <Card className="overflow-hidden">
+            <CardHeader>
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Layers className="size-4" style={{ color: "var(--brand)" }} />
+                  In play
+                </CardTitle>
+                <p className="text-ink-muted mt-0.5 text-xs">
+                  Furthest along first, with fit, prep left and what is scheduled
+                </p>
+              </div>
+              <Button asChild variant="ghost" size="sm">
+                <Link href="/jobs">
+                  All jobs
+                  <ArrowRight className="size-3.5" />
+                </Link>
+              </Button>
+            </CardHeader>
+            <div className="border-line border-t">
+              <InPlay jobs={inPlay} />
+            </div>
+          </Card>
 
           {/* Stat tiles */}
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -222,6 +254,31 @@ export default async function DashboardPage() {
               </div>
             </Card>
           </div>
+
+          {/* Applications with nothing scheduled at all — the gap the panel
+              below leaves, since that one needs a date to already exist. */}
+          {quiet.length > 0 ? (
+            <Card className="overflow-hidden">
+              <CardHeader>
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <EarOff
+                      className="size-4"
+                      style={{ color: "var(--warning)" }}
+                    />
+                    Going quiet
+                  </CardTitle>
+                  <p className="text-ink-muted mt-0.5 text-xs">
+                    Nothing scheduled, and nothing has moved for over{" "}
+                    {QUIET_AFTER_DAYS} days
+                  </p>
+                </div>
+              </CardHeader>
+              <div className="border-line border-t">
+                <GoingQuiet jobs={quiet} afterDays={QUIET_AFTER_DAYS} />
+              </div>
+            </Card>
+          ) : null}
 
           {/* Overdue follow-ups */}
           {attention.length > 0 ? (
