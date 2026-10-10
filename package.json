@@ -20,7 +20,8 @@
     "reset:providers": "tsx scripts/reset-providers.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "check:handbook": "tsx scripts/check-handbook-render.ts"
+    "check:handbook": "tsx scripts/check-handbook-render.ts",
+    "check:discovery": "tsx scripts/check-discovery-match.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.131.0",
