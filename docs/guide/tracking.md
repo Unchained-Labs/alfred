@@ -68,11 +68,38 @@ Set a **next action** date and label on an application and it appears in **Needs
 a nudge** on the dashboard once the date has passed, and as a red deadline on the
 card.
 
+### When you never set one
+
+The application nobody scheduled anything for is the one that gets lost, and
+"Needs a nudge" cannot help with it — it needs a date to already exist.
+
+So the dashboard also has **Going quiet**: applications with *nothing scheduled*
+where nothing has actually happened for over ten days. Each row carries a
+**Chase in 3d** button that sets the follow-up in one click, because the point
+is to make the fix cheaper than the guilt.
+
+"Nothing has happened" is read from the timeline, not from when the row was last
+edited — a stage change, an email or an interview counts; a note you wrote or a
+prep item you ticked does not. Otherwise jotting down how worried you are about
+the silence would reset the silence clock.
+
+It includes applications at **technical** and **onsite**, not only ones that
+never replied. Silence after an onsite is the case that costs the most and the
+one people are most reluctant to chase. Wishlist items are excluded: nothing has
+been sent, so there is nobody to chase.
+
 ## Views
 
 - **Board** — drag and drop, grouped by stage.
 - **List** — a sortable table with fit score, compensation, applied date and next
   action. This is also the accessible view: everything a colour conveys on the
   board is present as text here.
+- **Jobs** — every job you have tracked, open and closed, archived included,
+  searchable and sortable on any column. The board answers "what do I do next"
+  and hides what is closed; Jobs answers "what have I got".
+
+The **dashboard** opens with **In play**: your live applications, furthest along
+first, each showing how well it fits, how much prep is left and whether anything
+is scheduled.
 
 Press ++cmd+k++ (or ++ctrl+k++) anywhere to jump to an application by name.

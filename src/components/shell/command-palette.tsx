@@ -2,6 +2,7 @@
 
 import { Dialog as RDialog } from "radix-ui";
 import {
+  Briefcase,
   CalendarDays,
   Inbox,
   KanbanSquare,
@@ -100,6 +101,13 @@ export function CommandPalette({
         group: "Go to",
         Icon: KanbanSquare,
         run: go("/pipeline"),
+      },
+      {
+        id: "nav-jobs",
+        label: "Jobs",
+        group: "Go to",
+        Icon: Briefcase,
+        run: go("/jobs"),
       },
       {
         id: "nav-prep",

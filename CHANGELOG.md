@@ -16,6 +16,12 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Added
 
+- **The dashboard shows your jobs.** It opened with numbers, a funnel and a prep queue, but never the applications themselves — which is the first thing you actually want to see. **In play** now lists your live applications furthest-along first, each with its fit score, how much prep is left and whether anything is scheduled, and links through to the full Jobs table.
+
+- **Going quiet.** The application nobody scheduled anything for is the one that gets lost, and "Needs a nudge" could never surface it because it needs a date to already exist. The dashboard now flags applications with _nothing scheduled_ where nothing has happened for over ten days, each with a one-click **Chase in 3d** that sets the follow-up.
+
+  "Nothing has happened" is read from the **timeline**, not from `updatedAt`: a stage change, an email or an interview counts, while a note you wrote or a prep item you ticked does not. Measuring it from the row's own modification time would mean jotting down how worried you are about the silence reset the silence clock. It also covers **technical** and **onsite**, not just applications that never replied — silence after an onsite costs the most and is the one people are most reluctant to chase.
+
 - **Handbooks now teach the prep plan, and draw it.** Three changes, in response to the handbook reading more like a reading list than a textbook.
 
   Alfred allocates **every prep item to exactly one part**, and that part is responsible for teaching the substance behind it — the pattern behind a coding problem and how to recognise it, the concept itself, how to work through a design prompt, what a strong story contains. The part prompt now receives each item's detail and the reason it was assigned, because a title alone produces a pointer rather than an explanation.
@@ -54,6 +60,10 @@ All notable changes to this project are documented here. The format follows [Kee
 - ESLint (flat config) and Prettier, wired into CI.
 
 ### Fixed
+
+- The dashboard's hero figure was still set in the body face at 48px — it predated the rebrand and never moved onto the display face with the other figures.
+
+- The command palette did not know about the Jobs page.
 
 - **The Prep page overflowed the viewport.** It is laid out as a fixed-height column whose list is supposed to scroll inside itself, but `PrepBoard`'s root element between the two was a block, not a flex container — so the `flex-1 min-h-0` on the list had no flex parent to resolve against, the list grew to its content, and the page grew with it. The chain has to be flex the whole way down or none of it works. The list also has a height floor now, so a wrapped filter row on a short screen scrolls the page rather than crushing the rows to nothing.
 

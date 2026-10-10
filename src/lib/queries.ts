@@ -6,6 +6,7 @@ import {
   gte,
   inArray,
   isNotNull,
+  isNull,
   lte,
   ne,
   sql,
@@ -18,6 +19,7 @@ import {
   type ApplicationStage,
   applications,
   events,
+  type EventType,
   exercises,
   handbooks,
   mailMessages,
@@ -732,4 +734,166 @@ export function listJobsWithContext(userId: string) {
     prepTotal: prep.get(app.id)?.total ?? 0,
     prepDone: prep.get(app.id)?.done ?? 0,
   }));
+}
+
+/* ------------------------------------------------------------------ *
+ * Dashboard: the jobs themselves
+ * ------------------------------------------------------------------ */
+
+/** Furthest-along first, because that is the order you care about them in. */
+const STAGE_DEPTH = new Map(BOARD_STAGES.map((stage, index) => [stage, index]));
+
+/**
+ * The applications actually in play, with the context that decides what to do
+ * about one: how well it fits, how much of its prep is done, and whether a
+ * follow-up is set.
+ */
+export function jobsInPlay(userId: string, limit = 6) {
+  const rows = db
+    .select()
+    .from(applications)
+    .where(
+      and(
+        owned(userId),
+        eq(applications.archived, false),
+        inArray(applications.stage, BOARD_STAGES),
+      ),
+    )
+    .all();
+
+  const ids = rows.map((row) => row.id);
+
+  // `analyses` has no owner column — it is scoped through its application — so
+  // it is restricted to these ids rather than read whole.
+  const scores = new Map<string, number>();
+  if (ids.length) {
+    for (const row of db
+      .select({
+        applicationId: analyses.applicationId,
+        fitScore: analyses.fitScore,
+      })
+      .from(analyses)
+      .where(inArray(analyses.applicationId, ids))
+      .orderBy(desc(analyses.createdAt))
+      .all()) {
+      if (!scores.has(row.applicationId)) {
+        scores.set(row.applicationId, row.fitScore);
+      }
+    }
+  }
+
+  const prep = new Map<string, { total: number; done: number }>();
+  for (const row of db
+    .select({
+      applicationId: actionables.applicationId,
+      status: actionables.status,
+      total: count(),
+    })
+    .from(actionables)
+    .where(eq(actionables.userId, userId))
+    .groupBy(actionables.applicationId, actionables.status)
+    .all()) {
+    if (!row.applicationId) continue;
+    const entry = prep.get(row.applicationId) ?? { total: 0, done: 0 };
+    entry.total += row.total;
+    if (row.status === "done") entry.done += row.total;
+    prep.set(row.applicationId, entry);
+  }
+
+  return rows
+    .map((app) => ({
+      ...app,
+      fitScore: scores.get(app.id) ?? null,
+      prepTotal: prep.get(app.id)?.total ?? 0,
+      prepDone: prep.get(app.id)?.done ?? 0,
+    }))
+    .sort(
+      (a, b) =>
+        (STAGE_DEPTH.get(b.stage) ?? -1) - (STAGE_DEPTH.get(a.stage) ?? -1) ||
+        b.updatedAt.getTime() - a.updatedAt.getTime(),
+    )
+    .slice(0, limit);
+}
+
+/**
+ * Applications that have gone quiet: nothing scheduled, and nothing has
+ * actually happened on them for a while.
+ *
+ * This is the gap `needsAttention` leaves. That one only fires once a date has
+ * been set and has passed, so an application nobody scheduled anything for is
+ * invisible — which is exactly how a job hunt loses track of one.
+ *
+ * "Nothing has happened" is measured from the TIMELINE, not from
+ * `updatedAt`. Two reasons. `updatedAt` moves when you edit the row at all, so
+ * jotting a note about how worried you are about the silence would reset the
+ * silence clock, which is perverse. And only some events are movement: a stage
+ * change, an email, an interview. A note you wrote, a prep item you ticked or
+ * an analysis you ran are your activity, not theirs, and the employer being
+ * quiet is the thing being measured.
+ *
+ * Deliberately not limited to the pre-reply stages: silence after an onsite is
+ * the case that costs the most and the one people are most reluctant to chase.
+ * Wishlist is excluded — nothing has been sent, so there is nobody to chase.
+ */
+const MOVEMENT_EVENTS: EventType[] = ["stage_change", "email", "interview"];
+
+export function goingQuiet(userId: string, afterDays = 10, limit = 5) {
+  const cutoff = Date.now() - afterDays * DAY;
+
+  const rows = db
+    .select()
+    .from(applications)
+    .where(
+      and(
+        owned(userId),
+        eq(applications.archived, false),
+        inArray(applications.stage, [
+          "applied",
+          "screening",
+          "technical",
+          "onsite",
+        ]),
+        isNull(applications.nextActionAt),
+      ),
+    )
+    .all();
+
+  const ids = rows.map((row) => row.id);
+  if (!ids.length) return [];
+
+  const lastMove = new Map<string, number>();
+  for (const row of db
+    .select({
+      applicationId: events.applicationId,
+      occurredAt: events.occurredAt,
+    })
+    .from(events)
+    .where(
+      and(
+        eq(events.userId, userId),
+        inArray(events.applicationId, ids),
+        inArray(events.type, MOVEMENT_EVENTS),
+      ),
+    )
+    .orderBy(desc(events.occurredAt))
+    .all()) {
+    if (!row.applicationId) continue;
+    // Newest first, so the first one seen per application is its last move.
+    if (!lastMove.has(row.applicationId)) {
+      lastMove.set(row.applicationId, row.occurredAt.getTime());
+    }
+  }
+
+  return rows
+    .map((app) => ({
+      ...app,
+      // No movement on record falls back to when it was sent, and failing
+      // that to when the row was created — something must anchor the clock.
+      lastMovedAt: new Date(
+        lastMove.get(app.id) ?? app.appliedAt?.getTime() ?? app.createdAt.getTime(),
+      ),
+    }))
+    .filter((app) => app.lastMovedAt.getTime() <= cutoff)
+    .sort((a, b) => a.lastMovedAt.getTime() - b.lastMovedAt.getTime())
+    .slice(0, limit);
 }
