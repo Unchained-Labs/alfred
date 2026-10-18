@@ -46,7 +46,14 @@ export default async function ApplicationPage({ params }: Params) {
 
   return (
     <div className="mx-auto max-w-7xl p-4 lg:p-6">
-      <DetailHeader app={app} />
+      <DetailHeader
+        app={app}
+        openPrepCount={
+          actionables.filter(
+            (item) => item.status === "todo" || item.status === "in_progress",
+          ).length
+        }
+      />
 
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
@@ -80,6 +87,22 @@ export default async function ApplicationPage({ params }: Params) {
 
         <div className="space-y-4">
           <AskAlfred applicationId={id} />
+
+          {/* What they said when it ended. Above the posting text, because once
+              an application is closed this is the only part of the record that
+              can still change how you write the next one. */}
+          {app.outcomeNote?.trim() ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>What they said</CardTitle>
+              </CardHeader>
+              <CardBody>
+                <p className="text-ink-2 text-xs leading-relaxed whitespace-pre-wrap">
+                  {app.outcomeNote}
+                </p>
+              </CardBody>
+            </Card>
+          ) : null}
 
           {app.description?.trim() ? (
             <Card>

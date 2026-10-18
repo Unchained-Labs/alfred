@@ -4,6 +4,7 @@ import { AlertDialog as RAlertDialog } from "radix-ui";
 import {
   ArrowLeft,
   CalendarClock,
+  CircleSlash,
   ExternalLink,
   Pencil,
   Trash2,
@@ -16,7 +17,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/field";
 import { useToast } from "@/components/ui/toast";
-import type { Application, ApplicationStage } from "@/db/schema";
+import { CloseApplication } from "@/components/applications/detail/close-application";
+import {
+  type Application,
+  type ApplicationStage,
+  TERMINAL_STAGES,
+} from "@/db/schema";
 import { ALL_STAGES, STAGE_META } from "@/lib/stages";
 import { formatSalary, hueFromString, initials, relativeDay } from "@/lib/utils";
 
@@ -25,12 +31,20 @@ const STAGE_OPTIONS = ALL_STAGES.map((stage) => ({
   label: STAGE_META[stage].label,
 }));
 
-export function DetailHeader({ app }: { app: Application }) {
+export function DetailHeader({
+  app,
+  openPrepCount = 0,
+}: {
+  app: Application;
+  /** Offered for clearing when the application is closed. */
+  openPrepCount?: number;
+}) {
   const router = useRouter();
   const toast = useToast();
   const [editing, setEditing] = React.useState(false);
   const [stage, setStage] = React.useState<string>(app.stage);
   const [moving, setMoving] = React.useState(false);
+  const [closing, setClosing] = React.useState<ApplicationStage | null>(null);
 
   // Keep the picker aligned with the server after a refresh, adjusted during
   // render so it never shows the previous stage for a frame.
@@ -44,6 +58,19 @@ export function DetailHeader({ app }: { app: Application }) {
   const hue = hueFromString(app.company);
 
   async function changeStage(next: string) {
+    /*
+     * An outcome is not just another stage. Closing records what the company
+     * said and clears the prep that is now dead, so the picker hands over to
+     * the dialog rather than firing a bare move and losing the one moment the
+     * feedback was ever going to get written down.
+     */
+    if (TERMINAL_STAGES.includes(next as ApplicationStage)) {
+      setClosing(next as ApplicationStage);
+      // The picker snaps back until the close is actually confirmed.
+      setStage(app.stage);
+      return;
+    }
+
     const previous = stage;
     setStage(next);
     setMoving(true);
@@ -142,6 +169,16 @@ export function DetailHeader({ app }: { app: Application }) {
               className="w-36"
               ariaLabel="Pipeline stage"
             />
+            {!TERMINAL_STAGES.includes(app.stage) ? (
+              <Button
+                variant="outline"
+                onClick={() => setClosing("rejected")}
+                disabled={moving}
+              >
+                <CircleSlash className="size-3.5" />
+                Close
+              </Button>
+            ) : null}
             {app.jobUrl ? (
               <Button
                 asChild
@@ -199,6 +236,16 @@ export function DetailHeader({ app }: { app: Application }) {
       </div>
 
       <ApplicationForm open={editing} onOpenChange={setEditing} application={app} />
+
+      <CloseApplication
+        app={app}
+        openPrepCount={openPrepCount}
+        initialStage={closing ?? undefined}
+        open={closing !== null}
+        onOpenChange={(next) => {
+          if (!next) setClosing(null);
+        }}
+      />
     </>
   );
 }

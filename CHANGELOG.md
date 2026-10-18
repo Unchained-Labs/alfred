@@ -16,6 +16,12 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Added
 
+- **Closing an application properly.** Choosing Rejected, Withdrawn or Accepted now opens one dialog instead of silently moving the card, because closing is three decisions at once.
+
+  It keeps **what the company said**, in a field of its own rather than mixed into your notes, and shows it on the application under _What they said_. A rejection is the only moment a company tells you anything true about your application, and the moment the email arrives is the only moment anyone will write it down.
+
+  It **clears the scheduled follow-up** — chasing a company that has already said no is the most embarrassing thing Alfred could cause — and offers to **clear the open prep items** in the same action. That last one is the real reason people avoid closing applications: the dead work keeps turning up in the queue, so the application stays open and every number in the app drifts. Cleared means _skipped_, not deleted, so the record of what the loop was going to test survives.
+
 - **Alfred finds jobs now.** A **search** is a standing query — a job title, optionally a place — that gets re-run on a schedule, with anything new waiting on **Jobs → Discover** until you track or dismiss it. Tracking one turns it into an application at wishlist stage, ready for a fit analysis and a prep plan.
 
   Three sources, all keyless. **Watched boards** read an employer's own applicant tracking system (Greenhouse or Ashby) — the primary record rather than an aggregator's copy, and the high-signal option. **Remotive** and **Arbeitnow** are free feeds for remote and European roles; Remotive's free endpoint turns out to return a rotating sample of about seventeen postings and to ignore its own `search` parameter, so it is a bonus rather than coverage, and the docs say so.
