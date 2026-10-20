@@ -179,7 +179,12 @@ jobs:
           # only be found by the first person to open the page.
           curl -s -o /dev/null -b /tmp/ck.txt -X PATCH "http://localhost:3000/api/applications/$app/move" \
             -H 'content-type: application/json' -d '{"stage":"screening"}'
-          body=$(curl -s -b /tmp/ck.txt http://localhost:3000/analytics)
+          # React separates adjacent text nodes with an empty HTML comment, so
+          # JSX written as `out at {label}` reaches the browser as
+          # "out at <!-- -->screening". Strip comments before matching rather
+          # than contorting components to suit a grep.
+          page() { curl -s -b /tmp/ck.txt http://localhost:3000/analytics | sed 's/<!--[^>]*-->//g'; }
+          body=$(page)
           for phrase in "Where applications end" "Time in each stage" "Time to first reply" \
                         "Sends and outcomes by week" "Fit score against how far it went" \
                         "Response rate by slice" "What they said"; do
@@ -193,7 +198,7 @@ jobs:
           curl -s -o /dev/null -b /tmp/ck.txt -X POST "http://localhost:3000/api/applications/$app/close" \
             -H 'content-type: application/json' \
             -d '{"stage":"rejected","outcomeNote":"Needed deeper Kafka experience.","clearTasks":true}'
-          body=$(curl -s -b /tmp/ck.txt http://localhost:3000/analytics)
+          body=$(page)
           printf '%-42s' "analytics shows the rejection feedback"
           if printf '%s' "$body" | grep -qF "Needed deeper Kafka experience."; then echo "  ok"; else echo "  MISSING"; fail=1; fi
           printf '%-42s' "and attributes it to the screening round"
