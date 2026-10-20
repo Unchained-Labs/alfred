@@ -213,23 +213,44 @@ export default async function AnalyticsPage() {
               <CardBody className="flex-1">
                 <ResponseHistogram response={report.response} />
               </CardBody>
-              {report.response.ghosted > 0 ? (
-                <div className="border-line border-t px-5 py-3">
-                  <p className="text-ink-2 text-xs">
-                    <strong className="text-ink tnum">
-                      {report.response.ghosted}
-                    </strong>{" "}
-                    {report.response.ghosted === 1
-                      ? "application has"
-                      : "applications have"}{" "}
-                    had no reply at all for over {report.response.ghostedAfterDays}{" "}
-                    days.
-                    <span className="text-ink-muted">
-                      {" "}
-                      They are excluded from the median above — counting them as a
-                      fast reply would flatter it.
-                    </span>
-                  </p>
+              {report.response.ghosted > 0 || report.response.unobservable > 0 ? (
+                <div className="border-line space-y-1.5 border-t px-5 py-3">
+                  {report.response.ghosted > 0 ? (
+                    <p className="text-ink-2 text-xs">
+                      <strong className="text-ink tnum">
+                        {report.response.ghosted}
+                      </strong>{" "}
+                      {report.response.ghosted === 1
+                        ? "application has"
+                        : "applications have"}{" "}
+                      had no reply at all for over{" "}
+                      {report.response.ghostedAfterDays} days.
+                      <span className="text-ink-muted">
+                        {" "}
+                        They are excluded from the median above — counting them as a
+                        fast reply would flatter it.
+                      </span>
+                    </p>
+                  ) : null}
+                  {/* Said out loud rather than quietly dropped: a reader who
+                      knows they have sent more than the counts here would
+                      otherwise wonder where the rest went. */}
+                  {report.response.unobservable > 0 ? (
+                    <p className="text-ink-2 text-xs">
+                      <strong className="text-ink tnum">
+                        {report.response.unobservable}
+                      </strong>{" "}
+                      {report.response.unobservable === 1
+                        ? "was added"
+                        : "were added"}{" "}
+                      to Alfred mid-process, already past the application stage.
+                      <span className="text-ink-muted">
+                        {" "}
+                        The reply arrived before the record did, so the lag is
+                        unknown rather than zero.
+                      </span>
+                    </p>
+                  ) : null}
                 </div>
               ) : null}
             </Card>

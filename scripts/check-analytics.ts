@@ -24,6 +24,7 @@ import {
   outcomeTrend,
   quantile,
   rejections,
+  replyPredatesRecord,
   responseTimes,
   sentAt,
   type StageChangeRow,
@@ -351,6 +352,7 @@ ok(
   "a withdrawal counts as neither answered nor waiting",
   response.n + response.stillWaiting === 6,
 );
+ok("none of the main fixture is unobservable", response.unobservable === 0);
 ok(
   "a3's rejection out of applied counts as an answer, at 5 days",
   answeredAt(find("a3")) === ago(25) && sentAt(find("a3")) === ago(30),
@@ -561,6 +563,57 @@ ok(
   stageDurations(revisit, NOW).find((d) => d.stage === "screening")!.n === 2,
 );
 
+/* ---- added mid-process: the reply predates the record ---- */
+
+/*
+ * A job added to Alfred when you were already in a screening. There is no
+ * `applied` period on record, so the lag is unknown — not zero. The live
+ * account's only application has exactly this shape, and an earlier version
+ * reported "median 0 days" for it, which reads as a broken page rather than as
+ * a missing observation.
+ */
+const midway = buildTimelines(
+  [
+    app("m1", "Already Talking", {
+      stage: "rejected",
+      appliedAt: ago(30),
+      fitScore: 80,
+    }),
+  ],
+  [
+    { applicationId: "m1", from: "screening", to: "technical", at: ago(20) },
+    { applicationId: "m1", from: "technical", to: "rejected", at: ago(9) },
+  ],
+);
+ok(
+  "its record opens at screening, not applied",
+  midway[0].segments[0].stage === "screening" &&
+    replyPredatesRecord(midway[0]) === true,
+);
+ok("it still counts as sent", headline(midway).sent === 1);
+ok(
+  "it still counts as having responded",
+  headline(midway).responseRate === null && midway[0].furthestIndex === 2,
+);
+const midResponse = responseTimes(midway, NOW);
+ok(
+  "but contributes no reply time, rather than a 0-day one",
+  midResponse.n === 0 && midResponse.medianDays === null,
+);
+ok(
+  "and is not counted as still waiting either",
+  midResponse.stillWaiting === 0 && midResponse.ghosted === 0,
+);
+ok("it is reported as unobservable", midResponse.unobservable === 1);
+ok(
+  "its rejection is still attributed to the technical round",
+  rejections(midway).items[0].closedFrom === "technical",
+);
+ok(
+  "and its stage durations are still measured",
+  stageDurations(midway, NOW).find((d) => d.stage === "technical")!.n === 1,
+);
+
 /* ---- stage jumps: wishlist straight to a later round ---- */
 
 /*
@@ -643,6 +696,10 @@ ok(
 );
 ok("response median is null", responseTimes(none, NOW).medianDays === null);
 ok("nothing is reported as ghosted", responseTimes(none, NOW).ghosted === 0);
+ok(
+  "nothing is reported as unobservable",
+  responseTimes(none, NOW).unobservable === 0,
+);
 ok(
   "trend still returns its full window",
   outcomeTrend(none, 16, NOW).length === 16,

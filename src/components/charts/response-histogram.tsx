@@ -49,7 +49,12 @@ export function ResponseHistogram({ response }: { response: ResponseTimes }) {
         <p className="text-ink-muted max-w-60 text-center text-xs leading-relaxed">
           {response.stillWaiting > 0
             ? `Nothing has been answered yet — ${response.stillWaiting} ${response.stillWaiting === 1 ? "application is" : "applications are"} still waiting.`
-            : "No replies recorded yet. This fills in as companies come back to you."}
+            : response.unobservable > 0
+              ? // Saying "no replies yet" here would contradict the note
+                // directly below it, which explains that a reply did arrive —
+                // just before Alfred was watching.
+                "Nothing with a measurable lag yet. The next application you send from here will have one."
+              : "No replies recorded yet. This fills in as companies come back to you."}
         </p>
       </div>
     );

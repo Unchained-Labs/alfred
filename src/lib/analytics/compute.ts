@@ -192,13 +192,33 @@ export function sentAt(timeline: Timeline): number | null {
 }
 
 /**
- * When the company first answered, or null while it has not.
+ * True when the application's own record opens past `applied`.
+ *
+ * Happens whenever a job is added to Alfred mid-process — you were already in
+ * a screening when you started tracking it. The reply then predates the record
+ * entirely, so its lag is unknown rather than zero, and treating the opening
+ * segment as the moment of reply would report a 0-day response for an
+ * application nobody ever watched waiting.
+ */
+export function replyPredatesRecord(timeline: Timeline): boolean {
+  const first = timeline.segments[0];
+  if (!first) return false;
+  return funnelIndex(first.stage) > FUNNEL_STAGES.indexOf("applied");
+}
+
+/**
+ * When the company first answered, or null when that is not knowable.
  *
  * A rejection counts. The useful distinction is answered versus ignored, not
  * good news versus bad — and a pipeline where every reply is a rejection still
  * tells you your CV is landing, which is a different problem from silence.
+ *
+ * Null covers two different situations, and the caller has to tell them apart:
+ * still waiting, and answered before the record began. See
+ * `replyPredatesRecord`.
  */
 export function answeredAt(timeline: Timeline): number | null {
+  if (replyPredatesRecord(timeline)) return null;
   const pastApplied = FUNNEL_STAGES.indexOf("applied") + 1;
   // Segments are chronological, so the first match is the earliest.
   for (const segment of timeline.segments) {
@@ -368,6 +388,12 @@ export type ResponseTimes = {
   ghostedAfterDays: number;
   /** Sent and still waiting, including the ones that are merely recent. */
   stillWaiting: number;
+  /**
+   * Added to Alfred mid-process, so the reply happened before the record did.
+   * Counted here rather than folded into either of the above: as a reply it
+   * would be a 0-day one, and as a wait it would be a wait that already ended.
+   */
+  unobservable: number;
 };
 
 const RESPONSE_BUCKETS: { label: string; upTo: number }[] = [
@@ -394,10 +420,16 @@ export function responseTimes(
   const observed: number[] = [];
   let ghosted = 0;
   let stillWaiting = 0;
+  let unobservable = 0;
 
   for (const timeline of timelines) {
     const sent = sentAt(timeline);
     if (sent == null) continue;
+
+    if (replyPredatesRecord(timeline)) {
+      unobservable++;
+      continue;
+    }
 
     const answered = answeredAt(timeline);
     if (answered == null) {
@@ -427,6 +459,7 @@ export function responseTimes(
     ghosted,
     ghostedAfterDays,
     stillWaiting,
+    unobservable,
   };
 }
 
