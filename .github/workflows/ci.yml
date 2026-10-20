@@ -45,6 +45,14 @@ jobs:
       # wrong field produces a source that answers happily and yields nothing.
       - name: discovery filters and maps its sources
         run: npm run check:discovery
+      # Every figure on the Analytics page is derived, and a wrong derived
+      # number renders exactly as confidently as a right one. "You lose most
+      # often at the technical round" changes what someone practises for a
+      # month, so the stage attribution, the censoring of in-flight waits and
+      # the suppression of rates over tiny samples are gated here against a
+      # fixture whose answers were worked out by hand.
+      - name: analytics aggregations are correct
+        run: npm run check:analytics
       - name: exercise runner executes python
         run: |
           node -e "process.stdout.write(JSON.stringify({code:'def ok():\n    return 1\n',tests:[{name:'boots',call:'ok()',expect:'1',hidden:false},{name:'compares',call:'ok() + 1',expect:'3',hidden:true}]}))" > /tmp/job.json
@@ -122,7 +130,7 @@ jobs:
             "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/setup)"
 
           # --- signed in ---------------------------------------------------
-          for path in / /pipeline /jobs /jobs/discover /prep /calendar /inbox /settings; do
+          for path in / /pipeline /jobs /jobs/discover /prep /calendar /inbox /analytics /settings; do
             check "GET $path (signed in)" 200 \
               "$(curl -s -o /dev/null -b /tmp/ck.txt -w '%{http_code}' "http://localhost:3000$path")"
           done
@@ -162,6 +170,39 @@ jobs:
             "$(curl -s -o /dev/null -b /tmp/ck.txt -w '%{http_code}' -X POST \
                http://localhost:3000/api/exercises/does-not-exist/run \
                -H 'content-type: application/json' -d '{"code":"x=1"}')"
+
+          # --- analytics: renders from real rows, not just the empty state ---
+          # The aggregations are asserted offline by check:analytics. What this
+          # adds is that the page survives contact with a real database: one
+          # application, one stage move, one closure with feedback, and every
+          # panel still renders. A chart that throws on n=1 would otherwise
+          # only be found by the first person to open the page.
+          curl -s -o /dev/null -b /tmp/ck.txt -X PATCH "http://localhost:3000/api/applications/$app/move" \
+            -H 'content-type: application/json' -d '{"stage":"screening"}'
+          # React separates adjacent text nodes with an empty HTML comment, so
+          # JSX written as `out at {label}` reaches the browser as
+          # "out at <!-- -->screening". Strip comments before matching rather
+          # than contorting components to suit a grep.
+          page() { curl -s -b /tmp/ck.txt http://localhost:3000/analytics | sed 's/<!--[^>]*-->//g'; }
+          body=$(page)
+          for phrase in "Where applications end" "Time in each stage" "Time to first reply" \
+                        "Sends and outcomes by week" "Fit score against how far it went" \
+                        "Response rate by slice" "What they said"; do
+            printf '%-42s' "analytics panel: $phrase"
+            if printf '%s' "$body" | grep -qF "$phrase"; then echo "  ok"; else echo "  MISSING"; fail=1; fi
+          done
+          printf '%-42s' "analytics is past the empty state"
+          if printf '%s' "$body" | grep -qF "Nothing to measure yet"; then echo "  STILL EMPTY"; fail=1; else echo "  ok"; fi
+
+          # Closing with feedback must surface in the rejection panel.
+          curl -s -o /dev/null -b /tmp/ck.txt -X POST "http://localhost:3000/api/applications/$app/close" \
+            -H 'content-type: application/json' \
+            -d '{"stage":"rejected","outcomeNote":"Needed deeper Kafka experience.","clearTasks":true}'
+          body=$(page)
+          printf '%-42s' "analytics shows the rejection feedback"
+          if printf '%s' "$body" | grep -qF "Needed deeper Kafka experience."; then echo "  ok"; else echo "  MISSING"; fail=1; fi
+          printf '%-42s' "and attributes it to the screening round"
+          if printf '%s' "$body" | grep -qF "out at screening"; then echo "  ok"; else echo "  MISSING"; fail=1; fi
 
           exit $fail
 
