@@ -188,6 +188,91 @@ export function updateApplication(
   }
   return updated;
 }
+/**
+ * Closes an application: the outcome, what they said, and optionally the prep.
+ *
+ * Separate from `moveApplication` because closing is not just a stage change.
+ * Three things happen together and all three are the point:
+ *
+ *   - The company's own words are kept in `outcomeNote`, and repeated in the
+ *     timeline so the record reads in order.
+ *   - Any scheduled follow-up is cleared. Chasing a company that has already
+ *     said no is the most embarrassing thing this app could cause.
+ *   - The open prep items can be cleared in the same action, because that is
+ *     the actual reason people avoid closing things: the dead work keeps
+ *     showing up in their queue.
+ *
+ * Prep items are marked `skipped`, not deleted. The record of what you were
+ * asked to prepare for is worth keeping — it is how you notice the fourth
+ * company in a row wanted system design — and "skipped" already means
+ * "declined, honestly" everywhere else in the app.
+ */
+export function closeApplication(
+  userId: string,
+  id: string,
+  input: {
+    stage: ApplicationStage;
+    outcomeNote?: string | null;
+    clearTasks?: boolean;
+  },
+): { application: Application; cleared: number } | undefined {
+  const before = db
+    .select()
+    .from(applications)
+    .where(and(eq(applications.id, id), eq(applications.userId, userId)))
+    .get();
+  if (!before) return undefined;
+
+  const note = input.outcomeNote?.trim() || null;
+
+  const application = db
+    .update(applications)
+    .set({
+      stage: input.stage,
+      outcomeNote: note,
+      // A closed application has no next action by definition.
+      nextActionAt: null,
+      nextActionLabel: null,
+      boardOrder: nextBoardOrder(userId, input.stage),
+      updatedAt: new Date(),
+    })
+    .where(eq(applications.id, id))
+    .returning()
+    .get();
+
+  let cleared = 0;
+  if (input.clearTasks) {
+    const open = db
+      .update(actionables)
+      .set({ status: "skipped", updatedAt: new Date() })
+      .where(
+        and(
+          eq(actionables.userId, userId),
+          eq(actionables.applicationId, id),
+          inArray(actionables.status, ["todo", "in_progress"]),
+        ),
+      )
+      .returning()
+      .all();
+    cleared = open.length;
+  }
+
+  logEvent({
+    userId,
+    applicationId: id,
+    type: "stage_change",
+    title: `${stageLabel(before.stage)} → ${stageLabel(input.stage)}`,
+    body: note,
+    metadata: {
+      from: before.stage,
+      to: input.stage,
+      ...(cleared ? { clearedPrepItems: cleared } : {}),
+    },
+  });
+
+  return { application, cleared };
+}
+
 export function moveApplication(
   userId: string,
   id: string,

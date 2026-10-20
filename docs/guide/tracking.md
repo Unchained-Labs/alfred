@@ -48,6 +48,31 @@ added the role late.
 The **job description matters more than any other field**. Without it, analysis
 and prep fall back to reasoning from the title alone, and Alfred will say so.
 
+## Closing an application
+
+Picking **Rejected**, **I withdrew** or **Offer accepted** — from the stage
+picker or the **Close** button — opens one dialog rather than silently moving
+the card, because closing is three decisions at once.
+
+**What they said.** A rejection is the only moment a company tells you anything
+true about your application, and the moment the email arrives is the only
+moment you will ever bother writing it down. It is kept separate from your own
+notes and shown on the application under *What they said* — four of them side
+by side will tell you something no single one does.
+
+**The follow-up is cleared.** Chasing a company that has already said no is the
+most embarrassing thing this app could cause.
+
+**The prep can go with it.** Closing offers to clear the open prep items for
+that job in the same action. This is the real reason people avoid closing
+things: dead work keeps turning up in the queue, so they leave the application
+open and every number in the app drifts.
+
+!!! note "Cleared means skipped, not deleted"
+    Cleared items leave your prep queue and the dashboard but stay on the
+    record. That is deliberate — it is how you notice that the fourth company
+    in a row wanted system design.
+
 ## The timeline
 
 Every application has a timeline recording what happened and when:

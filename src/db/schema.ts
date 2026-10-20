@@ -223,6 +223,15 @@ export const applications = sqliteTable(
     notes: text("notes"),
     tags: text("tags", { mode: "json" }).$type<string[]>().default([]),
     appliedAt: integer("applied_at", { mode: "timestamp_ms" }),
+    /**
+     * What the company said when it ended, in their words.
+     *
+     * Separate from `notes`, which is the candidate's own running commentary.
+     * Rejection feedback is the single most useful thing a closed application
+     * leaves behind — it is the only outside signal in the whole record — and
+     * burying it in a notes field alongside "recruiter seemed nice" loses it.
+     */
+    outcomeNote: text("outcome_note"),
     nextActionAt: integer("next_action_at", { mode: "timestamp_ms" }),
     nextActionLabel: text("next_action_label"),
     archived: integer("archived", { mode: "boolean" }).notNull().default(false),
