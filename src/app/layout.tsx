@@ -3,7 +3,7 @@ import { Providers } from "@/components/providers";
 import { AppShell } from "@/components/shell/app-shell";
 import { runMigrations } from "@/db/migrate";
 import { currentUser } from "@/lib/auth";
-import { dashboardStats } from "@/lib/queries";
+import { countNewJobHits, dashboardStats } from "@/lib/queries";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -31,6 +31,8 @@ export default async function RootLayout({
   // is conditional: no nav, no counts, nothing that implies an account.
   const user = await currentUser();
   const stats = user ? dashboardStats(user.id) : null;
+  // New discovered postings, so the badge is visible without opening Jobs.
+  const newJobHits = user ? countNewJobHits(user.id) : 0;
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -41,6 +43,7 @@ export default async function RootLayout({
               user={{ name: user.name, email: user.email, role: user.role }}
               badges={{
                 "/inbox": stats.pendingMail,
+                "/jobs": newJobHits,
                 "/prep": stats.dueSoon,
               }}
             >

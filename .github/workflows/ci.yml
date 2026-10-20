@@ -40,6 +40,11 @@ jobs:
       # nothing from the content lands as markup. Deterministic and offline.
       - name: handbook renders and escapes its content
         run: npm run check:handbook
+      # The discovery filter and the per-source field mapping, offline against
+      # payloads recorded from the live APIs. The mapping matters because a
+      # wrong field produces a source that answers happily and yields nothing.
+      - name: discovery filters and maps its sources
+        run: npm run check:discovery
       - name: exercise runner executes python
         run: |
           node -e "process.stdout.write(JSON.stringify({code:'def ok():\n    return 1\n',tests:[{name:'boots',call:'ok()',expect:'1',hidden:false},{name:'compares',call:'ok() + 1',expect:'3',hidden:true}]}))" > /tmp/job.json
@@ -117,7 +122,7 @@ jobs:
             "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/setup)"
 
           # --- signed in ---------------------------------------------------
-          for path in / /pipeline /jobs /prep /calendar /inbox /settings; do
+          for path in / /pipeline /jobs /jobs/discover /prep /calendar /inbox /settings; do
             check "GET $path (signed in)" 200 \
               "$(curl -s -o /dev/null -b /tmp/ck.txt -w '%{http_code}' "http://localhost:3000$path")"
           done

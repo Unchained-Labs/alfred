@@ -643,6 +643,127 @@ export const handbooks = sqliteTable(
 );
 
 /* ------------------------------------------------------------------ *
+ * Job discovery
+ * ------------------------------------------------------------------ */
+
+export const JOB_SOURCE_KINDS = ["boards", "remotive", "arbeitnow"] as const;
+export type JobSourceKind = (typeof JOB_SOURCE_KINDS)[number];
+
+export const BOARD_PROVIDERS = ["greenhouse", "lever", "ashby"] as const;
+export type BoardProvider = (typeof BOARD_PROVIDERS)[number];
+
+/**
+ * A standing search, re-run on a schedule.
+ *
+ * The criteria are stored rather than the results of applying them, so
+ * tightening a search does not retroactively hide what it already found — a
+ * hit you have seen stays on the list until you act on it.
+ */
+export const jobSearches = sqliteTable(
+  "job_searches",
+  {
+    id: id(),
+    userId: text("user_id").references(() => users.id, { onDelete: "cascade" }),
+    label: text("label").notNull(),
+    /** Words that must appear in the title. Any of them, not all. */
+    titleQuery: text("title_query").notNull(),
+    /** Matched loosely against the posting's location text. */
+    location: text("location"),
+    remoteOnly: integer("remote_only", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    /** Annual, in whatever currency the posting states — compared loosely. */
+    minSalary: integer("min_salary"),
+    /** Which source kinds this search draws on. */
+    sources: text("sources", { mode: "json" })
+      .$type<JobSourceKind[]>()
+      .notNull()
+      .default(["boards"]),
+    active: integer("active", { mode: "boolean" }).notNull().default(true),
+    lastRunAt: integer("last_run_at", { mode: "timestamp_ms" }),
+    /** What the last run turned up, so a search that finds nothing is visible. */
+    lastNewCount: integer("last_new_count").notNull().default(0),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [index("job_searches_user_idx").on(t.userId)],
+);
+
+/** An employer whose own ATS board is checked directly. */
+export const jobBoards = sqliteTable(
+  "job_boards",
+  {
+    id: id(),
+    userId: text("user_id").references(() => users.id, { onDelete: "cascade" }),
+    provider: text("provider", { enum: BOARD_PROVIDERS }).notNull(),
+    /** The board's own identifier, e.g. `monzo` in boards-api/…/monzo/jobs. */
+    slug: text("slug").notNull(),
+    /** What to call the employer in the UI; the slug is rarely presentable. */
+    label: text("label").notNull(),
+    active: integer("active", { mode: "boolean" }).notNull().default(true),
+    lastRunAt: integer("last_run_at", { mode: "timestamp_ms" }),
+    /** Set when a board stops answering, so a dead slug explains itself. */
+    lastError: text("last_error"),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    uniqueIndex("job_boards_user_slug_idx").on(t.userId, t.provider, t.slug),
+    index("job_boards_user_idx").on(t.userId),
+  ],
+);
+
+export const JOB_HIT_STATUSES = ["new", "saved", "dismissed"] as const;
+export type JobHitStatus = (typeof JOB_HIT_STATUSES)[number];
+
+/**
+ * A posting a search turned up.
+ *
+ * Unique on (user, source, sourceRef) so re-running a search daily cannot
+ * produce the same row twice — which is the whole difficulty with a recurring
+ * scan, and the reason the external id is stored rather than derived.
+ */
+export const jobHits = sqliteTable(
+  "job_hits",
+  {
+    id: id(),
+    userId: text("user_id").references(() => users.id, { onDelete: "cascade" }),
+    /** Null once the search that found it is deleted; the hit outlives it. */
+    searchId: text("search_id").references(() => jobSearches.id, {
+      onDelete: "set null",
+    }),
+    source: text("source").notNull(),
+    sourceRef: text("source_ref").notNull(),
+    company: text("company").notNull(),
+    title: text("title").notNull(),
+    location: text("location"),
+    remote: integer("remote", { mode: "boolean" }),
+    url: text("url").notNull(),
+    salaryText: text("salary_text"),
+    postedAt: integer("posted_at", { mode: "timestamp_ms" }),
+    snippet: text("snippet"),
+    tags: text("tags", { mode: "json" }).$type<string[]>().default([]),
+    status: text("status", { enum: JOB_HIT_STATUSES }).notNull().default("new"),
+    /** Set when the hit is saved and becomes a tracked application. */
+    applicationId: text("application_id").references(() => applications.id, {
+      onDelete: "set null",
+    }),
+    /*
+     * Spelled out rather than using the createdAt() helper: that helper names
+     * the column `created_at`, and a column called created_at behind a field
+     * called firstSeenAt is a trap for whoever reads this next. What matters
+     * about a hit is when it was first seen, not when the row was written.
+     */
+    firstSeenAt: integer("first_seen_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(unixepoch() * 1000)`),
+  },
+  (t) => [
+    uniqueIndex("job_hits_ref_idx").on(t.userId, t.source, t.sourceRef),
+    index("job_hits_user_status_idx").on(t.userId, t.status),
+  ],
+);
+
+/* ------------------------------------------------------------------ *
  * Inferred types
  * ------------------------------------------------------------------ */
 
@@ -665,3 +786,8 @@ export type MailMessage = typeof mailMessages.$inferSelect;
 export type NewMailMessage = typeof mailMessages.$inferInsert;
 export type Handbook = typeof handbooks.$inferSelect;
 export type NewHandbook = typeof handbooks.$inferInsert;
+export type JobSearch = typeof jobSearches.$inferSelect;
+export type NewJobSearch = typeof jobSearches.$inferInsert;
+export type JobBoard = typeof jobBoards.$inferSelect;
+export type JobHit = typeof jobHits.$inferSelect;
+export type NewJobHit = typeof jobHits.$inferInsert;

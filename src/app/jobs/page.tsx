@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import * as React from "react";
 import { JobsTable } from "@/components/jobs/jobs-table";
+import { JobsTabs } from "@/components/jobs/jobs-tabs";
 import { PageHeader } from "@/components/shell/app-shell";
 import { requireUserForPage } from "@/lib/auth";
-import { listJobsWithContext } from "@/lib/queries";
+import { countNewJobHits, listJobsWithContext } from "@/lib/queries";
 
 export const metadata: Metadata = { title: "Jobs" };
 export const dynamic = "force-dynamic";
@@ -21,6 +22,7 @@ export const dynamic = "force-dynamic";
 export default async function JobsPage() {
   const user = await requireUserForPage();
   const jobs = listJobsWithContext(user.id);
+  const newHits = countNewJobHits(user.id);
 
   return (
     <div className="mx-auto max-w-7xl p-4 lg:p-6">
@@ -28,6 +30,7 @@ export default async function JobsPage() {
         title="Jobs"
         description="Everything you have tracked, open and closed. Sort by any column."
       />
+      <JobsTabs newCount={newHits} />
       <JobsTable jobs={jobs} />
     </div>
   );
