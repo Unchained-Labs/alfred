@@ -5,6 +5,7 @@ import {
   ArrowRight,
   Briefcase,
   CalendarClock,
+  ChartColumn,
   EarOff,
   Handshake,
   Layers,
@@ -34,6 +35,7 @@ import {
   needsAttention,
   upcomingWork,
 } from "@/lib/queries";
+import { stageExits } from "@/lib/analytics";
 import { getSettings, profileIsUsable, providerIsConfigured } from "@/lib/settings";
 import { STAGE_META } from "@/lib/stages";
 import { formatDate, initials, relativeDay } from "@/lib/utils";
@@ -59,6 +61,7 @@ export default async function DashboardPage() {
   const user = await requireUserForPage();
   const stats = dashboardStats(user.id);
   const funnel = funnelDepth(user.id);
+  const exits = stageExits(user.id);
   const activity = applicationActivity(user.id, 30);
   const queue = upcomingWork(user.id, 7);
   const attention = needsAttention(user.id, 5);
@@ -78,12 +81,20 @@ export default async function DashboardPage() {
         title="Dashboard"
         description="Where every application stands, and what to do about it next."
         actions={
-          <Button asChild variant="outline">
-            <Link href="/pipeline">
-              Open pipeline
-              <ArrowRight className="size-3.5" />
-            </Link>
-          </Button>
+          <>
+            <Button asChild variant="ghost">
+              <Link href="/analytics">
+                <ChartColumn className="size-3.5" />
+                Analytics
+              </Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/pipeline">
+                Open pipeline
+                <ArrowRight className="size-3.5" />
+              </Link>
+            </Button>
+          </>
         }
       />
 
@@ -136,8 +147,8 @@ export default async function DashboardPage() {
                 <div>
                   <CardTitle>Conversion funnel</CardTitle>
                   <p className="text-ink-muted mt-0.5 text-xs">
-                    Applications that reached each stage, including ones later
-                    closed.
+                    Applications that reached each stage, with the ones that ended
+                    there in red.
                   </p>
                 </div>
                 {stats.responseRate != null ? (
@@ -147,7 +158,7 @@ export default async function DashboardPage() {
                 ) : null}
               </CardHeader>
               <CardBody>
-                <Funnel rows={funnel} />
+                <Funnel rows={funnel} exits={exits} />
               </CardBody>
             </Card>
           </div>

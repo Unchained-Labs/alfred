@@ -5,7 +5,7 @@
   "engines": {
     "node": ">=22"
   },
-  "description": "Alfred \u2014 your job-hunt butler. Track applications, get AI-driven interview prep actionables.",
+  "description": "Alfred — your job-hunt butler. Track applications, get AI-driven interview prep actionables.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -21,7 +21,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check:handbook": "tsx scripts/check-handbook-render.ts",
-    "check:discovery": "tsx scripts/check-discovery-match.ts"
+    "check:discovery": "tsx scripts/check-discovery-match.ts",
+    "check:analytics": "tsx scripts/check-analytics.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.131.0",

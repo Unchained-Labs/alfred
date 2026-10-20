@@ -171,6 +171,14 @@ export function stageCounts(userId: string): StageCount[] {
  * Funnel depth: how many applications reached *at least* each stage. Current
  * stage alone would under-count everything later rejected, so this reads the
  * stage-change history.
+ *
+ * Both sides of each move count. Reading only `to` loses the stage an
+ * application *started* in, which is invisible until something is rejected
+ * straight out of it: an application that went applied → rejected has no move
+ * whose destination is a funnel stage at all, so it dropped out of the funnel
+ * entirely while still being counted as sent everywhere else. The Analytics
+ * page, which reconstructs full segments, then disagreed with this one on the
+ * same screen.
  */
 export function funnelDepth(
   userId: string,
@@ -184,7 +192,8 @@ export function funnelDepth(
   const reachedRows = db
     .select({
       applicationId: events.applicationId,
-      stage: sql<string>`json_extract(${events.metadata}, '$.to')`,
+      from: sql<string | null>`json_extract(${events.metadata}, '$.from')`,
+      to: sql<string | null>`json_extract(${events.metadata}, '$.to')`,
     })
     .from(events)
     .where(and(eq(events.type, "stage_change"), eq(events.userId, userId)))
@@ -193,8 +202,11 @@ export function funnelDepth(
   const reached = new Map<string, Set<string>>();
   for (const app of live) reached.set(app.id, new Set([app.stage]));
   for (const row of reachedRows) {
-    if (!row.applicationId || !row.stage) continue;
-    reached.get(row.applicationId)?.add(row.stage);
+    if (!row.applicationId) continue;
+    const stages = reached.get(row.applicationId);
+    if (!stages) continue;
+    if (row.from) stages.add(row.from);
+    if (row.to) stages.add(row.to);
   }
 
   return FUNNEL_STAGES.map((stage, index) => {
