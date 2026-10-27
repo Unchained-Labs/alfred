@@ -36,6 +36,12 @@ services:
       # internal one — so leaving this unset makes passkeys silently not work
       # rather than fail loudly. Set it to your tailnet or public URL.
       ALFRED_PUBLIC_URL: ${ALFRED_PUBLIC_URL:-}
+      # Only needed when the passkey host differs from ALFRED_PUBLIC_URL's.
+      ALFRED_RP_ID: ${ALFRED_RP_ID:-}
+      # Whether anyone who reaches Alfred may create an account after the
+      # first (the owner). Off unless set; invitations work either way. Without
+      # this line the setting in .env never reached the app.
+      ALFRED_ALLOW_SIGNUP: ${ALFRED_ALLOW_SIGNUP:-}
       # All optional: the same values can be set in Settings, which stores them
       # in the database. Environment wins where both are present.
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
