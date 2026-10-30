@@ -23,6 +23,18 @@ export type HandbookSummary = {
   parts: number;
   createdAt: Date | null;
   model: string | null;
+  /** False when a build stopped partway: an outline with parts unwritten. */
+  complete: boolean;
+};
+
+/** What the server says is left to do, after every step. */
+type HandbookStep = {
+  title: string;
+  parts: number;
+  partsWritten: number;
+  partTitles: string[];
+  nextStep: { step: "part"; index: number } | { step: "drills" } | null;
+  cards?: number;
 };
 
 /**
@@ -45,23 +57,51 @@ export function HandbookPanel({
   const toast = useToast();
   const [busy, setBusy] = React.useState(false);
   const [confirming, setConfirming] = React.useState(false);
+  const [progress, setProgress] = React.useState<string | null>(null);
 
+  async function step(body: Record<string, unknown>): Promise<HandbookStep> {
+    const response = await fetch(`/api/applications/${applicationId}/handbook`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error ?? "Could not build the handbook.");
+    }
+    return data as HandbookStep;
+  }
+
+  /**
+   * The server builds a handbook one step per request — outline, each part,
+   * then the drills — and says after each what is left. Drive it to the end.
+   * Without `regenerate`, an existing outline is reused, so a build that
+   * stopped partway resumes at the first unwritten part.
+   */
   async function build(regenerate: boolean) {
     setBusy(true);
     setConfirming(false);
+    setProgress("Planning the parts");
     try {
-      const response = await fetch(`/api/applications/${applicationId}/handbook`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ regenerate }),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error ?? "Could not build the handbook.");
+      let state = await step({ step: "outline", regenerate });
+      while (state.nextStep) {
+        const next = state.nextStep;
+        setProgress(
+          next.step === "part"
+            ? `Writing part ${next.index + 1} of ${state.parts}: ${state.partTitles[next.index] ?? ""}`
+            : "Writing the cards, glossary and checklist",
+        );
+        // One retry per step: a single clipped or malformed response should
+        // not cost the parts already written.
+        try {
+          state = await step(next);
+        } catch {
+          state = await step(next);
+        }
       }
       toast.success(
         "Handbook ready",
-        `${data.handbook.parts} parts${data.handbook.cards ? `, ${data.handbook.cards} cards` : ""}`,
+        `${state.parts} parts${state.cards ? `, ${state.cards} cards` : ""}`,
       );
       router.refresh();
     } catch (error) {
@@ -71,6 +111,7 @@ export function HandbookPanel({
       );
     } finally {
       setBusy(false);
+      setProgress(null);
     }
   }
 
@@ -117,11 +158,9 @@ export function HandbookPanel({
         ) : null}
       </CardHeader>
 
-      {busy && !handbook ? (
+      {busy && progress ? (
         <CardBody className="space-y-3">
-          <p className="text-ink text-sm font-medium">
-            Writing the handbook, then the practice material.
-          </p>
+          <p className="text-ink text-sm font-medium">{progress}</p>
           <p className="text-ink-muted text-xs leading-relaxed">
             Two passes: the parts get written first, then the cards and glossary
             drill the ground they actually cover. This takes a couple of minutes —
@@ -153,6 +192,18 @@ export function HandbookPanel({
       ) : (
         <CardBody className="space-y-3">
           <p className="text-ink text-sm font-medium">{handbook.title}</p>
+          {!handbook.complete ? (
+            <div className="space-y-2 rounded-md border p-3 text-xs">
+              <p className="text-ink-muted leading-relaxed">
+                This build stopped partway: the outline is there, but some parts
+                or the practice material are not written yet.
+              </p>
+              <Button variant="primary" size="sm" onClick={() => build(false)}>
+                <Sparkles className="size-3.5" />
+                Finish writing it
+              </Button>
+            </div>
+          ) : null}
           <div className="flex flex-wrap items-center gap-1.5">
             <Badge tint="var(--brand-accent)">{handbook.parts} parts</Badge>
             {handbook.model ? <Badge>{handbook.model}</Badge> : null}

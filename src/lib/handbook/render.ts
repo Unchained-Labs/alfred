@@ -25,6 +25,20 @@ export function asHandbookContent(value: unknown): HandbookContent | null {
   return v as HandbookContent;
 }
 
+/**
+ * Whether every step ran: each part has prose and the drills exist. A build
+ * that stopped partway leaves an outline behind, and the panel offers to
+ * finish it rather than presenting the empty shell as a handbook.
+ */
+export function handbookComplete(value: unknown): boolean {
+  const content = asHandbookContent(value);
+  if (!content) return false;
+  return (
+    content.plan.parts.every((p) => p.body?.trim()) &&
+    content.drills.flashcards.length > 0
+  );
+}
+
 const EMPHASIS_LABEL: Record<string, string> = {
   must: "Must know",
   leadership: "Leadership",

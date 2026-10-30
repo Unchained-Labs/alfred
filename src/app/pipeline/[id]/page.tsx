@@ -10,6 +10,7 @@ import { HandbookPanel } from "@/components/applications/detail/handbook-panel";
 import { QuestionnairePanel } from "@/components/applications/detail/questionnaire-panel";
 import { Timeline } from "@/components/applications/detail/timeline";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
+import { handbookComplete } from "@/lib/handbook/render";
 import {
   getApplication,
   getHandbook,
@@ -79,6 +80,7 @@ export default async function ApplicationPage({ params }: Params) {
                     parts: handbook.parts,
                     createdAt: handbook.createdAt,
                     model: handbook.model,
+                    complete: handbookComplete(handbook.content),
                   }
                 : null
             }
