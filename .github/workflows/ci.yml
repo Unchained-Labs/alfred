@@ -53,6 +53,13 @@ jobs:
       # fixture whose answers were worked out by hand.
       - name: analytics aggregations are correct
         run: npm run check:analytics
+      # The AI job queue decides what runs, when, and whether a failure is
+      # tried again — and a job that is never claimed looks exactly like one
+      # that is merely queued. Claim order, dependencies, backoff, dedupe,
+      # crash recovery and cancellation, against a scratch database and a fake
+      # handler. No provider is called.
+      - name: AI job queue claims, retries and recovers
+        run: npm run check:queue
       # Ranking jobs by pay is only right if every salary is converted first,
       # and a conversion bug does not crash — it crowns the posting with the
       # most zeros. Conversion, missing salaries and fits, percentiles, the

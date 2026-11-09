@@ -7,41 +7,39 @@ import { Button } from "@/components/ui/button";
 import { Card, CardBody } from "@/components/ui/card";
 import { EmptyState, ThinkingRows } from "@/components/ui/states";
 import { useToast } from "@/components/ui/toast";
+import { jobPhase, useQueuedJob } from "@/components/jobs/use-queued-job";
+import type { AiJob } from "@/db/schema";
 
-async function generate(actionableId: string, regenerate: boolean) {
-  const response = await fetch(`/api/actionables/${actionableId}/exercise`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ regenerate }),
-  });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.error ?? "Could not build the exercise.");
-  return data;
-}
+const urlFor = (actionableId: string) =>
+  `/api/actionables/${actionableId}/exercise`;
 
 /** The empty state: no exercise has been generated for this item yet. */
 export function GenerateExercise({
   actionableId,
   kind,
+  activeJob,
 }: {
   actionableId: string;
   kind: "code" | "written";
+  /** An exercise already queued or running for this item — say, by the automatic pipeline. */
+  activeJob?: AiJob | null;
 }) {
   const router = useRouter();
   const toast = useToast();
-  const [busy, setBusy] = React.useState(false);
+  const { job, busy, start } = useQueuedJob(activeJob, {
+    onFailed: (failed) => toast.error("Could not build it", failed.error ?? ""),
+  });
 
   async function run() {
-    setBusy(true);
     try {
-      await generate(actionableId, false);
-      router.refresh();
+      const data = await start(urlFor(actionableId), { regenerate: false });
+      // An exercise that already existed comes straight back.
+      if (!data.job) router.refresh();
     } catch (error) {
       toast.error(
         "Could not build it",
         error instanceof Error ? error.message : String(error),
       );
-      setBusy(false);
     }
   }
 
@@ -49,6 +47,11 @@ export function GenerateExercise({
     return (
       <Card>
         <CardBody className="space-y-4 pt-5">
+          <p className="text-ink-muted text-xs">
+            {jobPhase(job)}
+            {job?.status === "queued" ? " — other generations are ahead of it" : ""}
+            . It carries on if you leave this page.
+          </p>
           <p className="text-ink text-sm font-medium">
             {kind === "code"
               ? "Writing the problem, then solving it to check the tests are right."
@@ -100,25 +103,24 @@ export function RegenerateExercise({
   actionableId: string;
   verified: boolean;
 }) {
-  const router = useRouter();
   const toast = useToast();
-  const [busy, setBusy] = React.useState(false);
   const [confirming, setConfirming] = React.useState(false);
-
-  async function run() {
-    setBusy(true);
-    try {
-      await generate(actionableId, true);
+  const { busy, start } = useQueuedJob(null, {
+    onSucceeded: () => {
       toast.success("New exercise", "The previous attempts went with the old one.");
       setConfirming(false);
-      router.refresh();
+    },
+    onFailed: (failed) => toast.error("Could not rebuild it", failed.error ?? ""),
+  });
+
+  async function run() {
+    try {
+      await start(urlFor(actionableId), { regenerate: true });
     } catch (error) {
       toast.error(
         "Could not rebuild it",
         error instanceof Error ? error.message : String(error),
       );
-    } finally {
-      setBusy(false);
     }
   }
 

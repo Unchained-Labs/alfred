@@ -15,6 +15,7 @@ import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/states";
 import { currentUser, requireUserForPage } from "@/lib/auth";
 import { exerciseKindFor } from "@/lib/exercises";
+import { pendingJob } from "@/lib/jobs/queue";
 import {
   getActionable,
   getApplication,
@@ -143,7 +144,11 @@ export default async function ExercisePage({ params }: Params) {
           />
         </Card>
       ) : !exercise ? (
-        <GenerateExercise actionableId={actionable.id} kind={kind} />
+        <GenerateExercise
+          actionableId={actionable.id}
+          kind={kind}
+          activeJob={pendingJob(user.id, `exercise:${actionable.id}`)}
+        />
       ) : exercise.kind === "code" ? (
         <CodeWorkspace
           exercise={exercise}

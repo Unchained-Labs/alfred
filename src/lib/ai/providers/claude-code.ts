@@ -51,6 +51,22 @@ type CliResult = {
 };
 
 /**
+ * What a failed run said on stdout: the `result` of its JSON envelope when
+ * there is one, otherwise the last line printed.
+ */
+function stdoutDetail(stdout: string): string {
+  const text = stdout.trim();
+  if (!text) return "";
+  try {
+    const payload = JSON.parse(text) as CliResult;
+    if (payload.result) return payload.result;
+  } catch {
+    // Not the JSON envelope (stream-json, or a crash mid-print).
+  }
+  return text.split("\n").pop() ?? "";
+}
+
+/**
  * Drives a locally installed Claude Code CLI in non-interactive mode.
  *
  * This is the one provider that needs no API key: the CLI resolves the
@@ -161,12 +177,21 @@ export class ClaudeCodeProvider implements AiProvider {
         clearTimeout(timer);
         if (onLine && pending.trim()) onLine(pending);
         if (code !== 0) {
+          // With --output-format json the CLI reports most failures — an
+          // expired login among them — as a JSON result on STDOUT and leaves
+          // stderr empty, so "no output on stderr" said nothing useful.
+          const detail =
+            stderr.trim() || stdoutDetail(stdout) || "no output on stderr";
           reject(
-            new AiError(
-              `Claude Code exited with code ${code}: ${
-                stderr.trim().slice(0, 400) || "no output on stderr"
-              }`,
-            ),
+            /not logged in|failed to authenticate|oauth session expired|\/login/i.test(
+              detail,
+            )
+              ? new AiNotConfiguredError(
+                  `Claude Code is signed out or its login expired (${detail.slice(0, 200)}). Run \`claude\` in a terminal and sign in, then retry.`,
+                )
+              : new AiError(
+                  `Claude Code exited with code ${code}: ${detail.slice(0, 400)}`,
+                ),
           );
           return;
         }

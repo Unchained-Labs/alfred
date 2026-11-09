@@ -1,6 +1,7 @@
 import type { ApplicationStage } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
 import { badRequest, failed, ok, readJson } from "@/lib/api";
+import { queueApplicationPipeline } from "@/lib/jobs/pipeline";
 import { createApplication } from "@/lib/mutations";
 import { listApplications } from "@/lib/queries";
 
@@ -39,7 +40,24 @@ export async function POST(request: Request) {
       source: (body.source as string) ?? "manual",
     });
 
-    return ok({ application }, 201);
+    // Everything Alfred can write about it, queued now and run in the
+    // background: analysis, prep plan, questions, handbook, exercises.
+    const generation = queueApplicationPipeline(user.id, application, "created");
+
+    return ok(
+      {
+        application,
+        generation: {
+          queued: generation.queued.map((job) => ({
+            id: job.id,
+            kind: job.kind,
+            label: job.label,
+          })),
+          skipped: generation.skipped,
+        },
+      },
+      201,
+    );
   } catch (error) {
     return failed(error);
   }

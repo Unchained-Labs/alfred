@@ -773,6 +773,111 @@ export const jobHits = sqliteTable(
 );
 
 /* ------------------------------------------------------------------ *
+ * AI generation queue
+ * ------------------------------------------------------------------ */
+
+/**
+ * What the queue can run. Background kinds write their results where they
+ * always have (analyses, actionables, questions, handbooks, exercises); the
+ * interactive kinds are awaited by the request that queued them and hand their
+ * result back through `result`.
+ */
+export const AI_JOB_KINDS = [
+  "analysis",
+  "actionables",
+  "questionnaire",
+  "handbook_outline",
+  "handbook_part",
+  "handbook_drills",
+  "exercise",
+  "parse_job",
+  "parse_resume",
+  "grade_answer",
+  "triage_email",
+] as const;
+export type AiJobKind = (typeof AI_JOB_KINDS)[number];
+
+export const AI_JOB_STATUSES = [
+  "queued",
+  "running",
+  "succeeded",
+  "failed",
+  "cancelled",
+] as const;
+export type AiJobStatus = (typeof AI_JOB_STATUSES)[number];
+
+/**
+ * Two lanes, each with its own concurrency. A person waiting on a form (parse
+ * a posting, grade an answer) must not sit behind a twelve-step handbook that
+ * was queued in the background — so they never share a slot.
+ */
+export const AI_JOB_LANES = ["background", "interactive"] as const;
+export type AiJobLane = (typeof AI_JOB_LANES)[number];
+
+/**
+ * One AI generation, durable across restarts.
+ *
+ * Every provider call used to run inside the request that asked for it: close
+ * the tab and the work was lost, and two tabs meant two `claude` processes on
+ * a machine that has room for one. Now a request only enqueues; the worker
+ * started from instrumentation.ts runs jobs with bounded concurrency, retries
+ * what is worth retrying, and a restart picks up where it left off.
+ */
+export const aiJobs = sqliteTable(
+  "ai_jobs",
+  {
+    id: id(),
+    userId: text("user_id").references(() => users.id, { onDelete: "cascade" }),
+    applicationId: text("application_id").references(() => applications.id, {
+      onDelete: "cascade",
+    }),
+    kind: text("kind", { enum: AI_JOB_KINDS }).notNull(),
+    lane: text("lane", { enum: AI_JOB_LANES }).notNull().default("background"),
+    /** What the handler needs beyond the application — a part index, say. */
+    payload: text("payload", { mode: "json" }).$type<unknown>(),
+    status: text("status", { enum: AI_JOB_STATUSES }).notNull().default("queued"),
+    /** Lower runs first. Within a priority, oldest first. */
+    priority: integer("priority").notNull().default(5),
+    attempts: integer("attempts").notNull().default(0),
+    maxAttempts: integer("max_attempts").notNull().default(3),
+    /** Not before this. Backoff after a transient failure moves it forward. */
+    runAfter: integer("run_after", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(unixepoch() * 1000)`),
+    /** Job ids that must have succeeded first. */
+    dependsOn: text("depends_on", { mode: "json" })
+      .$type<string[]>()
+      .notNull()
+      .default([]),
+    /**
+     * Same key while one is pending → the existing job is returned instead of
+     * a second being queued. Two clicks on "Analyze" are one analysis.
+     */
+    dedupeKey: text("dedupe_key"),
+    /** A short human label for the queue view: "Handbook part 3 of 7". */
+    label: text("label"),
+    error: text("error"),
+    /** True when the last failure is one a retry cannot fix (signed out, no posting). */
+    permanent: integer("permanent", { mode: "boolean" }).notNull().default(false),
+    /** What the handler returned. Interactive kinds read their answer here. */
+    result: text("result", { mode: "json" }).$type<unknown>(),
+    startedAt: integer("started_at", { mode: "timestamp_ms" }),
+    finishedAt: integer("finished_at", { mode: "timestamp_ms" }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    index("ai_jobs_claim_idx").on(t.status, t.lane, t.priority, t.runAfter),
+    index("ai_jobs_application_idx").on(t.applicationId),
+    index("ai_jobs_user_idx").on(t.userId, t.createdAt),
+    // At most one pending job per key: the database enforces what enqueue checks.
+    uniqueIndex("ai_jobs_dedupe_pending_idx")
+      .on(t.dedupeKey)
+      .where(sql`status in ('queued', 'running') and dedupe_key is not null`),
+  ],
+);
+
+/* ------------------------------------------------------------------ *
  * Inferred types
  * ------------------------------------------------------------------ */
 
@@ -800,3 +905,5 @@ export type NewJobSearch = typeof jobSearches.$inferInsert;
 export type JobBoard = typeof jobBoards.$inferSelect;
 export type JobHit = typeof jobHits.$inferSelect;
 export type NewJobHit = typeof jobHits.$inferInsert;
+export type AiJob = typeof aiJobs.$inferSelect;
+export type NewAiJob = typeof aiJobs.$inferInsert;

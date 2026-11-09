@@ -1,6 +1,7 @@
 import { APPLICATION_STAGES, type ApplicationStage } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
 import { badRequest, failed, notFound, ok, readJson } from "@/lib/api";
+import { queueApplicationPipeline } from "@/lib/jobs/pipeline";
 import { applicationFromMail, linkMailToApplication } from "@/lib/mutations";
 
 type Params = { params: Promise<{ id: string }> };
@@ -22,6 +23,9 @@ export async function POST(request: Request, { params }: Params) {
           "Alfred could not tell which company this is from. Add the application manually.",
         );
       }
+      // An email carries no posting, so this usually records "waiting for the
+      // job description" on the timeline rather than queueing anything.
+      queueApplicationPipeline(user.id, application, "created");
       return ok({ application }, 201);
     }
 

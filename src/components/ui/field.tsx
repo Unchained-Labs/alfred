@@ -143,12 +143,14 @@ export function Switch({
   label,
   hint,
   id,
+  disabled,
 }: {
   checked: boolean;
   onCheckedChange: (checked: boolean) => void;
   label: string;
   hint?: string;
   id?: string;
+  disabled?: boolean;
 }) {
   const inputId = id ?? `switch-${label.replace(/\W+/g, "-").toLowerCase()}`;
   return (
@@ -166,8 +168,10 @@ export function Switch({
         id={inputId}
         checked={checked}
         onCheckedChange={onCheckedChange}
+        disabled={disabled}
         className={cn(
           "border-line relative mt-0.5 h-5.5 w-9.5 shrink-0 cursor-pointer rounded-full border transition-colors",
+          "disabled:cursor-not-allowed disabled:opacity-50",
           "data-[state=unchecked]:bg-surface-3 data-[state=checked]:border-transparent",
         )}
         style={checked ? { backgroundColor: "var(--brand)" } : undefined}

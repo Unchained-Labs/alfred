@@ -1,6 +1,7 @@
 import type { ApplicationStage } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
 import { asDate, failed, notFound, ok, readJson } from "@/lib/api";
+import { hasPosting, queueApplicationPipeline } from "@/lib/jobs/pipeline";
 import { deleteApplication, updateApplication } from "@/lib/mutations";
 import {
   getApplication,
@@ -63,8 +64,15 @@ export async function PATCH(request: Request, { params }: Params) {
     if ("appliedAt" in body) patch.appliedAt = asDate(body.appliedAt);
     if ("nextActionAt" in body) patch.nextActionAt = asDate(body.nextActionAt);
 
+    const before = getApplication(user.id, id);
     const application = updateApplication(user.id, id, patch);
     if (!application) return notFound("Application not found.");
+
+    // The posting arriving after the fact — pasted into an application created
+    // from an email or a two-line board snippet — is when generation can start.
+    if (before && !hasPosting(before) && hasPosting(application)) {
+      queueApplicationPipeline(user.id, application, "posting_added");
+    }
     return ok({ application });
   } catch (error) {
     return failed(error);

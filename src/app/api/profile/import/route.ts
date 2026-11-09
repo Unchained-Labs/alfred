@@ -1,6 +1,7 @@
 import { parseResume } from "@/lib/ai";
 import { requireUser } from "@/lib/auth";
 import { badRequest, failed, ok } from "@/lib/api";
+import { runInteractive } from "@/lib/jobs/worker";
 import { extractResumeText, MAX_RESUME_BYTES } from "@/lib/resume";
 
 // The PDF text layer is read in-process, so this needs the Node runtime.
@@ -23,7 +24,10 @@ export async function POST(request: Request) {
     const bytes = new Uint8Array(await file.arrayBuffer());
     const extracted = await extractResumeText(bytes, file.name);
 
-    const { result, provider, model } = await parseResume(user.id, extracted.text);
+    const { result, provider, model } = await runInteractive(
+      { userId: user.id, kind: "parse_resume", label: `Read CV: ${file.name}` },
+      () => parseResume(user.id, extracted.text),
+    );
 
     return ok({
       profile: result,

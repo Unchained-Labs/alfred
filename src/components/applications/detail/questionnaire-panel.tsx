@@ -16,7 +16,8 @@ import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/field";
 import { EmptyState, ThinkingRows } from "@/components/ui/states";
 import { useToast } from "@/components/ui/toast";
-import type { Question } from "@/db/schema";
+import { jobPhase, useQueuedJob } from "@/components/jobs/use-queued-job";
+import type { AiJob, Question } from "@/db/schema";
 import { cn } from "@/lib/utils";
 
 const CATEGORY_TINT: Record<string, string> = {
@@ -182,40 +183,39 @@ function QuestionItem({ question }: { question: Question }) {
 export function QuestionnairePanel({
   applicationId,
   questions,
+  activeJob,
 }: {
   applicationId: string;
   questions: Question[];
+  /** A questionnaire already queued or running when the page rendered. */
+  activeJob?: AiJob | null;
 }) {
-  const router = useRouter();
   const toast = useToast();
-  const [generating, setGenerating] = React.useState(false);
+  const {
+    job,
+    busy: generating,
+    start,
+  } = useQueuedJob(activeJob, {
+    onSucceeded: (finished) => {
+      const count = (finished.result as { questions?: number } | null)?.questions;
+      toast.success(`${count ?? "New"} questions ready`);
+    },
+    onFailed: (finished) =>
+      toast.error("Questionnaire failed", finished.error ?? ""),
+  });
 
   const answered = questions.filter((question) => question.userAnswer).length;
 
   async function generate() {
-    setGenerating(true);
     try {
-      const response = await fetch(
-        `/api/applications/${applicationId}/questionnaire`,
-        {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ count: 12 }),
-        },
-      );
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error ?? "Could not draft the questionnaire.");
-      }
-      toast.success(`${data.questions.length} questions ready`);
-      router.refresh();
+      await start(`/api/applications/${applicationId}/questionnaire`, {
+        count: 12,
+      });
     } catch (error) {
       toast.error(
         "Questionnaire failed",
         error instanceof Error ? error.message : String(error),
       );
-    } finally {
-      setGenerating(false);
     }
   }
 
@@ -242,7 +242,10 @@ export function QuestionnairePanel({
       </CardHeader>
 
       {generating && !questions.length ? (
-        <CardBody>
+        <CardBody className="space-y-3">
+          <p className="text-ink-muted text-xs">
+            {jobPhase(job)} — it carries on if you leave this page.
+          </p>
           <ThinkingRows rows={4} />
         </CardBody>
       ) : !questions.length ? (

@@ -1,6 +1,7 @@
 import { JOB_HIT_STATUSES, type JobHitStatus } from "@/db/schema";
 import { badRequest, failed, notFound, ok, readJson } from "@/lib/api";
 import { requireUser } from "@/lib/auth";
+import { queueApplicationPipeline } from "@/lib/jobs/pipeline";
 import { saveJobHitAsApplication, setJobHitStatus } from "@/lib/mutations";
 
 type Params = { params: Promise<{ id: string }> };
@@ -22,6 +23,9 @@ export async function PATCH(request: Request, { params }: Params) {
     if (body.save) {
       const result = saveJobHitAsApplication(user.id, id);
       if (!result) return notFound("That posting is not on your list.");
+      if (result.created) {
+        queueApplicationPipeline(user.id, result.application, "created");
+      }
       return ok({
         application: result.application,
         created: result.created,

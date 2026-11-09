@@ -11,6 +11,9 @@ database. Environment variables exist for the credentials you'd rather not store
 | `ANTHROPIC_API_KEY`    | Claude credentials                                      |
 | `ALFRED_LLM_API_KEY`   | Bearer token for the OpenAI-compatible endpoint         |
 | `ALFRED_AGENT_API_KEY` | Bearer token for a custom agent                         |
+| `ALFRED_AI_CONCURRENCY` | AI generations run at once in the background. Default `1` |
+| `ALFRED_AI_INTERACTIVE_CONCURRENCY` | Generations someone is waiting on (parse, grade, triage), in their own slots. Default `1` |
+| `ALFRED_AI_JOB_TIMEOUT_MS` | A job running longer than this is given up on and retried. Default 20 minutes |
 
 Copy `.env.example` to `.env` to set them. **The environment wins** where both it
 and the stored setting are present, so you can leave the Settings fields blank

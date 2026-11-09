@@ -49,7 +49,7 @@ const SUBMITTED_STAGES: ApplicationStage[] = [
   "accepted",
   "rejected",
 ];
-function logEvent(input: {
+export function logEvent(input: {
   userId: string;
   applicationId: string;
   type: "created" | "stage_change" | "note" | "email" | "interview" | "task" | "ai";

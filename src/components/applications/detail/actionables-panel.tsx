@@ -25,7 +25,8 @@ import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState, ThinkingRows } from "@/components/ui/states";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useToast } from "@/components/ui/toast";
-import type { Actionable, ActionableStatus } from "@/db/schema";
+import { jobPhase, useQueuedJob } from "@/components/jobs/use-queued-job";
+import type { Actionable, ActionableStatus, AiJob } from "@/db/schema";
 import { DO_IT_LABEL, exerciseKindFor, requiresExercise } from "@/lib/exercises";
 import { actionableMeta } from "@/lib/stages";
 import { cn } from "@/lib/utils";
@@ -220,16 +221,39 @@ export function ActionablesPanel({
   applicationId,
   actionables,
   hasAnalysis,
+  activeJob,
 }: {
   applicationId: string;
   actionables: Actionable[];
   hasAnalysis: boolean;
+  /** A prep plan already queued or running when the page rendered. */
+  activeJob?: AiJob | null;
 }) {
   const router = useRouter();
   const toast = useToast();
-  const [generating, setGenerating] = React.useState(false);
   const [busyId, setBusyId] = React.useState<string | null>(null);
   const [overview, setOverview] = React.useState<string | null>(null);
+  const {
+    job,
+    busy: generating,
+    start,
+  } = useQueuedJob(activeJob, {
+    onSucceeded: (finished) => {
+      const result = finished.result as {
+        items?: number;
+        overview?: string;
+        exercisesQueued?: number;
+      } | null;
+      setOverview(result?.overview ?? null);
+      toast.success(
+        `${result?.items ?? "New"} prep items ready`,
+        result?.exercisesQueued
+          ? `${result.exercisesQueued} exercises are being written in the background.`
+          : undefined,
+      );
+    },
+    onFailed: (finished) => toast.error("Prep plan failed", finished.error ?? ""),
+  });
 
   const done = actionables.filter((item) => item.status === "done").length;
   const totalMinutes = actionables
@@ -243,24 +267,13 @@ export function ActionablesPanel({
   const verified = gated.filter((item) => item.verifiedAt).length;
 
   async function generate() {
-    setGenerating(true);
     try {
-      const response = await fetch(
-        `/api/applications/${applicationId}/actionables`,
-        { method: "POST" },
-      );
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error ?? "Could not build the plan.");
-      setOverview(data.overview ?? null);
-      toast.success(`${data.actionables.length} prep items ready`);
-      router.refresh();
+      await start(`/api/applications/${applicationId}/actionables`);
     } catch (error) {
       toast.error(
         "Prep plan failed",
         error instanceof Error ? error.message : String(error),
       );
-    } finally {
-      setGenerating(false);
     }
   }
 
@@ -332,7 +345,13 @@ export function ActionablesPanel({
       ) : null}
 
       {generating && !actionables.length ? (
-        <CardBody>
+        <CardBody className="space-y-3">
+          <p className="text-ink-muted text-xs">
+            {jobPhase(job)}
+            {job?.status === "queued" && job.dependsOn.length
+              ? " — waiting for the fit analysis, which it builds on."
+              : " — it carries on if you leave this page."}
+          </p>
           <ThinkingRows rows={5} />
         </CardBody>
       ) : !actionables.length ? (

@@ -15,6 +15,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState, ThinkingRows } from "@/components/ui/states";
 import { useToast } from "@/components/ui/toast";
+import { useApplicationJobsContext } from "@/components/jobs/jobs-context";
+import { isPending } from "@/components/jobs/use-queued-job";
 import { relativeDay } from "@/lib/utils";
 
 export type HandbookSummary = {
@@ -27,15 +29,11 @@ export type HandbookSummary = {
   complete: boolean;
 };
 
-/** What the server says is left to do, after every step. */
-type HandbookStep = {
-  title: string;
-  parts: number;
-  partsWritten: number;
-  partTitles: string[];
-  nextStep: { step: "part"; index: number } | { step: "drills" } | null;
-  cards?: number;
-};
+const HANDBOOK_KINDS = new Set([
+  "handbook_outline",
+  "handbook_part",
+  "handbook_drills",
+]);
 
 /**
  * The learning handbook: one long-form study document per application.
@@ -43,6 +41,10 @@ type HandbookStep = {
  * It opens in a new tab rather than inside the app, because it is a whole
  * document with its own navigation, and the download is the same bytes — what
  * the reader keeps is exactly what they read.
+ *
+ * Building it is a chain of queued jobs (outline → each part → drills) that
+ * the server runs whether or not this page is open; this panel only starts the
+ * chain and reports on it, from the page's shared job poller.
  */
 export function HandbookPanel({
   applicationId,
@@ -55,68 +57,71 @@ export function HandbookPanel({
 }) {
   const router = useRouter();
   const toast = useToast();
-  const [busy, setBusy] = React.useState(false);
+  const shared = useApplicationJobsContext();
+  const [starting, setStarting] = React.useState(false);
+  const [deleting, setDeleting] = React.useState(false);
   const [confirming, setConfirming] = React.useState(false);
-  const [progress, setProgress] = React.useState<string | null>(null);
 
-  async function step(body: Record<string, unknown>): Promise<HandbookStep> {
-    const response = await fetch(`/api/applications/${applicationId}/handbook`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.error ?? "Could not build the handbook.");
+  const chain = (shared?.jobs ?? []).filter((j) => HANDBOOK_KINDS.has(j.kind));
+  const pending = chain.filter(isPending);
+  const running = pending.find((j) => j.status === "running");
+  const parts = chain.filter(
+    (j) => j.kind === "handbook_part" && j.status !== "cancelled",
+  );
+  const partsDone = parts.filter((j) => j.status === "succeeded").length;
+  const busy = starting || pending.length > 0;
+  const progress = !busy
+    ? null
+    : running?.label
+      ? `${running.label}${parts.length ? ` · ${partsDone} of ${parts.length} parts written` : ""}`
+      : pending.length
+        ? pending[0].dependsOn.length
+          ? "Queued — waiting for the prep plan it teaches from"
+          : "Queued"
+        : "Queuing";
+
+  // Toast once when a chain this panel watched settles.
+  const wasBusy = React.useRef(busy);
+  React.useEffect(() => {
+    if (wasBusy.current && !busy && chain.length) {
+      const failed = chain.find((j) => j.status === "failed");
+      if (failed) toast.error("Handbook step failed", failed.error ?? "");
+      else toast.success("Handbook ready");
     }
-    return data as HandbookStep;
-  }
+    wasBusy.current = busy;
+  }, [busy, chain, toast]);
 
   /**
-   * The server builds a handbook one step per request — outline, each part,
-   * then the drills — and says after each what is left. Drive it to the end.
-   * Without `regenerate`, an existing outline is reused, so a build that
-   * stopped partway resumes at the first unwritten part.
+   * Queues the outline; its job queues the parts and the drills. Without
+   * `regenerate`, an existing outline is kept and only the unwritten steps are
+   * queued — which is how a half-built handbook gets finished.
    */
   async function build(regenerate: boolean) {
-    setBusy(true);
+    setStarting(true);
     setConfirming(false);
-    setProgress("Planning the parts");
     try {
-      let state = await step({ step: "outline", regenerate });
-      while (state.nextStep) {
-        const next = state.nextStep;
-        setProgress(
-          next.step === "part"
-            ? `Writing part ${next.index + 1} of ${state.parts}: ${state.partTitles[next.index] ?? ""}`
-            : "Writing the cards, glossary and checklist",
-        );
-        // One retry per step: a single clipped or malformed response should
-        // not cost the parts already written.
-        try {
-          state = await step(next);
-        } catch {
-          state = await step(next);
-        }
-      }
-      toast.success(
-        "Handbook ready",
-        `${state.parts} parts${state.cards ? `, ${state.cards} cards` : ""}`,
-      );
-      router.refresh();
+      const response = await fetch(`/api/applications/${applicationId}/handbook`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ regenerate }),
+      });
+      const data = await response.json();
+      if (!response.ok)
+        throw new Error(data.error ?? "Could not build the handbook.");
+      shared?.refresh();
+      if (!shared) router.refresh();
     } catch (error) {
       toast.error(
         "Could not build it",
         error instanceof Error ? error.message : String(error),
       );
     } finally {
-      setBusy(false);
-      setProgress(null);
+      setStarting(false);
     }
   }
 
   async function remove() {
-    setBusy(true);
+    setDeleting(true);
     try {
       const response = await fetch(`/api/applications/${applicationId}/handbook`, {
         method: "DELETE",
@@ -127,7 +132,7 @@ export function HandbookPanel({
     } catch (error) {
       toast.error("Delete failed", error instanceof Error ? error.message : "");
     } finally {
-      setBusy(false);
+      setDeleting(false);
     }
   }
 
@@ -162,9 +167,9 @@ export function HandbookPanel({
         <CardBody className="space-y-3">
           <p className="text-ink text-sm font-medium">{progress}</p>
           <p className="text-ink-muted text-xs leading-relaxed">
-            Two passes: the parts get written first, then the cards and glossary
-            drill the ground they actually cover. This takes a couple of minutes —
-            it is the longest thing Alfred writes.
+            The parts get written first, one at a time, then the cards and glossary
+            drill the ground they actually cover. It is the longest thing Alfred
+            writes, and it carries on if you close this page.
           </p>
           <ThinkingRows rows={5} />
         </CardBody>
@@ -192,7 +197,7 @@ export function HandbookPanel({
       ) : (
         <CardBody className="space-y-3">
           <p className="text-ink text-sm font-medium">{handbook.title}</p>
-          {!handbook.complete ? (
+          {!handbook.complete && !busy ? (
             <div className="space-y-2 rounded-md border p-3 text-xs">
               <p className="text-ink-muted leading-relaxed">
                 This build stopped partway: the outline is there, but some parts or
@@ -229,7 +234,12 @@ export function HandbookPanel({
             </Button>
             {confirming ? (
               <>
-                <Button size="sm" variant="danger" onClick={remove} loading={busy}>
+                <Button
+                  size="sm"
+                  variant="danger"
+                  onClick={remove}
+                  loading={deleting}
+                >
                   Delete it
                 </Button>
                 <Button
