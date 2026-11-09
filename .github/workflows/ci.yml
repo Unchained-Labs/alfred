@@ -60,6 +60,12 @@ jobs:
       # handler. No provider is called.
       - name: AI job queue claims, retries and recovers
         run: npm run check:queue
+      # Ranking jobs by pay is only right if every salary is converted first,
+      # and a conversion bug does not crash — it crowns the posting with the
+      # most zeros. Conversion, missing salaries and fits, percentiles, the
+      # combined score, the filters and their URL round trip are gated here.
+      - name: job rankings convert and filter correctly
+        run: npm run check:job-analytics
       - name: exercise runner executes python
         run: |
           node -e "process.stdout.write(JSON.stringify({code:'def ok():\n    return 1\n',tests:[{name:'boots',call:'ok()',expect:'1',hidden:false},{name:'compares',call:'ok() + 1',expect:'3',hidden:true}]}))" > /tmp/job.json

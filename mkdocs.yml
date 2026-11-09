@@ -103,6 +103,7 @@ nav:
       - Prep plans & questionnaires: guide/prep.md
       - Learning handbooks: guide/handbooks.md
       - Automatic prep & the queue: guide/generation.md
+      - Analytics: guide/analytics.md
       - Mailbox: guide/mailbox.md
   - Reference:
       - AI providers: reference/ai-providers.md
