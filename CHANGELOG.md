@@ -16,6 +16,14 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Added
 
+- **Analytics → Jobs: the board as a ranking.** Analytics now has two views. **Outcomes** is the existing one; **Jobs** ranks every application by **pay**, by **fit**, and by a **combined score**, with a pay-against-fit chart, the best-paid ranges, breakdowns by stage, work mode, seniority and country, and a table sortable by any column.
+
+  Pay is compared in one **display currency**, because ranking 555,000 NOK above 105,000 EUR is wrong by a factor of five and looks fine. Rates come from open.er-api.com (keyless, and unlike the ECB feed it covers AED and NOK), fetched once a day and cached, then a built-in table if the box is offline. The page says which it used.
+
+  The combined score is `w × pay percentile + (1 − w) × fit`, with `w` on a slider. Pay enters as a percentile within the current view, so a salary's magnitude cannot swamp a 0–100 fit score, and narrowing the filter re-ranks the jobs against each other. A job with **no salary or no analysis is unranked, not zero**: it sorts last, the page counts it, and pay or fit floors keep it rather than treating unknown as too low.
+
+  Every filter is in the URL, so a view is a link: stage group or stages, work mode, seniority, source, posting currency, tags, priority, date range, archived, minimum fit and pay. `npm run check:job-analytics` gates the conversion, ranking and filters in CI.
+
 - **Closing an application properly.** Choosing Rejected, Withdrawn or Accepted now opens one dialog instead of silently moving the card, because closing is three decisions at once.
 
   It keeps **what the company said**, in a field of its own rather than mixed into your notes, and shows it on the application under _What they said_. A rejection is the only moment a company tells you anything true about your application, and the moment the email arrives is the only moment anyone will write it down.

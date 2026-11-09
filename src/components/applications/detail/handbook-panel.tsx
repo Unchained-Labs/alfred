@@ -195,8 +195,8 @@ export function HandbookPanel({
           {!handbook.complete ? (
             <div className="space-y-2 rounded-md border p-3 text-xs">
               <p className="text-ink-muted leading-relaxed">
-                This build stopped partway: the outline is there, but some parts
-                or the practice material are not written yet.
+                This build stopped partway: the outline is there, but some parts or
+                the practice material are not written yet.
               </p>
               <Button variant="primary" size="sm" onClick={() => build(false)}>
                 <Sparkles className="size-3.5" />

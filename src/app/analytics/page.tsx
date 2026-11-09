@@ -8,6 +8,7 @@ import {
   Split,
 } from "lucide-react";
 import * as React from "react";
+import { AnalyticsTabs } from "@/components/analytics/analytics-tabs";
 import { RejectionFeedback } from "@/components/analytics/rejection-feedback";
 import { BreakdownBars } from "@/components/charts/breakdown-bars";
 import { FitScatter } from "@/components/charts/fit-scatter";
@@ -60,6 +61,7 @@ export default async function AnalyticsPage() {
       <PageHeader
         title="Analytics"
         description="Where applications end, how long each step takes, and what the companies said on the way out."
+        actions={<AnalyticsTabs current="outcomes" />}
       />
 
       {headline.sent === 0 ? (

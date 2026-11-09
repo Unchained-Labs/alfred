@@ -102,6 +102,7 @@ nav:
       - Fit analysis: guide/analysis.md
       - Prep plans & questionnaires: guide/prep.md
       - Learning handbooks: guide/handbooks.md
+      - Analytics: guide/analytics.md
       - Mailbox: guide/mailbox.md
   - Reference:
       - AI providers: reference/ai-providers.md
