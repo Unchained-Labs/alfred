@@ -1,11 +1,10 @@
 /*
  * Currency conversion, the pure half.
  *
- * Salaries arrive in whatever currency the posting used — NOK for a Norwegian
- * scholarship, AED for Abu Dhabi, EUR for Eindhoven — and ranking them by pay
- * means putting them on one scale first. Ranking the raw numbers would put
- * 555,000 NOK above 105,000 EUR, which is the wrong way round by a factor of
- * five and exactly the kind of answer that looks fine until someone acts on it.
+ * Salaries arrive in whatever currency the posting used, and ranking them by
+ * pay means putting them on one scale first. Ranking the raw numbers would put
+ * a krone salary above a euro salary worth five times as much — exactly the
+ * kind of answer that looks fine until someone acts on it.
  *
  * Rates are "units per one US dollar", the shape every free feed publishes, so
  * any pair converts through USD. This module never fetches; ./store does, and

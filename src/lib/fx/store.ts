@@ -6,9 +6,10 @@ import { FALLBACK_PER_USD, FALLBACK_RATES, type FxRates } from "./convert";
 /*
  * Today's exchange rates, fetched at most once a day per account.
  *
- * open.er-api.com is keyless and covers AED and NOK, which the ECB feed behind
- * frankfurter.app does not — and AED is the currency of half the postings this
- * was built for. The answer is cached in the settings table with its date, so
+ * open.er-api.com is keyless and covers currencies such as AED and NOK, which
+ * the ECB feed behind frankfurter.app does not — and a Gulf posting should not
+ * silently drop out of the ranking. The answer is cached in the settings
+ * table with its date, so
  * the Analytics page costs one request a day, and an offline box keeps using
  * yesterday's rates and then the built-in table rather than failing to render.
  */

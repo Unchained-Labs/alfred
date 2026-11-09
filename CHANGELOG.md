@@ -18,7 +18,7 @@ All notable changes to this project are documented here. The format follows [Kee
 
 - **Analytics → Jobs: the board as a ranking.** Analytics now has two views. **Outcomes** is the existing one; **Jobs** ranks every application by **pay**, by **fit**, and by a **combined score**, with a pay-against-fit chart, the best-paid ranges, breakdowns by stage, work mode, seniority and country, and a table sortable by any column.
 
-  Pay is compared in one **display currency**, because ranking 555,000 NOK above 105,000 EUR is wrong by a factor of five and looks fine. Rates come from open.er-api.com (keyless, and unlike the ECB feed it covers AED and NOK), fetched once a day and cached, then a built-in table if the box is offline. The page says which it used.
+  Pay is compared in one **display currency**, because ranking raw figures puts a krone salary above a euro salary worth five times as much, and looks fine doing it. Rates come from open.er-api.com (keyless, and unlike the ECB feed it covers AED and NOK), fetched once a day and cached, then a built-in table if the box is offline. The page says which it used.
 
   The combined score is `w × pay percentile + (1 − w) × fit`, with `w` on a slider. Pay enters as a percentile within the current view, so a salary's magnitude cannot swamp a 0–100 fit score, and narrowing the filter re-ranks the jobs against each other. A job with **no salary or no analysis is unranked, not zero**: it sorts last, the page counts it, and pay or fit floors keep it rather than treating unknown as too low.
 
