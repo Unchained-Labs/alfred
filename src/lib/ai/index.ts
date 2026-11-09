@@ -5,7 +5,9 @@ import {
   analyzeJobPrompt,
   chatPrompt,
   codeExercisePrompt,
+  handbookAskPrompt,
   handbookDrillsPrompt,
+  handbookLabPrompt,
   handbookOutlinePrompt,
   handbookPartPrompt,
   gradeAnswerPrompt,
@@ -26,8 +28,12 @@ import {
   codeExerciseSchema,
   type GradedAnswer,
   gradedAnswerSchema,
+  type HandbookAnswer,
+  handbookAnswerSchema,
   type HandbookDrills,
   handbookDrillsSchema,
+  type HandbookLab,
+  handbookLabSchema,
   type HandbookOutline,
   handbookOutlineSchema,
   type HandbookPartBody,
@@ -287,6 +293,52 @@ export async function generateHandbookPart(
     task: "generate_handbook_part",
     // One part of prose. Bounded on purpose: see handbookOutlinePrompt.
     maxTokens: 12000,
+  });
+  return {
+    result: object,
+    provider: provider.kind,
+    model: model ?? provider.model,
+  };
+}
+
+export async function generateHandbookLab(
+  userId: string,
+  app: Application,
+  part: Parameters<typeof handbookLabPrompt>[1],
+  body: string,
+): Promise<AiRun<HandbookLab>> {
+  const provider = resolveProvider(userId);
+  const { system, prompt } = handbookLabPrompt(app, part, body);
+  const { object, model } = await provider.generateObject({
+    system,
+    prompt,
+    schema: handbookLabSchema,
+    schemaName: "handbook_lab",
+    task: "generate_handbook_lab",
+    // Scenes, cells and problems for ONE part — its own call so the prose
+    // call stays the size it was.
+    maxTokens: 16000,
+  });
+  return {
+    result: object,
+    provider: provider.kind,
+    model: model ?? provider.model,
+  };
+}
+
+export async function answerHandbookQuestion(
+  userId: string,
+  input: Parameters<typeof handbookAskPrompt>[0],
+): Promise<AiRun<HandbookAnswer>> {
+  const provider = resolveProvider(userId);
+  const { system, prompt } = handbookAskPrompt(input);
+  const { object, model } = await provider.generateObject({
+    system,
+    prompt,
+    schema: handbookAnswerSchema,
+    schemaName: "handbook_answer",
+    task: "answer_handbook_question",
+    maxTokens: 8000,
   });
   return {
     result: object,

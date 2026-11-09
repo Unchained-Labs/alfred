@@ -21,6 +21,10 @@ var store = {
   set: function(k, v){ try { localStorage.setItem(KEY+k, JSON.stringify(v)); } catch(e){} }
 };
 var reduced = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+/* Progress points: see XP_JS in play.ts, which listens for these. */
+function xp(key, pts, why){
+  try { document.dispatchEvent(new CustomEvent("hb:xp", { detail: { key: key, pts: pts, why: why } })); } catch(e){}
+}
 function toast(msg, ms){
   var t = $("#toast"); if(!t) return;
   t.textContent = msg; t.hidden = false;
@@ -49,6 +53,7 @@ boxes.forEach(function(b){
   b.addEventListener("change", function(){
     doneState[id] = b.checked; store.set("done", doneState); updateProgress();
     if (b.checked) {
+      xp("part:" + id, 20, "Part finished");
       var n = boxes.filter(function(x){ return x.checked; }).length;
       toast(n === boxes.length ? "Every part done. Now rest." : "Nice. " + n + " of " + boxes.length + ".",
             n === boxes.length ? 5000 : 1700);
@@ -191,6 +196,7 @@ $("#t-print").addEventListener("click", function(){ window.print(); });
     var d = deck(); if (!d.length) return;
     known[d[idx]] = true;
     store.set("known", Object.keys(known).map(Number));
+    xp("card:" + d[idx], 2, "Card known");
     idx++; show();
   });
   $("#fc-shuffle").addEventListener("click", function(){

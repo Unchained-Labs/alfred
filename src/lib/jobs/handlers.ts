@@ -5,6 +5,7 @@ import {
   generateActionables,
   generateCodeExercise,
   generateHandbookDrills,
+  generateHandbookLab,
   generateHandbookOutline,
   generateHandbookPart,
   generateQuestionnaire,
@@ -245,22 +246,43 @@ export function queueHandbookSteps(
   after: string[] = [],
 ) {
   const parts = content.plan.parts;
-  const partJobs = parts
-    .map((p, index) => ({ p, index }))
-    .filter(({ p }) => !p.body?.trim())
-    .map(({ p, index }) =>
-      ctx.enqueue({
-        userId,
-        applicationId,
-        kind: "handbook_part",
-        payload: { index },
-        dependsOn: after,
-        dedupeKey: `handbook-part:${applicationId}:${index}`,
-        label: `Handbook part ${index + 1} of ${parts.length}: ${p.short || p.title}`,
-        priority: 6,
-      }),
-    );
-  if (content.drills.flashcards.length && !partJobs.length) return partJobs;
+  const partJobs: AiJob[] = [];
+  const labJobs: AiJob[] = [];
+  parts.forEach((p, index) => {
+    const prose = p.body?.trim()
+      ? null
+      : ctx.enqueue({
+          userId,
+          applicationId,
+          kind: "handbook_part",
+          payload: { index },
+          dependsOn: after,
+          dedupeKey: `handbook-part:${applicationId}:${index}`,
+          label: `Handbook part ${index + 1} of ${parts.length}: ${p.short || p.title}`,
+          priority: 6,
+        });
+    if (prose) partJobs.push(prose);
+    // The lab reads the part's prose, so it waits for it. A part written
+    // before labs existed gets one queued on its own — that is how an old
+    // handbook is upgraded without rewriting text that is already there.
+    if (!p.lab) {
+      labJobs.push(
+        ctx.enqueue({
+          userId,
+          applicationId,
+          kind: "handbook_lab",
+          payload: { index },
+          dependsOn: prose ? [prose.id] : after,
+          dedupeKey: `handbook-lab:${applicationId}:${index}`,
+          label: `Handbook scenes and lab ${index + 1} of ${parts.length}: ${p.short || p.title}`,
+          priority: 7,
+        }),
+      );
+    }
+  });
+  if (content.drills.flashcards.length && !partJobs.length) {
+    return [...partJobs, ...labJobs];
+  }
   const drills = ctx.enqueue({
     userId,
     applicationId,
@@ -270,8 +292,16 @@ export function queueHandbookSteps(
     label: "Handbook cards, glossary and checklist",
     priority: 6,
   });
-  return [...partJobs, drills];
+  return [...partJobs, drills, ...labJobs];
 }
+
+/** Every job kind that writes into a handbook. */
+export const HANDBOOK_JOB_KINDS = [
+  "handbook_outline",
+  "handbook_part",
+  "handbook_lab",
+  "handbook_drills",
+] as const;
 
 async function handbookOutline(job: AiJob, ctx: JobContext) {
   const app = applicationFor(job);
@@ -375,6 +405,46 @@ async function handbookPart(job: AiJob) {
   return { index };
 }
 
+async function handbookLab(job: AiJob) {
+  const app = applicationFor(job);
+  const userId = job.userId!;
+  const index = Number(payloadOf(job).index);
+  const content = handbookContentFor(userId, app.id);
+  const part = content.plan.parts[index];
+  if (!part) throw new PermanentJobError(`The handbook has no part ${index + 1}.`);
+  if (part.lab) return { index, skipped: true };
+  if (!part.body?.trim()) {
+    throw new PermanentJobError(
+      `Part ${index + 1} has no text yet, so there is nothing to animate.`,
+    );
+  }
+
+  const run = await generateHandbookLab(
+    userId,
+    app,
+    { title: part.title, intent: part.intent, emphasis: part.emphasis },
+    part.body,
+  );
+
+  const latest = handbookContentFor(userId, app.id);
+  const parts = [...latest.plan.parts];
+  if (!parts[index])
+    throw new PermanentJobError(
+      "The handbook was rebuilt while this part's lab was written.",
+    );
+  parts[index] = { ...parts[index], lab: run.result };
+  updateHandbookContent(userId, app.id, {
+    ...latest,
+    plan: { ...latest.plan, parts } as HandbookPlan,
+  });
+  return {
+    index,
+    scenes: run.result.scenes.length,
+    cells: run.result.cells.length,
+    problems: run.result.problems.length,
+  };
+}
+
 async function handbookDrills(job: AiJob) {
   const app = applicationFor(job);
   const userId = job.userId!;
@@ -438,6 +508,7 @@ export const handlers: HandlerMap = {
 
   handbook_outline: handbookOutline,
   handbook_part: handbookPart,
+  handbook_lab: handbookLab,
   handbook_drills: handbookDrills,
   exercise,
 };

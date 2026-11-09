@@ -16,6 +16,9 @@ It opens in its own tab, because it is a whole document rather than a panel, and
 | ------- | ---------- |
 | **Reading routes** | Two to four paths through it — ten minutes, an evening, everything — so there is somewhere to go when you are short on time. |
 | **Parts** | Five to eight taught sections, each opening with a three-line TL;DR. Tables, worked examples and code where code is the clearest explanation. |
+| **Scenes** | Animated explainers, like the visuals in a good explainer video: a two-pointer sweep, a BFS spreading through a graph, a request travelling client → cache → database, gradient descent rolling down a loss curve. Each plays step by step with a line of narration, and you can pause, step and scrub. |
+| **Notebook** | Python you can edit and run in the page, like a Jupyter notebook. Cells in a part share variables, top to bottom. |
+| **Practice problems** | LeetCode-style: a statement, starter code, tests (some hidden), hints that give away a little more each time, and a worked solution behind a reveal. Solved problems are marked. |
 | **Diagrams** | Animated where a topic has a shape — a path a request takes, layers of a system, a retry loop that closes on itself. Layer diagrams are clickable. |
 | **Callouts** | *Say it like this* for phrasing you can adapt out loud, *Trap* for the mistakes people make, *Why it matters here* for the link back to this employer. |
 | **Practice cards** | Twenty to thirty recall cards, grouped by topic, with the points a strong answer hits. Mark them off as they stick. |
@@ -39,6 +42,58 @@ part is where consistent hashing gets explained.
 So you should be able to close the handbook and answer on the topic from what
 you just read, rather than being sent somewhere else to learn it.
 
+## Watch it, run it, solve it
+
+A handbook is meant to work like hybrid university notes: each part's prose
+explains the idea, its **scenes** show it moving, its **notebook** lets you poke
+it, and its **problems** make you do it under interview conditions.
+
+**Scenes** are drawn by Alfred from data the model writes — the array, the
+graph, the services, and what changes at each step. There are primitives for
+arrays and pointers (two pointers, sliding windows, binary search), stacks,
+queues, linked lists, heaps, hash maps, trees, graphs (BFS, DFS, Dijkstra),
+tables filling in (dynamic programming), request flows between services,
+state machines, curves (loss, distributions, growth rates) and bar charts.
+Press **Play**, or step with ◀ ▶ and the arrow keys. Without JavaScript, or on
+paper, a scene is its numbered narration.
+
+**Python runs in your browser** with [Pyodide](https://pyodide.org). It is only
+downloaded — about 10 MB, from its official CDN — the first time you press
+**Run**, and runs in a background worker: a loop that never ends is stopped
+after 15 seconds instead of freezing the page. Standard library only. Run a cell
+with **Ctrl/⌘ + Enter**. Offline, running code is the one thing that does not
+work, and the cell says so.
+
+**Problems** run your function against every test, including the hidden ones,
+and show which pass. Arguments and expected values are parsed as Python
+literals, never run as code. Your attempts are saved in the browser.
+
+### Progress
+
+Finishing a part, watching a scene to the end, running a cell, solving a problem
+and knowing a card each earn points once — a level every hundred, and a study
+streak. It is a nudge, not a game: there is nothing to farm, and it all lives in
+the browser like the rest of your progress.
+
+### Ask Alfred about any passage
+
+On the live page — not a downloaded copy — an **Ask Alfred** button follows you
+down the page. Select any passage and an **Ask about this** button appears next
+to it. Ask anything: explain it more simply, give an example, quiz me. Ask for
+a **diagram or graph** and the answer comes with an animated scene drawn the same
+way as the handbook's own.
+
+Each question is one call to your AI provider, through the queue's interactive
+lane, and limited to fifteen every ten minutes.
+
+## Older handbooks
+
+Handbooks written before scenes existed still open and read as before. Their
+panel says something is missing, and **Finish it** adds scenes, a notebook and
+problems to each part without touching the text. **Settings → Generation →
+Handbooks** does the same for every handbook at once (**Add scenes and labs**),
+or rewrites every one from scratch with them in mind (**Rewrite all**).
+
 ## Reading it
 
 The top bar carries the tools:
@@ -60,7 +115,7 @@ them too.
 
 !!! note "Built a part at a time"
     Alfred writes the spine first, then each part in its own pass, then the
-    practice material. That is not for show: providers cap how much they will
+    practice material, then each part's scenes, notebook and problems. That is not for show: providers cap how much they will
     write in one answer, and some of them say nothing when they clip it. Asking
     for a page at a time means no answer is ever long enough to be truncated,
     progress is real rather than a spinner, and a failure halfway costs one part

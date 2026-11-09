@@ -689,6 +689,16 @@ export function getHandbook(userId: string, applicationId: string) {
   );
 }
 
+/** The applications this account has a handbook for. */
+export function listHandbookApplicationIds(userId: string): string[] {
+  return db
+    .select({ applicationId: handbooks.applicationId })
+    .from(handbooks)
+    .where(eq(handbooks.userId, userId))
+    .all()
+    .map((r) => r.applicationId);
+}
+
 /* ------------------------------------------------------------------ *
  * Jobs table
  * ------------------------------------------------------------------ */

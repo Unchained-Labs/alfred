@@ -30,6 +30,7 @@ export async function GET(request: Request, { params }: Params) {
     }
 
     const app = getApplication(user.id, id);
+    const download = new URL(request.url).searchParams.get("download") === "1";
     const html = renderHandbook(content, {
       id: row.id,
       company: app?.company ?? "Alfred",
@@ -37,9 +38,13 @@ export async function GET(request: Request, { params }: Params) {
       generatedAt: row.createdAt ?? new Date(),
       provider: row.provider,
       model: row.model,
+      // The ask panel needs this session, so only the live page gets it. A
+      // downloaded copy is the same document without the panel.
+      askUrl: download
+        ? null
+        : `/api/applications/${encodeURIComponent(id)}/handbook/ask`,
     });
 
-    const download = new URL(request.url).searchParams.get("download") === "1";
     const slug = (app?.company ?? "handbook")
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")

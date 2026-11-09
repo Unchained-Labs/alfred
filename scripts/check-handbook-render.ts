@@ -9,8 +9,150 @@
  *
  *   npm run check:handbook
  */
+import { spawnSync } from "node:child_process";
 import { writeFileSync } from "node:fs";
-import { renderHandbook, type HandbookContent } from "@/lib/handbook/render";
+import type { HandbookLab, HandbookScene } from "@/lib/ai/schemas";
+import { createRateLimit, parseAskRequest, sameSiteJson } from "@/lib/handbook/ask";
+import { HARNESS, LAB_JS, WORKER } from "@/lib/handbook/lab";
+import { ASK_JS, XP_JS } from "@/lib/handbook/play";
+import {
+  handbookComplete,
+  renderHandbook,
+  type HandbookContent,
+} from "@/lib/handbook/render";
+import { cleanScene, SCENE_JS } from "@/lib/handbook/scenes";
+
+const XSS = `<img src=x onerror="alert(1)">`;
+
+/** A scene step with every field empty, so fixtures only state what they use. */
+const step = (patch: Partial<HandbookScene["steps"][number]>) => ({
+  caption: "",
+  values: [],
+  highlight: [],
+  visited: [],
+  pointers: [],
+  range: null,
+  cells: [],
+  entries: [],
+  message: null,
+  marker: null,
+  ...patch,
+});
+const sceneBase = {
+  items: [],
+  nodes: [],
+  edges: [],
+  grid: null,
+  axes: null,
+  series: [],
+};
+
+/*
+ * One part carries a lab: a sliding-window scene with a hostile caption, a
+ * request-flow scene, a scene the schema rejects, a notebook cell whose code
+ * tries to close its textarea, and a problem whose text is hostile too. The
+ * other parts have no lab, which is how every handbook written before labs
+ * looks — they must still render.
+ */
+const LAB: HandbookLab = {
+  scenes: [
+    {
+      ...sceneBase,
+      kind: "array",
+      title: "Sliding window over fees",
+      caption: `Keep the window's sum, never recompute it ${XSS}`,
+      items: ["3", "1", "4", "1", "5"],
+      steps: [
+        step({
+          caption: `Start with the first two ${XSS}`,
+          range: { from: 0, to: 1 },
+        }),
+        step({
+          caption: "Slide right: add 4, drop 3.",
+          range: { from: 1, to: 2 },
+          pointers: [{ label: "lo", index: 1 }],
+        }),
+        step({ caption: "Done.", highlight: ["4"] }),
+      ],
+    },
+    {
+      ...sceneBase,
+      kind: "sequence",
+      title: "An idempotent write",
+      caption: "The key turns a retry into a read.",
+      nodes: [
+        { id: "c", label: "Client" },
+        { id: "api", label: "API" },
+        { id: "db", label: "Postgres" },
+      ],
+      steps: [
+        step({
+          caption: "POST with a key.",
+          message: { from: "c", to: "api", label: "POST /charges" },
+        }),
+        step({
+          caption: "Insert, or find the row.",
+          message: { from: "api", to: "db", label: "INSERT … ON CONFLICT" },
+        }),
+        step({
+          caption: "Nonsense edge dropped.",
+          message: { from: "api", to: "ghost", label: "nowhere" },
+        }),
+      ],
+    },
+    // Not a kind the player knows: the whole scene is dropped.
+    {
+      ...sceneBase,
+      kind: "hologram",
+      title: "SHOULD-NOT-RENDER",
+      caption: "",
+      steps: [step({ caption: "x" })],
+    } as unknown as HandbookScene,
+  ],
+  cells: [
+    {
+      title: "Count the duplicates",
+      explain: "Change `n` and run again.",
+      code: `n = 5\nprint("</textarea><script>alert(1)</script>")\nn * 2`,
+    },
+  ],
+  problems: [
+    {
+      title: `Two sum ${XSS}`,
+      difficulty: "easy",
+      statement: `Return the indices of two numbers that add to target. ${XSS}`,
+      functionName: "two_sum",
+      starter: "def two_sum(nums, target):\n    pass\n",
+      solution:
+        "def two_sum(nums, target):\n    seen = {}\n    for i, x in enumerate(nums):\n        if target - x in seen:\n            return [seen[target - x], i]\n        seen[x] = i\n    return []\n",
+      explanation: "Store what you have seen; look up the complement.",
+      complexity: "O(n) time, O(n) space",
+      hints: [
+        "What would you need to have seen already?",
+        "A dict from value to index.",
+      ],
+      tests: [
+        { args: "[2, 7, 11, 15], 9", expected: "[0, 1]", hidden: false },
+        { args: "[3, 2, 4], 6", expected: "[1, 2]", hidden: false },
+        { args: "[3, 3], 6", expected: "[0, 1]", hidden: true },
+        { args: "[1, 2], 7", expected: "[]", hidden: true },
+      ],
+    },
+    {
+      // An invalid function name: the problem is dropped, not run.
+      title: "SHOULD-NOT-RENDER-PROBLEM",
+      difficulty: "easy",
+      statement: "x",
+      functionName: "__import__('os').system",
+      starter: "",
+      solution: "",
+      explanation: "",
+      complexity: "",
+      hints: [],
+      tests: [{ args: "", expected: "None", hidden: false }],
+    },
+  ],
+};
 
 const content: HandbookContent = {
   plan: {
@@ -101,6 +243,7 @@ const content: HandbookContent = {
       },
       {
         id: "ledger",
+        lab: LAB,
         title: "The write path, end to end",
         short: "The ledger",
         minutes: 14,
@@ -334,7 +477,53 @@ const html = renderHandbook(content, {
   generatedAt: new Date("2026-10-09T12:00:00Z"),
   provider: "claude-code",
   model: "claude-sonnet-5-5",
+  askUrl: "/api/applications/app-1/handbook/ask",
 });
+const downloaded = renderHandbook(content, {
+  id: "hb-fixture-0001",
+  company: "Stripe",
+  role: "Senior Backend Engineer",
+  generatedAt: new Date("2026-10-09T12:00:00Z"),
+});
+const script = html.slice(
+  html.indexOf("<script>") + 8,
+  html.lastIndexOf("</script>"),
+);
+
+/** Does this source parse as JavaScript? Parsed only, never run. */
+const parses = (source: string) => {
+  try {
+    new Function(source);
+    return true;
+  } catch (error) {
+    console.error(error);
+    return false;
+  }
+};
+
+/*
+ * The Python harness, run for real against the reference solution and a wrong
+ * one — if python3 is on this machine. Pyodide is CPython, so this is the
+ * same code path the browser takes, minus the worker.
+ */
+function harness(solution: string, tests: unknown[]) {
+  // A JSON string literal is also a valid Python string literal.
+  const program = `${solution}\n__fn_name = "two_sum"\n__tests_json = ${JSON.stringify(JSON.stringify(tests))}\n${HARNESS}\nprint(__results_json)`;
+  const run = spawnSync("python3", ["-c", program], { encoding: "utf8" });
+  if (run.error) return null;
+  return JSON.parse(run.stdout.trim()) as { ok: boolean; error: string }[];
+}
+const problem = LAB.problems[0];
+const good = harness(problem.solution, problem.tests);
+const wrong = harness(
+  "def two_sum(nums, target):\n    return [0, 0]\n",
+  problem.tests,
+);
+const sneaky = harness(problem.solution, [
+  { args: "__import__('os').getcwd()", expected: "[]", hidden: false },
+]);
+
+const limit = createRateLimit(2, 1000);
 
 console.log(`rendered ${(html.length / 1024).toFixed(1)} KB`);
 
@@ -414,7 +603,190 @@ const checks: [string, boolean][] = [
   ],
   ["diagram css inlined", html.includes("@keyframes dgm-travel")],
   ["stack script inlined", html.includes("[data-stack]")],
+
+  // Scenes: data in one escaped attribute, narration as a fallback list.
+  [
+    "2 valid scenes rendered",
+    (html.match(/<figure class="scene"/g) ?? []).length === 2,
+  ],
+  [
+    "unknown scene kind dropped",
+    !html.includes("SHOULD-NOT-RENDER<") && !html.includes("hologram"),
+  ],
+  ["scene narration fallback", html.includes('<ol class="scene-steps">')],
+  [
+    "scene caption escaped in the list",
+    html.includes("Start with the first two &lt;img src=x onerror="),
+  ],
+  [
+    "scene JSON is attribute-escaped",
+    html.includes('data-scene="{&quot;kind&quot;:&quot;array&quot;'),
+  ],
+  ["no raw hostile markup anywhere", !html.includes(XSS)],
+  [
+    "cleanScene drops edges to missing nodes",
+    cleanScene({
+      ...sceneBase,
+      kind: "graph",
+      title: "g",
+      caption: "",
+      nodes: [{ id: "a", label: "A" }],
+      edges: [{ from: "a", to: "zz", label: "", weight: null }],
+      steps: [step({ caption: "x" })],
+    })?.edges.length === 0,
+  ],
+  [
+    "cleanScene rejects a scene with no steps",
+    cleanScene({
+      ...sceneBase,
+      kind: "array",
+      title: "t",
+      caption: "",
+      steps: [],
+    }) === null,
+  ],
+  [
+    "cleanScene rejects junk",
+    cleanScene({ kind: "array" }) === null && cleanScene("<svg>") === null,
+  ],
+
+  // Notebook and problems: code is text in a textarea, never markup.
+  ["notebook rendered", html.includes('<div class="nb" data-ns="ledger">')],
+  [
+    "cell code escaped in its textarea",
+    html.includes(
+      "print(&quot;&lt;/textarea&gt;&lt;script&gt;alert(1)&lt;/script&gt;&quot;)",
+    ),
+  ],
+  ["cell cannot close its textarea", !html.includes("</textarea><script>")],
+  ["problem rendered", (html.match(/<div class="prob"/g) ?? []).length === 1],
+  [
+    "invalid function name drops the problem",
+    !html.includes("SHOULD-NOT-RENDER-PROBLEM"),
+  ],
+  ["problem title escaped", html.includes("Two sum &lt;img src=x onerror=")],
+  [
+    "visible tests listed, hidden ones not",
+    html.includes("two_sum([2, 7, 11, 15], 9)") &&
+      !html.includes("two_sum([3, 3], 6)"),
+  ],
+  ["tests travel as escaped JSON", html.includes('data-tests="[{&quot;args&quot;')],
+  ["solution behind a reveal", html.includes('<details class="prob-sol">')],
+  [
+    "Pyodide is pinned to the official CDN",
+    html.includes("cdn.jsdelivr.net/pyodide/v0.29.3/full/"),
+  ],
+
+  // Old-format parts (no lab) still render, and count as unfinished.
+  [
+    "parts without a lab still render",
+    (html.match(/<section class="part"/g) ?? []).length === 4,
+  ],
+  ["a handbook missing labs is not complete", handbookComplete(content) === false],
+  [
+    "a handbook with every lab is complete",
+    handbookComplete({
+      ...content,
+      plan: {
+        ...content.plan,
+        parts: content.plan.parts.map((p) => ({ ...p, lab: LAB })),
+      },
+    }),
+  ],
+
+  // The page's scripts all parse, including the worker built from a string.
+  ["inline script parses", parses(script)],
+  ["scene player parses", parses(SCENE_JS)],
+  ["lab script parses", parses(LAB_JS)],
+  ["python worker parses", parses(WORKER)],
+  ["xp script parses", parses(XP_JS)],
+  ["ask script parses", parses(ASK_JS)],
+  ["still one script element", (html.match(/<script/g) ?? []).length === 1],
+  ["xp chip present", html.includes('id="xp"')],
+
+  // The ask panel: live page only.
+  [
+    "live page points the panel at its endpoint",
+    html.includes('data-ask="/api/applications/app-1/handbook/ask"'),
+  ],
+  ["downloaded copy has no ask endpoint", !downloaded.includes("data-ask=")],
+
+  // The ask endpoint's checks, without a session or a model.
+  ["ask: question required", !parseAskRequest({ question: "  " }).ok],
+  [
+    "ask: overlong question refused",
+    !parseAskRequest({ question: "x".repeat(1001) }).ok,
+  ],
+  [
+    "ask: junk body refused",
+    !parseAskRequest("nope").ok && !parseAskRequest(null).ok,
+  ],
+  [
+    "ask: selection and context are trimmed to size",
+    (() => {
+      const r = parseAskRequest({
+        question: "why?",
+        selection: "s".repeat(3000),
+        context: "c".repeat(9000),
+      });
+      return (
+        r.ok && r.value.selection.length === 2000 && r.value.context.length === 4000
+      );
+    })(),
+  ],
+  [
+    "ask: JSON from the same site only",
+    sameSiteJson(
+      new Request("http://x/a", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "sec-fetch-site": "same-origin",
+        },
+      }),
+    ) &&
+      !sameSiteJson(
+        new Request("http://x/a", {
+          method: "POST",
+          headers: { "content-type": "text/plain" },
+        }),
+      ) &&
+      !sameSiteJson(
+        new Request("http://x/a", {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            "sec-fetch-site": "cross-site",
+          },
+        }),
+      ),
+  ],
+  [
+    "ask: rate limit",
+    limit("u", 0) &&
+      limit("u", 10) &&
+      !limit("u", 20) &&
+      limit("u", 1500) &&
+      limit("v", 20),
+  ],
 ];
+
+// The harness, when python3 exists to run it.
+if (good && wrong && sneaky) {
+  checks.push(
+    ["harness: reference solution passes every test", good.every((r) => r.ok)],
+    [
+      "harness: a wrong solution fails",
+      wrong.filter((r) => r.ok).length < wrong.length,
+    ],
+    [
+      "harness: arguments are literals, never code",
+      !sneaky[0].ok && /ValueError|malformed/i.test(sneaky[0].error),
+    ],
+  );
+} else {
+  console.log("  skip harness checks: python3 not available");
+}
 let bad = 0;
 for (const [name, pass] of checks) {
   if (!pass) bad++;

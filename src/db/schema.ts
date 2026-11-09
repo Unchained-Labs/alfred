@@ -789,6 +789,8 @@ export const AI_JOB_KINDS = [
   "handbook_outline",
   "handbook_part",
   "handbook_drills",
+  "handbook_lab",
+  "handbook_ask",
   "exercise",
   "parse_job",
   "parse_resume",
