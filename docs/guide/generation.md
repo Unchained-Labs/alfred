@@ -4,7 +4,8 @@ Add an application with its job description and Alfred starts on it straight
 away. By the time you open it, the prep is either there or on its way:
 
 ```
-analysis ─┬─▶ prep plan ─┬─▶ handbook outline ─▶ each part ─▶ cards & glossary
+analysis ─┬─▶ prep plan ─┬─▶ handbook outline ─▶ each part ─┬─▶ cards & glossary
+          │              │                                  └─▶ its scenes, notebook & problems
           │              └─▶ exercises for the top prep items
           └─▶ interview questions
 ```

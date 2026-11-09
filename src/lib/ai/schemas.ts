@@ -531,6 +531,298 @@ export const handbookPartBodySchema = z.object({
 });
 export type HandbookPartBody = z.infer<typeof handbookPartBodySchema>;
 
+/* ------------------------------------------------------------------ *
+ * Scenes: animated explainers, described as data
+ * ------------------------------------------------------------------ */
+
+export const SCENE_KINDS = [
+  "array",
+  "stack",
+  "queue",
+  "linked_list",
+  "heap",
+  "hashmap",
+  "tree",
+  "graph",
+  "grid",
+  "sequence",
+  "state_machine",
+  "plot",
+  "bars",
+] as const;
+export type SceneKind = (typeof SCENE_KINDS)[number];
+
+const sceneStepSchema = z.object({
+  caption: z
+    .string()
+    .describe(
+      "The narration for this step, one or two sentences, as a teacher would say it while pointing: what just changed and WHY. Never 'step 3'.",
+    ),
+  values: z
+    .array(z.string())
+    .describe(
+      "array, stack, queue, linked_list, heap: the whole contents at this step, in order (stack: bottom first; queue: front first; heap: level order). bars: one number per bar, as text. Empty means unchanged from the previous step.",
+    ),
+  highlight: z
+    .array(z.string())
+    .describe(
+      "What to light up at this step. array/linked_list/heap/stack/queue: indices as text, e.g. '3'. grid: 'row,col'. tree/graph/state_machine/sequence: node ids. hashmap: keys. bars: bar labels. plot: empty.",
+    ),
+  visited: z
+    .array(z.string())
+    .describe(
+      "tree/graph/state_machine: node ids that become 'done' at this step (they stay done). Use it for BFS/DFS/Dijkstra settled nodes. Empty otherwise.",
+    ),
+  pointers: z
+    .array(
+      z.object({
+        label: z.string().describe("One short name: 'i', 'lo', 'slow', 'head'."),
+        index: z.number().int().describe("The index it points at, from zero."),
+      }),
+    )
+    .describe(
+      "array/linked_list: named pointers and where they are at this step — two pointers, binary search bounds, fast/slow. Empty otherwise.",
+    ),
+  range: z
+    .object({
+      from: z.number().int(),
+      to: z.number().int().describe("Inclusive."),
+    })
+    .nullable()
+    .describe(
+      "array: a shaded window at this step (sliding window, the live half of a binary search). Null otherwise.",
+    ),
+  cells: z
+    .array(
+      z.object({
+        row: z.number().int(),
+        col: z.number().int(),
+        value: z.string(),
+      }),
+    )
+    .describe(
+      "grid: cells filled in AT THIS STEP (earlier fills stay). Use for DP tables, matrices, adjacency. Empty otherwise.",
+    ),
+  entries: z
+    .array(
+      z.object({
+        key: z.string(),
+        value: z.string(),
+        bucket: z.number().int().describe("Bucket index, from zero."),
+      }),
+    )
+    .describe(
+      "hashmap: entries inserted or updated AT THIS STEP (earlier ones stay). Two keys in one bucket show a collision chain. Empty otherwise.",
+    ),
+  message: z
+    .object({
+      from: z.string().describe("Node id of the sender."),
+      to: z.string().describe("Node id of the receiver."),
+      label: z.string().describe("What travels: 'GET /cart', 'cache miss', 'ack'."),
+    })
+    .nullable()
+    .describe(
+      "sequence: the one message that travels at this step. Earlier messages stay drawn. Null otherwise.",
+    ),
+  marker: z
+    .object({
+      x: z.number(),
+      y: z.number(),
+      label: z.string().describe("Short, e.g. 'w=0.8, loss=2.1', or empty."),
+    })
+    .nullable()
+    .describe(
+      "plot: a point to mark at this step — the current guess of gradient descent, a sample, a threshold. Earlier markers fade into a trail. Null otherwise.",
+    ),
+});
+export type SceneStep = z.infer<typeof sceneStepSchema>;
+
+export const handbookSceneSchema = z.object({
+  kind: z
+    .enum(SCENE_KINDS)
+    .describe(
+      "array: two pointers, sliding window, binary search, sorting. stack/queue: LIFO/FIFO, monotonic stack, a BFS frontier. linked_list: reversal, fast/slow pointers. heap: push/pop, top-k. hashmap: hashing, collisions, counting. tree: BST insert/search, traversals. graph: BFS, DFS, Dijkstra, topological order. grid: DP tables, matrices, flood fill. sequence: a request path across services — client, gateway, cache, database, queue, replica. state_machine: lifecycles, protocols, retries. plot: a curve over x — loss and gradient descent, distributions, growth rates. bars: a categorical comparison that changes, e.g. counts or latencies.",
+    ),
+  title: z.string().describe("What the scene shows, as a short heading."),
+  caption: z
+    .string()
+    .describe("One sentence under the scene: the single thing to take away."),
+  items: z
+    .array(z.string())
+    .describe(
+      "array/stack/queue/linked_list/heap: the starting contents. hashmap: one label per bucket, e.g. '0'..'7'. bars: the bar labels. Empty otherwise.",
+    ),
+  nodes: z
+    .array(
+      z.object({
+        id: z.string().describe("Short unique id, e.g. 'a', 'api', 'q1'."),
+        label: z.string().describe("Shown on the node. One to three words."),
+      }),
+    )
+    .describe(
+      "tree/graph/state_machine: the nodes (tree: root first). sequence: the participants, left to right. At most 12. Empty otherwise.",
+    ),
+  edges: z
+    .array(
+      z.object({
+        from: z.string().describe("Node id."),
+        to: z.string().describe("Node id."),
+        label: z.string().describe("Edge label, or empty."),
+        weight: z
+          .number()
+          .nullable()
+          .describe("graph: the weight, for shortest paths. Null otherwise."),
+      }),
+    )
+    .describe(
+      "tree: parent → child. graph: connections, drawn undirected. state_machine: transitions, labelled with the event. Empty otherwise.",
+    ),
+  grid: z
+    .object({
+      rows: z.array(z.string()).describe("Row labels, one per row."),
+      cols: z.array(z.string()).describe("Column labels, one per column."),
+    })
+    .nullable()
+    .describe(
+      "grid only: its labelled rows and columns, at most 12 each. Null otherwise.",
+    ),
+  axes: z
+    .object({
+      xLabel: z.string(),
+      yLabel: z.string(),
+      xMin: z.number(),
+      xMax: z.number(),
+      yMin: z.number(),
+      yMax: z.number(),
+    })
+    .nullable()
+    .describe("plot only. Null otherwise."),
+  series: z
+    .array(
+      z.object({
+        label: z.string(),
+        points: z
+          .array(z.object({ x: z.number(), y: z.number() }))
+          .describe("Ten to forty points, x ascending, sampling the curve."),
+      }),
+    )
+    .describe("plot only: one to three curves. Empty otherwise."),
+  steps: z
+    .array(sceneStepSchema)
+    .describe(
+      "Three to ten steps. Each step is one frame of the explanation: change one thing, and say why in the caption.",
+    ),
+});
+export type HandbookScene = z.infer<typeof handbookSceneSchema>;
+
+/* ------------------------------------------------------------------ *
+ * The lab: runnable cells and practice problems
+ * ------------------------------------------------------------------ */
+
+export const handbookCellSchema = z.object({
+  title: z.string().describe("What running this shows, as a short heading."),
+  explain: z
+    .string()
+    .describe(
+      "One or two sentences before the code: what to look for in the output, and what to change to see something new.",
+    ),
+  code: z
+    .string()
+    .describe(
+      "Plain Python 3 for Pyodide, standard library only — no numpy, no network, no files. Under 40 lines. It must print something meaningful. Cells in a part run in order and share variables, like a notebook.",
+    ),
+});
+export type HandbookCell = z.infer<typeof handbookCellSchema>;
+
+export const handbookProblemSchema = z.object({
+  title: z.string().describe("A LeetCode-style problem name."),
+  difficulty: z.enum(["easy", "medium", "hard"]),
+  statement: z
+    .string()
+    .describe(
+      "The problem as markdown: what the function receives and returns, constraints, and one small worked example.",
+    ),
+  functionName: z
+    .string()
+    .describe("A valid Python identifier: the function the tests call."),
+  starter: z
+    .string()
+    .describe(
+      "Python starter code: the function signature with a docstring and `pass`. Nothing else.",
+    ),
+  solution: z
+    .string()
+    .describe(
+      "A correct, idiomatic reference solution in Python, defining the same function.",
+    ),
+  explanation: z
+    .string()
+    .describe("Markdown: the pattern, why it works, the key insight in one line."),
+  complexity: z.string().describe("Time and space, e.g. 'O(n) time, O(1) space'."),
+  hints: z
+    .array(z.string())
+    .describe("Two or three hints, each giving away a little more than the last."),
+  tests: z
+    .array(
+      z.object({
+        args: z
+          .string()
+          .describe(
+            "The call's arguments as Python literals, comma-separated, exactly as they would appear inside the parentheses: '[2, 7, 11, 15], 9'. Literals only — no expressions, no names.",
+          ),
+        expected: z
+          .string()
+          .describe(
+            "The expected return value as a Python literal: '[0, 1]', 'True', '3'.",
+          ),
+        hidden: z
+          .boolean()
+          .describe(
+            "Hidden tests run, but their inputs are not shown. Make the edge cases hidden.",
+          ),
+      }),
+    )
+    .describe(
+      "Five to eight tests, at least two hidden, covering the edge cases. The reference solution must pass every one.",
+    ),
+});
+export type HandbookProblem = z.infer<typeof handbookProblemSchema>;
+
+/** A part's visual and hands-on material, written after its prose. */
+export const handbookLabSchema = z.object({
+  scenes: z
+    .array(handbookSceneSchema)
+    .describe(
+      "One to three animated scenes, for the ideas in this part that MOVE — an algorithm stepping, a request travelling, a value converging. Zero only for a part with nothing that moves (company background, behavioural answers).",
+    ),
+  cells: z
+    .array(handbookCellSchema)
+    .describe(
+      "Nought to three runnable Python cells that let the reader poke the idea: simulate it, measure it, break it. Zero for parts that are not technical.",
+    ),
+  problems: z
+    .array(handbookProblemSchema)
+    .describe(
+      "Nought to two practice problems, for parts that teach coding patterns. Zero for system design, company and behavioural parts.",
+    ),
+});
+export type HandbookLab = z.infer<typeof handbookLabSchema>;
+
+/** Asking about a passage of the handbook. */
+export const handbookAnswerSchema = z.object({
+  answer: z
+    .string()
+    .describe(
+      "The explanation, as markdown. Lead with the direct answer, then the why, then a tiny example if it helps. Under 350 words.",
+    ),
+  scene: handbookSceneSchema
+    .nullable()
+    .describe(
+      "A scene when a picture answers better than words — always when the reader asks for a graph, diagram, animation or visual. Null otherwise.",
+    ),
+});
+export type HandbookAnswer = z.infer<typeof handbookAnswerSchema>;
+
 /**
  * A part as it is stored: the stub, plus the body once it has been written.
  *
@@ -539,7 +831,10 @@ export type HandbookPartBody = z.infer<typeof handbookPartBodySchema>;
  * sees the finished parts and a note on the rest, rather than an error.
  */
 export type HandbookPart = z.infer<typeof handbookPartStubSchema> &
-  Partial<HandbookPartBody>;
+  Partial<HandbookPartBody> & {
+    /** Absent on handbooks written before scenes existed; they still render. */
+    lab?: HandbookLab;
+  };
 
 export type HandbookPlan = Omit<HandbookOutline, "parts"> & {
   parts: HandbookPart[];

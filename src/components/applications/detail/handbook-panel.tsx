@@ -25,13 +25,14 @@ export type HandbookSummary = {
   parts: number;
   createdAt: Date | null;
   model: string | null;
-  /** False when a build stopped partway: an outline with parts unwritten. */
+  /** False when something is unwritten: prose, a part's lab, or the drills. */
   complete: boolean;
 };
 
 const HANDBOOK_KINDS = new Set([
   "handbook_outline",
   "handbook_part",
+  "handbook_lab",
   "handbook_drills",
 ]);
 
@@ -200,12 +201,14 @@ export function HandbookPanel({
           {!handbook.complete && !busy ? (
             <div className="space-y-2 rounded-md border p-3 text-xs">
               <p className="text-ink-muted leading-relaxed">
-                This build stopped partway: the outline is there, but some parts or
-                the practice material are not written yet.
+                Something is missing: some parts, their animated scenes and Python
+                lab, or the practice cards. Handbooks written before scenes existed
+                show this too. Finishing fills in only what is missing; Rebuild
+                rewrites it all.
               </p>
               <Button variant="primary" size="sm" onClick={() => build(false)}>
                 <Sparkles className="size-3.5" />
-                Finish writing it
+                Finish it
               </Button>
             </div>
           ) : null}

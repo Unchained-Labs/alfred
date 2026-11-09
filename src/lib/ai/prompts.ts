@@ -600,6 +600,15 @@ a kind — and it is drawn and animated for you. One diagram is usually right; t
 is the maximum; none is correct for a part that is genuinely a set of unrelated
 facts. A diagram of a list is decoration.
 
+NOTES THAT A LAB IS BUILT FROM
+
+Write this like the best university lecture notes: definitions, the mechanism,
+a worked example carried all the way through, the pitfalls. After you, a second
+pass reads your text and adds animated scenes, runnable Python cells and
+practice problems to the part — so give it something concrete to animate and
+run: real numbers in the worked example, the exact sequence of steps, the
+state that changes. Do not describe animations or write exercises yourself.
+
 LENGTH
 
 Four hundred to nine hundred words. Long enough to actually teach; do not pad to
@@ -631,6 +640,124 @@ ${part.tldr.map((l) => `- ${l}`).join("\n")}
 </your_part>
 ${assignment}
 Write this part.`,
+  };
+}
+
+/** How to choose a scene primitive. Shared by the lab and the ask prompt. */
+const SCENE_GUIDE = `SCENES ARE MOTION GRAPHICS, DESCRIBED AS DATA
+
+A scene is a short animated explainer, like the visual in a good explainer
+video: it plays step by step, and each step's caption is the narration. You
+describe the data and what changes at each step; the drawing and animation are
+done for you. Pick the primitive that matches the idea's real shape:
+
+- array — two pointers, sliding window (use \`range\`), binary search (\`range\`
+  for the live half, pointers lo/mid/hi), in-place sorting (\`values\` per step).
+- stack / queue — balanced brackets, monotonic stack, undo, a BFS frontier.
+- linked_list — reversal, fast/slow pointers, merging.
+- heap — push and pop with sift up/down, top-k (values in level order).
+- hashmap — hashing to buckets, collisions, counting frequencies.
+- tree — BST insert/search, traversal order (\`visited\` as nodes finish).
+- graph — BFS/DFS (\`highlight\` = current, \`visited\` = done), Dijkstra with
+  weights, topological order, connected components.
+- grid — a DP table filling in, a matrix walk, flood fill.
+- sequence — a request travelling through a system: client, gateway, service,
+  cache hit and miss, database, queue, replica. One \`message\` per step.
+- state_machine — lifecycles, protocols, retry and backoff, consensus roles.
+- plot — gradient descent on a loss curve (one \`marker\` per step), a
+  distribution, a learning-rate comparison, O(n) against O(n log n).
+- bars — a comparison that changes: frequencies, latency percentiles.
+
+Rules: three to ten steps; each step changes ONE thing and the caption says
+what changed and why, as a teacher would while pointing. Keep labels short.
+Every id you reference must exist in \`nodes\`. Use the real example from the
+text rather than a toy when you can. Fill fields that do not apply to the
+chosen kind with empty arrays or null.`;
+
+/** A part's scenes, runnable cells and practice problems, after its prose. */
+export function handbookLabPrompt(
+  app: Application,
+  part: { title: string; intent: string; emphasis: string },
+  body: string,
+) {
+  return {
+    system: `${BUTLER}
+
+Your task: the visual and hands-on half of one part of a study handbook. The
+handbook works like hybrid university notes: the prose (already written, below)
+explains; your scenes SHOW it moving, like an explainer video; your Python cells
+let the reader run and poke it, like a notebook; your problems make them do it
+under interview conditions, like LeetCode.
+
+${SCENE_GUIDE}
+
+PYTHON CELLS
+
+Plain Python 3 running in the reader's browser (Pyodide): standard library
+only, no files, no network, no input(). Short, and each one prints something
+worth reading — a simulation, a measurement, a before/after. Cells run in order
+and share variables. Say in \`explain\` what to change to see something new.
+
+PRACTICE PROBLEMS
+
+Only when the part teaches a coding pattern. A LeetCode-style function with a
+statement, starter code, a reference solution, hints that escalate, and tests
+whose \`args\` and \`expected\` are Python LITERALS — they are parsed with
+ast.literal_eval, so no expressions, names or calls. Your solution must pass
+every test; check it mentally before you answer.
+
+Match the part. Company and behavioural parts usually get one scene (a
+lifecycle, a timeline as a state machine, a bar comparison) and nothing else.
+Coding parts get scenes, a cell and a problem. System design parts get sequence
+and state-machine scenes and maybe a simulation cell.`,
+    prompt: `${jobBlock(app)}
+
+<part>
+Title: ${part.title}
+Emphasis: ${part.emphasis}
+What it teaches: ${part.intent}
+</part>
+
+<part_text>
+${body.slice(0, 9000)}
+</part_text>
+
+Write this part's scenes, cells and problems.`,
+  };
+}
+
+/** A reader asking about a passage of their handbook. */
+export function handbookAskPrompt(input: {
+  handbookTitle: string;
+  partTitle: string;
+  selection: string;
+  question: string;
+  context: string;
+}) {
+  return {
+    system: `${BUTLER}
+
+A candidate is studying a handbook you wrote for an interview and has selected
+a passage to ask about. Answer like a patient tutor: the direct answer first,
+then why, then a tiny example if it helps. Stay on the passage and the
+interview it prepares for.
+
+${SCENE_GUIDE}
+
+Include a scene whenever a picture answers better than words, and ALWAYS when
+the reader asks for a graph, chart, diagram, animation or visual. Otherwise
+\`scene\` is null.`,
+    prompt: `<handbook>${input.handbookTitle}</handbook>
+<part>${input.partTitle}</part>
+<part_excerpt>
+${input.context.slice(0, 4000)}
+</part_excerpt>
+<selected_passage>
+${input.selection.slice(0, 2000)}
+</selected_passage>
+<question>
+${input.question.slice(0, 1000)}
+</question>`,
   };
 }
 

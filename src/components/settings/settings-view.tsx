@@ -27,6 +27,7 @@ import {
   type PersonRow,
 } from "@/components/settings/people";
 import { JobQueueCard } from "@/components/settings/job-queue";
+import { RebuildHandbooksCard } from "@/components/settings/rebuild-handbooks";
 import { ResumeImport } from "@/components/settings/resume-import";
 import { Field, Input, Select, Switch, Textarea } from "@/components/ui/field";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -1001,6 +1002,7 @@ export function SettingsView({
               </div>
             </CardBody>
           </Card>
+          <RebuildHandbooksCard />
           <JobQueueCard />
         </TabsContent>
 

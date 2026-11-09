@@ -44,7 +44,7 @@ const STEPS: { label: string; kinds: AiJobKind[] }[] = [
   { label: "Questions", kinds: ["questionnaire"] },
   {
     label: "Handbook",
-    kinds: ["handbook_outline", "handbook_part", "handbook_drills"],
+    kinds: ["handbook_outline", "handbook_part", "handbook_lab", "handbook_drills"],
   },
   { label: "Exercises", kinds: ["exercise"] },
 ];

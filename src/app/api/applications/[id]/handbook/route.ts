@@ -10,6 +10,7 @@ type Params = { params: Promise<{ id: string }> };
 const HANDBOOK_KINDS = [
   "handbook_outline",
   "handbook_part",
+  "handbook_lab",
   "handbook_drills",
 ] as const;
 

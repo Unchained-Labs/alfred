@@ -1,7 +1,11 @@
 import type { HandbookDrills, HandbookPlan } from "@/lib/ai/schemas";
 import { renderDiagrams } from "./diagrams";
+import { LAB_JS, renderCells, renderProblems } from "./lab";
 import { escapeHtml, inlineMarkdown, renderMarkdown, slug } from "./markdown";
+import { ASK_HTML, ASK_JS, XP_JS } from "./play";
+import { renderScenes, SCENE_JS } from "./scenes";
 import { HANDBOOK_CSS } from "./styles";
+import { LAB_CSS } from "./styles-lab";
 import { HANDBOOK_JS } from "./behaviour";
 
 /*
@@ -26,15 +30,16 @@ export function asHandbookContent(value: unknown): HandbookContent | null {
 }
 
 /**
- * Whether every step ran: each part has prose and the drills exist. A build
- * that stopped partway leaves an outline behind, and the panel offers to
- * finish it rather than presenting the empty shell as a handbook.
+ * Whether every step ran: each part has prose and its lab (scenes, cells,
+ * problems), and the drills exist. A build that stopped partway leaves gaps,
+ * and so does a handbook written before labs existed — the panel offers to
+ * finish either, which fills only what is missing.
  */
 export function handbookComplete(value: unknown): boolean {
   const content = asHandbookContent(value);
   if (!content) return false;
   return (
-    content.plan.parts.every((p) => p.body?.trim()) &&
+    content.plan.parts.every((p) => p.body?.trim() && p.lab) &&
     content.drills.flashcards.length > 0
   );
 }
@@ -70,6 +75,11 @@ export type HandbookMeta = {
   model?: string | null;
   /** Rendered into the page so a downloaded copy can still link home. */
   appUrl?: string | null;
+  /**
+   * Where the ask panel posts. Set only when the page is served live by
+   * Alfred; a downloaded copy leaves it out and the panel never appears.
+   */
+  askUrl?: string | null;
 };
 
 export function renderHandbook(
@@ -127,6 +137,10 @@ export function renderHandbook(
         : "";
 
       const diagrams = renderDiagrams(p.diagrams);
+      // The lab is optional: handbooks written before it existed have none.
+      const scenes = renderScenes(p.lab?.scenes, p.anchor);
+      const cells = renderCells(p.lab?.cells, p.anchor);
+      const problems = renderProblems(p.lab?.problems, p.anchor);
 
       const notes = (p.notes ?? [])
         .map(
@@ -157,9 +171,12 @@ export function renderHandbook(
         ? renderMarkdown(p.body)
         : `<p class="caveat">This part has not been written yet. Rebuild the handbook to fill it in.</p>`
     }
+    ${scenes}
     ${diagrams}
     ${notes}
     ${cards}
+    ${cells}
+    ${problems}
   </div>
   <footer class="foot">
     <label class="gotit"><input type="checkbox" class="done" data-part="${p.anchor}"> I've got this</label>
@@ -312,9 +329,9 @@ export function renderHandbook(
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<style>${HANDBOOK_CSS}</style>
+<style>${HANDBOOK_CSS}${LAB_CSS}</style>
 </head>
-<body data-handbook="${escapeHtml(meta.id)}">
+<body data-handbook="${escapeHtml(meta.id)}"${meta.askUrl ? ` data-ask="${escapeHtml(meta.askUrl)}"` : ""}>
 
 <div class="bar">
   <div class="bar-in">
@@ -323,6 +340,7 @@ export function renderHandbook(
       <div class="prog-track"><div class="prog-fill" id="prog-fill"></div></div>
       <span class="prog-txt" id="prog-txt">0/${parts.length} parts</span>
     </div>
+    <span class="xp" id="xp" hidden></span>
     <div class="tools">
       <button class="btn" id="t-tldr" aria-pressed="false" title="Show only the TL;DR of every part">TL;DR only</button>
       <button class="btn" id="t-focus" aria-pressed="false" title="Show one part at a time">Focus</button>
@@ -366,8 +384,9 @@ ${sources}
     <p class="caveat" style="margin-top:40px">${escapeHtml(origin)} for ${escapeHtml(meta.role)} at ${escapeHtml(meta.company)}. Written by a language model from the job posting and your profile — check anything you plan to assert out loud.</p>
   </main>
 </div>
+${ASK_HTML}
 <div class="toast" id="toast" hidden></div>
-<script>${HANDBOOK_JS}</script>
+<script>${XP_JS}${SCENE_JS}${LAB_JS}${HANDBOOK_JS}${ASK_JS}</script>
 </body>
 </html>
 `;
