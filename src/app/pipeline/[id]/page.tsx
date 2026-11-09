@@ -9,8 +9,13 @@ import { DetailHeader } from "@/components/applications/detail/detail-header";
 import { HandbookPanel } from "@/components/applications/detail/handbook-panel";
 import { QuestionnairePanel } from "@/components/applications/detail/questionnaire-panel";
 import { Timeline } from "@/components/applications/detail/timeline";
+import {
+  ApplicationJobsProvider,
+  GenerationStrip,
+} from "@/components/jobs/application-jobs";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 import { handbookComplete } from "@/lib/handbook/render";
+import { listJobs, pendingOf } from "@/lib/jobs/queue";
 import {
   getApplication,
   getHandbook,
@@ -44,99 +49,114 @@ export default async function ApplicationPage({ params }: Params) {
   const questions = listQuestions(user.id, id);
   const events = listEvents(user.id, id);
   const handbook = getHandbook(user.id, id);
+  // Recent AI jobs for this application: the strip shows them, and a panel
+  // whose generation is still queued or running picks it up after a reload.
+  const jobs = listJobs(user.id, { applicationId: id, limit: 60 });
 
   return (
-    <div className="mx-auto max-w-7xl p-4 lg:p-6">
-      <DetailHeader
-        app={app}
-        openPrepCount={
-          actionables.filter(
-            (item) => item.status === "todo" || item.status === "in_progress",
-          ).length
-        }
-      />
+    <ApplicationJobsProvider applicationId={id} initialJobs={jobs}>
+      <div className="mx-auto max-w-7xl p-4 lg:p-6">
+        <DetailHeader
+          app={app}
+          openPrepCount={
+            actionables.filter(
+              (item) => item.status === "todo" || item.status === "in_progress",
+            ).length
+          }
+        />
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <div className="space-y-4 lg:col-span-2">
-          <AnalysisPanel
-            applicationId={id}
-            analysis={analysis}
-            hasDescription={Boolean(app.description?.trim())}
-          />
-          <ActionablesPanel
-            applicationId={id}
-            actionables={actionables}
-            hasAnalysis={Boolean(analysis)}
-          />
-          <QuestionnairePanel applicationId={id} questions={questions} />
-          <HandbookPanel
-            applicationId={id}
-            hasDescription={Boolean(app.description?.trim())}
-            handbook={
-              handbook
-                ? {
-                    id: handbook.id,
-                    title: handbook.title,
-                    parts: handbook.parts,
-                    createdAt: handbook.createdAt,
-                    model: handbook.model,
-                    complete: handbookComplete(handbook.content),
-                  }
-                : null
-            }
-          />
+        <div className="mb-4">
+          <GenerationStrip />
         </div>
 
-        <div className="space-y-4">
-          <AskAlfred applicationId={id} />
+        <div className="grid gap-4 lg:grid-cols-3">
+          <div className="space-y-4 lg:col-span-2">
+            <AnalysisPanel
+              applicationId={id}
+              analysis={analysis}
+              hasDescription={Boolean(app.description?.trim())}
+              activeJob={pendingOf(jobs, "analysis")}
+            />
+            <ActionablesPanel
+              applicationId={id}
+              actionables={actionables}
+              hasAnalysis={Boolean(analysis)}
+              activeJob={pendingOf(jobs, "actionables")}
+            />
+            <QuestionnairePanel
+              applicationId={id}
+              questions={questions}
+              activeJob={pendingOf(jobs, "questionnaire")}
+            />
+            <HandbookPanel
+              applicationId={id}
+              hasDescription={Boolean(app.description?.trim())}
+              handbook={
+                handbook
+                  ? {
+                      id: handbook.id,
+                      title: handbook.title,
+                      parts: handbook.parts,
+                      createdAt: handbook.createdAt,
+                      model: handbook.model,
+                      complete: handbookComplete(handbook.content),
+                    }
+                  : null
+              }
+            />
+          </div>
 
-          {/* What they said when it ended. Above the posting text, because once
+          <div className="space-y-4">
+            <AskAlfred applicationId={id} />
+
+            {/* What they said when it ended. Above the posting text, because once
               an application is closed this is the only part of the record that
               can still change how you write the next one. */}
-          {app.outcomeNote?.trim() ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>What they said</CardTitle>
-              </CardHeader>
-              <CardBody>
-                <p className="text-ink-2 text-xs leading-relaxed whitespace-pre-wrap">
-                  {app.outcomeNote}
-                </p>
-              </CardBody>
-            </Card>
-          ) : null}
-
-          {app.description?.trim() ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>Job description</CardTitle>
-              </CardHeader>
-              <CardBody>
-                <div className="max-h-72 overflow-y-auto">
+            {app.outcomeNote?.trim() ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle>What they said</CardTitle>
+                </CardHeader>
+                <CardBody>
                   <p className="text-ink-2 text-xs leading-relaxed whitespace-pre-wrap">
-                    {app.description}
+                    {app.outcomeNote}
                   </p>
-                </div>
-              </CardBody>
-            </Card>
-          ) : null}
+                </CardBody>
+              </Card>
+            ) : null}
 
-          {app.notes?.trim() ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>Your notes</CardTitle>
-              </CardHeader>
-              <CardBody>
-                <p className="text-ink-2 text-xs leading-relaxed whitespace-pre-wrap">
-                  {app.notes}
-                </p>
-              </CardBody>
-            </Card>
-          ) : null}
+            {app.description?.trim() ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Job description</CardTitle>
+                </CardHeader>
+                <CardBody>
+                  <div className="max-h-72 overflow-y-auto">
+                    <p className="text-ink-2 text-xs leading-relaxed whitespace-pre-wrap">
+                      {app.description}
+                    </p>
+                  </div>
+                </CardBody>
+              </Card>
+            ) : null}
 
-          <Timeline applicationId={id} events={events} />
+            {app.notes?.trim() ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Your notes</CardTitle>
+                </CardHeader>
+                <CardBody>
+                  <p className="text-ink-2 text-xs leading-relaxed whitespace-pre-wrap">
+                    {app.notes}
+                  </p>
+                </CardBody>
+              </Card>
+            ) : null}
+
+            <Timeline applicationId={id} events={events} />
+          </div>
         </div>
       </div>
-    </div>
+    </ApplicationJobsProvider>
   );
 }

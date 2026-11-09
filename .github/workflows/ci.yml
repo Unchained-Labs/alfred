@@ -53,6 +53,13 @@ jobs:
       # fixture whose answers were worked out by hand.
       - name: analytics aggregations are correct
         run: npm run check:analytics
+      # The AI job queue decides what runs, when, and whether a failure is
+      # tried again — and a job that is never claimed looks exactly like one
+      # that is merely queued. Claim order, dependencies, backoff, dedupe,
+      # crash recovery and cancellation, against a scratch database and a fake
+      # handler. No provider is called.
+      - name: AI job queue claims, retries and recovers
+        run: npm run check:queue
       - name: exercise runner executes python
         run: |
           node -e "process.stdout.write(JSON.stringify({code:'def ok():\n    return 1\n',tests:[{name:'boots',call:'ok()',expect:'1',hidden:false},{name:'compares',call:'ok() + 1',expect:'3',hidden:true}]}))" > /tmp/job.json

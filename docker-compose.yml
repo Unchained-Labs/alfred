@@ -42,6 +42,12 @@ services:
       # first (the owner). Off unless set; invitations work either way. Without
       # this line the setting in .env never reached the app.
       ALFRED_ALLOW_SIGNUP: ${ALFRED_ALLOW_SIGNUP:-}
+      # How many AI generations run at once. Background is everything nobody
+      # is waiting on (the pipeline queued for a new application); interactive
+      # is a request held open for an answer. The claude-code provider starts
+      # a whole CLI per call, so 1 each suits a small machine.
+      ALFRED_AI_CONCURRENCY: ${ALFRED_AI_CONCURRENCY:-1}
+      ALFRED_AI_INTERACTIVE_CONCURRENCY: ${ALFRED_AI_INTERACTIVE_CONCURRENCY:-1}
       # All optional: the same values can be set in Settings, which stores them
       # in the database. Environment wins where both are present.
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}

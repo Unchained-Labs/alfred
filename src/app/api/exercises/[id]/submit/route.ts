@@ -1,4 +1,5 @@
-import { AiError, AiNotConfiguredError, gradeWrittenAnswer } from "@/lib/ai";
+import { gradeWrittenAnswer } from "@/lib/ai";
+import { runInteractive } from "@/lib/jobs/worker";
 import { badRequest, failed, notFound, ok, readJson } from "@/lib/api";
 import { requireUser } from "@/lib/auth";
 import type { CriterionOutcome, GradeReport } from "@/lib/exercises";
@@ -75,31 +76,20 @@ export async function POST(request: Request, { params }: Params) {
 
     const rubric = exercise.rubric ?? [];
 
-    // One retry, and only for a provider that failed to answer in the shape it
-    // was asked for — not for a grade the candidate dislikes. A model returning
-    // unparseable JSON is rare but it does happen, and losing a long written
-    // answer to it is a far worse experience than waiting another ten seconds.
-    let graded: Awaited<ReturnType<typeof gradeWrittenAnswer>>;
-    try {
-      graded = await gradeWrittenAnswer(
-        user.id,
-        application,
-        exercise.brief,
-        rubric,
-        answer,
-      );
-    } catch (first) {
-      if (!(first instanceof AiError) || first instanceof AiNotConfiguredError) {
-        throw first;
-      }
-      graded = await gradeWrittenAnswer(
-        user.id,
-        application,
-        exercise.brief,
-        rubric,
-        answer,
-      );
-    }
+    // Through the interactive lane, which allows one retry — and only for a
+    // provider that failed to answer in the shape it was asked for, not for a
+    // grade the candidate dislikes. Losing a long written answer to one
+    // unparseable reply is far worse than waiting another ten seconds.
+    const graded = await runInteractive(
+      {
+        userId: user.id,
+        kind: "grade_answer",
+        applicationId: application.id,
+        label: `Grade answer: ${actionable.title}`,
+      },
+      () =>
+        gradeWrittenAnswer(user.id, application, exercise.brief, rubric, answer),
+    );
 
     // The grader returns ids; the requirements live here. Joining them server
     // side means the UI never has to guess which criterion a verdict is about,

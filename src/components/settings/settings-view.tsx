@@ -13,6 +13,7 @@ import {
   Sparkles,
   User,
   Users,
+  Workflow,
   Zap,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -25,6 +26,7 @@ import {
   type InviteRow,
   type PersonRow,
 } from "@/components/settings/people";
+import { JobQueueCard } from "@/components/settings/job-queue";
 import { ResumeImport } from "@/components/settings/resume-import";
 import { Field, Input, Select, Switch, Textarea } from "@/components/ui/field";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -115,6 +117,9 @@ function TestBadge({ result }: { result: TestResult | null }) {
   );
 }
 
+const clampInt = (value: number, min: number, max: number) =>
+  Math.min(max, Math.max(min, Math.round(Number.isFinite(value) ? value : min)));
+
 export function SettingsView({
   initial,
   isOwner,
@@ -137,6 +142,7 @@ export function SettingsView({
   });
   const [ai, setAi] = React.useState(initial.ai);
   const [mail, setMail] = React.useState(initial.mail);
+  const [automation, setAutomation] = React.useState(initial.automation);
 
   const [saving, setSaving] = React.useState(false);
   const [testing, setTesting] = React.useState(false);
@@ -166,6 +172,11 @@ export function SettingsView({
           },
           ai,
           mail,
+          automation: {
+            ...automation,
+            maxExercises: clampInt(automation.maxExercises, 0, 20),
+            questionnaireCount: clampInt(automation.questionnaireCount, 5, 25),
+          },
         }),
       });
       const data = await response.json();
@@ -269,6 +280,10 @@ export function SettingsView({
           <TabsTrigger value="mail">
             <Mail className="size-3.5" />
             Mailbox
+          </TabsTrigger>
+          <TabsTrigger value="generation">
+            <Workflow className="size-3.5" />
+            Generation
           </TabsTrigger>
           {isOwner ? (
             <TabsTrigger value="people">
@@ -882,6 +897,113 @@ export function SettingsView({
             </CardBody>
           </Card>
         </TabsContent>
+        {/* ---------------- Generation ---------------- */}
+        <TabsContent value="generation" className="mt-4 space-y-4">
+          <Card>
+            <CardHeader>
+              <div>
+                <CardTitle>When you add an application</CardTitle>
+                <p className="text-ink-muted mt-0.5 text-xs">
+                  Alfred queues everything below as soon as an application has its
+                  job description, and works through it in the background — one
+                  generation at a time, in the order each step needs the last.
+                </p>
+              </div>
+              <Badge tint={automation.autoGenerate ? "var(--good)" : undefined}>
+                {automation.autoGenerate ? "Automatic" : "Manual"}
+              </Badge>
+            </CardHeader>
+            <CardBody className="space-y-4">
+              <Switch
+                checked={automation.autoGenerate}
+                onCheckedChange={(autoGenerate) =>
+                  setAutomation({ ...automation, autoGenerate })
+                }
+                label="Generate prep automatically"
+                hint="Off: nothing runs until you press a button on the application."
+              />
+              <div className="grid gap-3 sm:grid-cols-2">
+                {(
+                  [
+                    [
+                      "analysis",
+                      "Fit analysis",
+                      "Scores your fit and names the gaps.",
+                    ],
+                    [
+                      "actionables",
+                      "Prep plan",
+                      "Problems, concepts and stories, aimed at the gaps.",
+                    ],
+                    [
+                      "questionnaire",
+                      "Interview questions",
+                      "Likely questions with drafted answers.",
+                    ],
+                    [
+                      "handbook",
+                      "Learning handbook",
+                      "The long-form study guide, cards and glossary.",
+                    ],
+                    [
+                      "exercises",
+                      "Exercises",
+                      "Coding problems and written questions for the top prep items.",
+                    ],
+                  ] as const
+                ).map(([key, label, hint]) => (
+                  <Switch
+                    key={key}
+                    checked={automation[key]}
+                    disabled={!automation.autoGenerate}
+                    onCheckedChange={(on) =>
+                      setAutomation({ ...automation, [key]: on })
+                    }
+                    label={label}
+                    hint={hint}
+                  />
+                ))}
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field
+                  label="Exercises to write automatically"
+                  hint="Highest-priority prep items first. Each coding one is two AI calls and a test run; build the rest from the Prep page."
+                >
+                  <Input
+                    type="number"
+                    min={0}
+                    max={20}
+                    value={automation.maxExercises}
+                    disabled={!automation.autoGenerate || !automation.exercises}
+                    onChange={(event) =>
+                      setAutomation({
+                        ...automation,
+                        maxExercises: Number(event.target.value),
+                      })
+                    }
+                  />
+                </Field>
+                <Field label="Questions per questionnaire">
+                  <Input
+                    type="number"
+                    min={5}
+                    max={25}
+                    value={automation.questionnaireCount}
+                    disabled={!automation.autoGenerate || !automation.questionnaire}
+                    onChange={(event) =>
+                      setAutomation({
+                        ...automation,
+                        questionnaireCount: Number(event.target.value),
+                      })
+                    }
+                  />
+                </Field>
+              </div>
+            </CardBody>
+          </Card>
+          <JobQueueCard />
+        </TabsContent>
+
         {isOwner ? (
           <TabsContent value="people" className="mt-4">
             <People people={people} invites={invites} />

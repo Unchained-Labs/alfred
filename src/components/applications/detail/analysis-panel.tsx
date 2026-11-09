@@ -9,16 +9,16 @@ import {
   Target,
   ThumbsUp,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
 import * as React from "react";
 import { fitTone, FitGauge } from "@/components/charts/meter";
+import { jobPhase, useQueuedJob } from "@/components/jobs/use-queued-job";
 import { SkillBars } from "@/components/charts/skill-bars";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState, ThinkingRows } from "@/components/ui/states";
 import { useToast } from "@/components/ui/toast";
-import type { Analysis } from "@/db/schema";
+import type { AiJob, Analysis } from "@/db/schema";
 import { formatDateTime } from "@/lib/utils";
 
 function Bullets({
@@ -59,35 +59,38 @@ export function AnalysisPanel({
   applicationId,
   analysis,
   hasDescription,
+  activeJob,
 }: {
   applicationId: string;
   analysis: Analysis | null;
   hasDescription: boolean;
+  /** An analysis already queued or running when the page rendered. */
+  activeJob?: AiJob | null;
 }) {
-  const router = useRouter();
   const toast = useToast();
-  const [running, setRunning] = React.useState(false);
+  const {
+    job,
+    busy: running,
+    start,
+  } = useQueuedJob(activeJob, {
+    onSucceeded: (done) => {
+      const fit = (done.result as { fitScore?: number } | null)?.fitScore;
+      toast.success(
+        "Analysis ready",
+        fit != null ? `Fit score: ${fit}/100` : undefined,
+      );
+    },
+    onFailed: (done) => toast.error("Analysis failed", done.error ?? ""),
+  });
 
   async function analyze() {
-    setRunning(true);
     try {
-      const response = await fetch(`/api/applications/${applicationId}/analyze`, {
-        method: "POST",
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error ?? "Analysis failed.");
-      toast.success(
-        `Fit score: ${data.analysis.fitScore}/100`,
-        data.analysis.verdict,
-      );
-      router.refresh();
+      await start(`/api/applications/${applicationId}/analyze`);
     } catch (error) {
       toast.error(
         "Analysis failed",
         error instanceof Error ? error.message : String(error),
       );
-    } finally {
-      setRunning(false);
     }
   }
 
@@ -117,7 +120,12 @@ export function AnalysisPanel({
 
       <CardBody>
         {running && !analysis ? (
-          <ThinkingRows rows={4} />
+          <div className="space-y-3">
+            <p className="text-ink-muted text-xs">
+              {jobPhase(job)} — it carries on if you leave this page.
+            </p>
+            <ThinkingRows rows={4} />
+          </div>
         ) : !analysis ? (
           <EmptyState
             icon={Target}

@@ -64,10 +64,32 @@ export type MailSettings = {
   autoTriage: boolean;
 };
 
+/**
+ * What Alfred generates on its own when an application is created (or its
+ * posting text is first added). Everything is on by default: the point is to
+ * open a new application and find the prep already waiting.
+ */
+export type AutomationSettings = {
+  autoGenerate: boolean;
+  analysis: boolean;
+  actionables: boolean;
+  questionnaire: boolean;
+  handbook: boolean;
+  exercises: boolean;
+  /**
+   * Exercises are one job per prep item and the code ones are two provider
+   * calls plus a test run each, so the automatic batch stops here. The rest can
+   * still be built one at a time from the Prep page.
+   */
+  maxExercises: number;
+  questionnaireCount: number;
+};
+
 export type AlfredSettings = {
   profile: UserProfile;
   ai: AiSettings;
   mail: MailSettings;
+  automation: AutomationSettings;
 };
 
 export const DEFAULT_SETTINGS: AlfredSettings = {
@@ -109,6 +131,16 @@ export const DEFAULT_SETTINGS: AlfredSettings = {
     folder: "INBOX",
     lookbackDays: 30,
     autoTriage: true,
+  },
+  automation: {
+    autoGenerate: true,
+    analysis: true,
+    actionables: true,
+    questionnaire: true,
+    handbook: true,
+    exercises: true,
+    maxExercises: 6,
+    questionnaireCount: 12,
   },
 };
 

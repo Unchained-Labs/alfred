@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { applications, mailMessages } from "@/db/schema";
 import { triageEmail } from "@/lib/ai";
 import { AiError } from "@/lib/ai/types";
+import { runInteractive } from "@/lib/jobs/worker";
 import { fetchRecentMail } from "@/lib/mail/imap";
 import { linkMailToApplication } from "@/lib/mutations";
 import { listKnownCompanies } from "@/lib/queries";
@@ -123,16 +124,26 @@ export async function syncMailbox(
 
   for (const row of inserted) {
     try {
-      const { result } = await triageEmail(
-        userId,
+      // The sync request is held open for these, so they take the interactive
+      // lane — one at a time, alongside but never behind background work.
+      const { result } = await runInteractive(
         {
-          fromName: row.fromName,
-          fromAddress: row.fromAddress,
-          subject: row.subject,
-          body: row.body,
-          receivedAt: row.receivedAt,
+          userId,
+          kind: "triage_email",
+          label: `Triage: ${row.subject ?? "(no subject)"}`,
         },
-        knownCompanies,
+        () =>
+          triageEmail(
+            userId,
+            {
+              fromName: row.fromName,
+              fromAddress: row.fromAddress,
+              subject: row.subject,
+              body: row.body,
+              receivedAt: row.receivedAt,
+            },
+            knownCompanies,
+          ),
       );
       report.triaged++;
 

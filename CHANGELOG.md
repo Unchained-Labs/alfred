@@ -16,6 +16,12 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Added
 
+- **Alfred prepares a new application on its own.** Adding one with its job description queues everything Alfred can write about it — fit analysis, prep plan, interview questions, the handbook (outline, every part, then the cards) and exercises for the top prep items — in the order each step needs the last. A strip on the application shows where it is, and it carries on with the tab closed. **Settings → Generation** turns it off or picks the steps. An application with no posting yet (from an email, or a discovered job's two-line snippet) waits, says so on its timeline, and starts the moment the description is pasted.
+
+- **Every AI generation goes through a durable queue.** Generations used to run inside the request that asked for them: close the tab and the work was lost, and two tabs meant two `claude` processes on a machine with room for one. Now a request only queues; a worker runs jobs a bounded number at a time (`ALFRED_AI_CONCURRENCY`, default 1), in two lanes so something you are waiting on — reading a posting, grading an answer — never sits behind a background handbook. Transient failures retry with a growing pause; a signed-out provider fails at once and says to sign in, instead of burning attempts. A restart picks up what it interrupted. **Settings → Generation** lists recent jobs with their duration and error, with Retry and Cancel.
+
+- **Claude Code failures say what happened.** A non-zero exit with nothing on stderr used to read "no output on stderr"; the CLI puts the reason in its JSON on stdout, and that is what is shown now — and an expired login is reported as one.
+
 - **Closing an application properly.** Choosing Rejected, Withdrawn or Accepted now opens one dialog instead of silently moving the card, because closing is three decisions at once.
 
   It keeps **what the company said**, in a field of its own rather than mixed into your notes, and shows it on the application under _What they said_. A rejection is the only moment a company tells you anything true about your application, and the moment the email arrives is the only moment anyone will write it down.
