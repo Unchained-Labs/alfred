@@ -22,7 +22,8 @@
     "format:check": "prettier --check .",
     "check:handbook": "tsx scripts/check-handbook-render.ts",
     "check:discovery": "tsx scripts/check-discovery-match.ts",
-    "check:analytics": "tsx scripts/check-analytics.ts"
+    "check:analytics": "tsx scripts/check-analytics.ts",
+    "check:job-analytics": "tsx scripts/check-job-analytics.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.131.0",
