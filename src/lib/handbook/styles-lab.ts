@@ -123,6 +123,18 @@ export const LAB_CSS = `
   background:var(--surface);color:var(--ink)}
 .ask-form .primary{background:var(--rule);color:var(--brand-ink);border-color:var(--rule)}
 @media (max-width:620px){.ask-panel{right:12px;left:12px;width:auto;bottom:70px}.ask-fab{right:12px;bottom:12px}}
+/* Wide enough to read beside it: dock the panel full height and move the page
+   out from under it, instead of floating over the text being asked about. */
+@media (min-width:981px){
+  html.ask-open body{padding-right:476px}
+  html.ask-open .ask-panel{top:72px;max-height:none}
+}
+/* Below 1240 the parts rail and the panel do not both fit beside the text:
+   the rail steps aside while the panel is open. */
+@media (min-width:981px) and (max-width:1239px){
+  html.ask-open .shell{grid-template-columns:minmax(0,1fr)}
+  html.ask-open .rail{display:none}
+}
 @media print{
   .scene-ctl,.scene-say,.cell-bar,.ask-fab,.ask-sel,.ask-panel,.xp{display:none!important}
   .scene-steps{display:block!important}

@@ -710,6 +710,12 @@ const checks: [string, boolean][] = [
     html.includes('data-ask="/api/applications/app-1/handbook/ask"'),
   ],
   ["downloaded copy has no ask endpoint", !downloaded.includes("data-ask=")],
+  // .ask-panel sets display:flex, which beats the browser's own [hidden]
+  // rule: the close button set hidden and the panel stayed on screen.
+  [
+    "hidden beats any class's display",
+    html.includes("[hidden]{display:none!important}"),
+  ],
 
   // The ask endpoint's checks, without a session or a model.
   ["ask: question required", !parseAskRequest({ question: "  " }).ok],

@@ -99,11 +99,12 @@ function partOf(node){
 }
 function open(){
   panel.hidden = false; fab.setAttribute("aria-expanded", "true");
+  document.documentElement.classList.add("ask-open");
   if (picked.text){ quote.textContent = picked.text.length > 400 ? picked.text.slice(0, 399) + "…" : picked.text; quote.hidden = false; }
   else quote.hidden = true;
   q.focus();
 }
-function close(){ panel.hidden = true; fab.setAttribute("aria-expanded", "false"); fab.focus(); }
+function close(){ panel.hidden = true; fab.setAttribute("aria-expanded", "false"); document.documentElement.classList.remove("ask-open"); fab.focus(); }
 fab.addEventListener("click", function(){ panel.hidden ? open() : close(); });
 if (x) x.addEventListener("click", close);
 document.addEventListener("keydown", function(e){ if (e.key === "Escape" && !panel.hidden) close(); });
