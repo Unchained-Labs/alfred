@@ -8,6 +8,11 @@
  */
 export const HANDBOOK_CSS = `
 *,*::before,*::after{box-sizing:border-box}
+/* The browser hides [hidden] with display:none at the lowest priority, so any
+   class that sets display (the ask panel, the scene controls) un-hides it and
+   the script's el.hidden = true does nothing. The print sheet's
+   .dgm-panel[hidden] still wins: it is more specific. */
+[hidden]{display:none!important}
 :root{
   --page:#f6f3ef;--surface:#fff;--surface-2:#f3efe9;--surface-3:#e8e1d8;
   --ink:#1a1512;--ink-2:#4a423c;--muted:#6f655e;
