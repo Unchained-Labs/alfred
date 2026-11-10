@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState, ThinkingRows } from "@/components/ui/states";
 import { useToast } from "@/components/ui/toast";
+import { CheckIns } from "@/components/jobs/application-jobs";
 import { useApplicationJobsContext } from "@/components/jobs/jobs-context";
 import { isPending } from "@/components/jobs/use-queued-job";
 import { relativeDay } from "@/lib/utils";
@@ -167,6 +168,7 @@ export function HandbookPanel({
       {busy && progress ? (
         <CardBody className="space-y-3">
           <p className="text-ink text-sm font-medium">{progress}</p>
+          {shared ? <CheckIns jobs={chain} onChange={shared.refresh} /> : null}
           <p className="text-ink-muted text-xs leading-relaxed">
             The parts get written first, one at a time, then the cards and glossary
             drill the ground they actually cover. It is the longest thing Alfred

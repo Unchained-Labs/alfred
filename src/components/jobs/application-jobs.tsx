@@ -1,10 +1,22 @@
 "use client";
 
-import { AlertTriangle, Check, Clock, Loader2, RotateCcw, X } from "lucide-react";
+import {
+  AlertTriangle,
+  Check,
+  Clock,
+  Hand,
+  Loader2,
+  Play,
+  RotateCcw,
+  Square,
+  X,
+} from "lucide-react";
+import Link from "next/link";
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import type { AiJob, AiJobKind } from "@/db/schema";
+import { elapsedSeconds, formatElapsed, isWaitingOnYou } from "@/lib/jobs/status";
 import { cn } from "@/lib/utils";
 import { ApplicationJobsContext, useApplicationJobsContext } from "./jobs-context";
 import { isPending, jobAction, useApplicationJobs } from "./use-queued-job";
@@ -212,6 +224,76 @@ export function GenerationStrip() {
           {failures[0].error}
         </p>
       ) : null}
+      <CheckIns jobs={ctx.jobs} onChange={ctx.refresh} />
     </div>
+  );
+}
+
+/**
+ * A job past its check-in, asking whether to keep going. It is still running
+ * while it asks; no answer means it carries on to the hard ceiling.
+ */
+export function CheckIns({
+  jobs,
+  onChange,
+}: {
+  jobs: AiJob[];
+  onChange: () => void;
+}) {
+  const [busy, setBusy] = React.useState<string | null>(null);
+  // Re-rendered by each poll, which is often enough for a minutes counter.
+  const waiting = jobs.filter((j) => isWaitingOnYou(j));
+  if (!waiting.length) return null;
+
+  async function act(job: AiJob, action: "continue" | "cancel") {
+    setBusy(job.id + action);
+    try {
+      await jobAction(job.id, action);
+      onChange();
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  return (
+    <ul className="w-full space-y-1.5 text-xs">
+      {waiting.map((job) => (
+        <li
+          key={job.id}
+          className="flex flex-wrap items-center gap-2 rounded-md px-2.5 py-2"
+          style={{
+            background: "color-mix(in oklab, var(--warning) 12%, transparent)",
+          }}
+        >
+          <Hand className="size-3.5 shrink-0" style={{ color: "var(--warning)" }} />
+          <span className="text-ink min-w-0 flex-1">
+            <b className="font-medium">{job.label ?? job.kind}</b> has been running
+            for {formatElapsed(elapsedSeconds(job) ?? 0)}, longer than usual. Keep
+            going?{" "}
+            <Link href="/queue" className="text-ink-muted hover:underline">
+              AI queue
+            </Link>
+          </span>
+          <Button
+            size="sm"
+            variant="primary"
+            onClick={() => act(job, "continue")}
+            loading={busy === job.id + "continue"}
+          >
+            <Play className="size-3.5" />
+            Keep going
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => act(job, "cancel")}
+            loading={busy === job.id + "cancel"}
+          >
+            <Square className="size-3.5" />
+            Stop
+          </Button>
+        </li>
+      ))}
+    </ul>
   );
 }

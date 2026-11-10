@@ -864,6 +864,13 @@ export const aiJobs = sqliteTable(
     /** What the handler returned. Interactive kinds read their answer here. */
     result: text("result", { mode: "json" }).$type<unknown>(),
     startedAt: integer("started_at", { mode: "timestamp_ms" }),
+    /**
+     * When a running background job asks whether to keep going. Past it, the
+     * job is still running — it waits for an answer, it does not stop — and
+     * "Keep going" moves it forward. Null for interactive jobs, whose person
+     * is already watching a spinner.
+     */
+    checkInAt: integer("check_in_at", { mode: "timestamp_ms" }),
     finishedAt: integer("finished_at", { mode: "timestamp_ms" }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),

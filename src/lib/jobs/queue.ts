@@ -120,7 +120,11 @@ function cancelDependents(rootId: string, now: Date) {
  * unblocks it — while one whose dependency was CANCELLED is cancelled too,
  * because nothing will ever run the step it was waiting for.
  */
-export function claim(lane: AiJobLane, now = new Date()): AiJob | null {
+export function claim(
+  lane: AiJobLane,
+  now = new Date(),
+  checkInMs: number | null = null,
+): AiJob | null {
   const take = sqlite.transaction((): AiJob | null => {
     const candidates = db
       .select()
@@ -167,6 +171,10 @@ export function claim(lane: AiJobLane, now = new Date()): AiJob | null {
           status: "running",
           attempts: job.attempts + 1,
           startedAt: now,
+          checkInAt:
+            checkInMs && lane === "background"
+              ? new Date(now.getTime() + checkInMs)
+              : null,
           finishedAt: null,
           updatedAt: now,
         })
@@ -242,6 +250,26 @@ export function fail(
           },
     )
     .where(eq(aiJobs.id, id))
+    .returning()
+    .get();
+}
+
+/**
+ * "Keep going": a running job past its check-in gets another period before it
+ * asks again. Anything not running is returned untouched.
+ */
+export function keepGoing(
+  userId: string,
+  id: string,
+  periodMs: number,
+  now = new Date(),
+): AiJob | undefined {
+  const job = getJob(userId, id);
+  if (!job || job.status !== "running") return job;
+  return db
+    .update(aiJobs)
+    .set({ checkInAt: new Date(now.getTime() + periodMs), updatedAt: now })
+    .where(and(eq(aiJobs.id, id), eq(aiJobs.status, "running")))
     .returning()
     .get();
 }
@@ -462,4 +490,25 @@ export function queueDepth(userId: string) {
     queued: rows.find((r) => r.status === "queued")?.n ?? 0,
     running: rows.find((r) => r.status === "running")?.n ?? 0,
   };
+}
+
+/** The ids of this user's jobs in a status, oldest first — for bulk actions. */
+export function jobIdsWithStatus(
+  userId: string,
+  status: AiJobStatus,
+  lane?: AiJobLane,
+): string[] {
+  return db
+    .select({ id: aiJobs.id })
+    .from(aiJobs)
+    .where(
+      and(
+        eq(aiJobs.userId, userId),
+        eq(aiJobs.status, status),
+        lane ? eq(aiJobs.lane, lane) : undefined,
+      ),
+    )
+    .orderBy(aiJobs.createdAt)
+    .all()
+    .map((row) => row.id);
 }

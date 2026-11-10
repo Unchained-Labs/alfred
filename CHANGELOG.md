@@ -16,6 +16,10 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Added
 
+- **AI queue: every generation as it runs, and a question instead of a timeout.** A new **AI queue** page in the sidebar shows what needs your answer, what is running (with a live timer), what is next and why it is waiting, per-kind numbers (success rate, retries, typical and longest duration), and a filterable history, with Stop, Retry, **Retry all failed** and **Cancel all**.
+
+  Long generations no longer die at five minutes. Claude Code used to be killed at 300s and then re-run identically twice more, so a long handbook step failed after fifteen minutes of work without anyone being asked. Now a background job that passes five minutes **asks whether to keep going** (on the application, in the handbook panel and in the queue) and keeps working while it asks. It is stopped only at a 30-minute ceiling, and a job that hit the ceiling is not retried on its own. **Stop** now actually kills the Claude Code process or aborts the API call; before, a cancelled job ran to the end and its result was thrown away.
+
 - **Handbooks you watch, run and solve, not just read.** Every part now comes with its own lab, written in a second pass from the part's text: **animated scenes**, a **Python notebook** and **LeetCode-style problems**. Think hybrid university notes, explainer-video visuals, a notebook and LeetCode in one page.
 
   **Scenes** are step-through motion graphics the model describes as data and Alfred draws: arrays with pointers and windows, stacks, queues, linked lists, heaps, hash maps, trees, graphs with traversal, DP tables, request flows between services, state machines, curves with gradient-descent markers, and bar charts. Each has play, pause, step, scrub and per-step narration, and degrades to the numbered narration without JavaScript. As with diagrams, nothing generated is markup: the scene travels as escaped JSON in one attribute and the player builds every element with `createElementNS` and `textContent`.

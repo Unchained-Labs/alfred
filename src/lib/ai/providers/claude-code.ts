@@ -13,6 +13,7 @@ import {
 import { extractJsonObject, toStrictJsonSchema } from "./json-schema";
 
 import { DEFAULT_CLAUDE_CODE_BINARY } from "../catalog";
+import { JobStopped, jobScope } from "@/lib/jobs/scope";
 
 export { CLAUDE_CODE_MODELS, DEFAULT_CLAUDE_CODE_BINARY } from "../catalog";
 
@@ -54,6 +55,12 @@ type CliResult = {
  * What a failed run said on stdout: the `result` of its JSON envelope when
  * there is one, otherwise the last line printed.
  */
+/** "300s", or "25 min" once it is minutes long. */
+function formatLimit(ms: number): string {
+  const seconds = Math.round(ms / 1000);
+  return seconds < 120 ? `${seconds}s` : `${Math.round(seconds / 60)} min`;
+}
+
 function stdoutDetail(stdout: string): string {
   const text = stdout.trim();
   if (!text) return "";
@@ -135,20 +142,43 @@ export class ClaudeCodeProvider implements AiProvider {
       let pending = "";
       let settled = false;
 
-      const timer = setTimeout(() => {
-        if (settled) return;
-        settled = true;
+      const end = () => {
         child.kill("SIGTERM");
         // SIGTERM first; if it ignores that, insist.
         setTimeout(() => child.kill("SIGKILL"), 5_000);
+      };
+
+      // Inside a queued job the job decides how long this may take: it asks
+      // the person at its check-in and gives up only at its own deadline. A
+      // fixed per-call ceiling here killed long handbook steps at 300s, three
+      // times over, without anyone being asked.
+      const scope = jobScope.getStore();
+      const limitMs = scope
+        ? Math.max(1_000, scope.deadline - Date.now())
+        : this.timeoutMs;
+
+      const timer = setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        end();
         reject(
           new AiError(
-            `Claude Code did not finish within ${Math.round(this.timeoutMs / 1000)}s.`,
+            `Claude Code did not finish within ${formatLimit(limitMs)}.`,
             undefined,
             true,
           ),
         );
-      }, this.timeoutMs);
+      }, limitMs);
+
+      const onStop = () => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        end();
+        reject(new JobStopped());
+      };
+      if (scope?.signal.aborted) onStop();
+      else scope?.signal.addEventListener("abort", onStop, { once: true });
 
       child.stdout?.on("data", (chunk: Buffer) => {
         const text = chunk.toString();
@@ -165,6 +195,7 @@ export class ClaudeCodeProvider implements AiProvider {
       });
 
       child.on("error", (error) => {
+        scope?.signal.removeEventListener("abort", onStop);
         if (settled) return;
         settled = true;
         clearTimeout(timer);
@@ -172,6 +203,7 @@ export class ClaudeCodeProvider implements AiProvider {
       });
 
       child.on("close", (code) => {
+        scope?.signal.removeEventListener("abort", onStop);
         if (settled) return;
         settled = true;
         clearTimeout(timer);
