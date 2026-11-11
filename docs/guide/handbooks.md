@@ -15,7 +15,8 @@ It opens in its own tab, because it is a whole document rather than a panel, and
 | Section | What it is |
 | ------- | ---------- |
 | **Reading routes** | Two to four paths through it — ten minutes, an evening, everything — so there is somewhere to go when you are short on time. |
-| **Parts** | Five to eight taught sections, each opening with a three-line TL;DR. Tables, worked examples and code where code is the clearest explanation. |
+| **Parts** | Five to eight sections read as one story, from the big picture down to the detail. Each opens with a three-line TL;DR and a goal — what you will be able to explain or do by the end — then teaches in short beats: a question, an animated picture that answers it, a few sentences under it. |
+| **Go deeper** | Under each part's story, folded away until you open it: the notebook, the practice problems and the notes for the room. Nothing in it is an idea the story has not shown you yet. |
 | **Scenes** | Animated explainers, like the visuals in a good explainer video: a two-pointer sweep, a BFS spreading through a graph, a request travelling client → cache → database, gradient descent rolling down a loss curve. Each plays step by step with a line of narration, and you can pause, step and scrub. |
 | **Notebook** | Python you can edit and run in the page, like a Jupyter notebook. Cells in a part share variables, top to bottom. |
 | **Practice problems** | LeetCode-style: a statement, starter code, tests (some hidden), hints that give away a little more each time, and a worked solution behind a reveal. Solved problems are marked. |
@@ -42,11 +43,23 @@ part is where consistent hashing gets explained.
 So you should be able to close the handbook and answer on the topic from what
 you just read, rather than being sent somewhere else to learn it.
 
-## Watch it, run it, solve it
+## Watch it first, then do it
 
-A handbook is meant to work like hybrid university notes: each part's prose
-explains the idea, its **scenes** show it moving, its **notebook** lets you poke
-it, and its **problems** make you do it under interview conditions.
+A part reads like a good explainer video, not a textbook chapter. It starts
+with the widest view of its idea and zooms in, one **beat** at a time. Each
+beat asks the question you would ask next, answers it with a **scene** or
+**diagram**, and then says in two to four sentences what you just watched. The
+picture carries the explanation; the words point at it. A whole part is under
+three hundred words of narration.
+
+Only after the story comes **Go deeper**: the **notebook** lets you poke what
+you watched, and the **problems** make you do it under interview conditions.
+Each one works an idea a beat already showed.
+
+The parts follow the same arc across the whole handbook — what the company
+does and the idea at the heart of the role first, then the material you will
+be tested on in the order a teacher would introduce it, then the employer's
+hard problems, and the interview last.
 
 **Scenes** are drawn by Alfred from data the model writes — the array, the
 graph, the services, and what changes at each step. There are primitives for
@@ -88,11 +101,14 @@ lane, and limited to fifteen every ten minutes.
 
 ## Older handbooks
 
-Handbooks written before scenes existed still open and read as before. Their
-panel says something is missing, and **Finish it** adds scenes, a notebook and
-problems to each part without touching the text. **Settings → Generation →
-Handbooks** does the same for every handbook at once (**Add scenes and labs**),
-or rewrites every one from scratch with them in mind (**Rewrite all**).
+Handbooks written as prose, before parts were told as stories, still open and
+read as they were written: the text, then its scenes, notebook and problems.
+**Rebuild** on the application page, or **Settings → Generation → Handbooks →
+Rewrite all**, rewrites them as stories.
+
+Handbooks written before scenes existed say something is missing, and **Finish
+it** adds scenes, a notebook and problems to each part without touching the
+text (**Add scenes and labs** does it for every handbook at once).
 
 ## Reading it
 
@@ -114,8 +130,8 @@ you opened it in — they never leave the machine, and a downloaded copy keeps
 them too.
 
 !!! note "Built a part at a time"
-    Alfred writes the spine first, then each part in its own pass, then the
-    practice material, then each part's scenes, notebook and problems. That is not for show: providers cap how much they will
+    Alfred writes the spine first, then each part's story in its own pass,
+    then the practice material, then each part's notebook and problems. That is not for show: providers cap how much they will
     write in one answer, and some of them say nothing when they clip it. Asking
     for a page at a time means no answer is ever long enough to be truncated,
     progress is real rather than a spinner, and a failure halfway costs one part

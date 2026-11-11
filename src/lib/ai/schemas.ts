@@ -501,7 +501,7 @@ export const handbookOutlineSchema = z.object({
   parts: z
     .array(handbookPartStubSchema)
     .describe(
-      "Five to eight parts, ordered as they should be read: the company and the role, then the substance they will be tested on, then this employer's hard problems, then the interview itself. Each part earns its place — five strong parts beat eight with filler.",
+      "Five to eight parts, one story read front to back: the big picture first, then each part zooming in on what the one before it set up, and the interview itself last. Each part earns its place — five strong parts beat eight with filler.",
     ),
 });
 export type HandbookOutline = z.infer<typeof handbookOutlineSchema>;
@@ -788,6 +788,83 @@ export const handbookProblemSchema = z.object({
 });
 export type HandbookProblem = z.infer<typeof handbookProblemSchema>;
 
+/* ------------------------------------------------------------------ *
+ * A part told as a story: picture first, words second
+ * ------------------------------------------------------------------ */
+
+/**
+ * One step of a part's story: the question it answers, the picture that
+ * answers it, and a few sentences of narration over the picture.
+ *
+ * The visual is written in the same call as the narration on purpose. When the
+ * prose came first and a second call illustrated it, the scenes were captions
+ * to an essay; here the picture is the explanation and the words point at it.
+ * Exactly one of `scene` and `diagram` is set — a scene when the idea moves
+ * (steps, a request travelling, a curve converging), a diagram when it is a
+ * shape (layers, a pipeline, a loop).
+ */
+export const handbookBeatSchema = z.object({
+  hook: z
+    .string()
+    .describe(
+      "The question this beat answers, as the reader would ask it, e.g. 'Why can't two payments both win?'. One line.",
+    ),
+  scene: handbookSceneSchema
+    .nullable()
+    .describe(
+      "The animated scene that answers the hook, when the idea moves. Null when `diagram` is set.",
+    ),
+  diagram: handbookDiagramSchema
+    .nullable()
+    .describe(
+      "A diagram, when the idea is a shape rather than a motion: layers, a pipeline, a loop. Null when `scene` is set.",
+    ),
+  say: z
+    .string()
+    .describe(
+      "Two to four sentences of markdown under the picture: what the reader just watched and the one thing to take from it. Never re-describe the picture step by step — it does that itself.",
+    ),
+});
+export type HandbookBeat = z.infer<typeof handbookBeatSchema>;
+
+/** One part, written as a story of beats instead of a block of prose. */
+export const handbookPartStorySchema = z.object({
+  goal: z
+    .string()
+    .describe(
+      "What the reader can DO after this part, starting 'By the end you can', e.g. 'By the end you can explain why the ledger never double-spends, and sketch the write path on a whiteboard.' One sentence.",
+    ),
+  beats: z
+    .array(handbookBeatSchema)
+    .describe(
+      "Three to six beats, ordered from the broad idea down to the detail. Each one builds on the beat before it, and every beat has a picture.",
+    ),
+  notes: z
+    .array(handbookNoteSchema)
+    .describe(
+      "Nought to three callouts — how to say it in the room, the trap people fall into. They sit under the story, in the part's 'Go deeper' section.",
+    ),
+});
+export type HandbookPartStory = z.infer<typeof handbookPartStorySchema>;
+
+/**
+ * The exercises behind a story part. No scenes: the story already has its
+ * pictures, and the exercises come after them.
+ */
+export const handbookDeeperSchema = z.object({
+  cells: z
+    .array(handbookCellSchema)
+    .describe(
+      "Nought to three runnable Python cells that let the reader poke an idea the story showed: simulate it, measure it, break it. Zero for parts that are not technical.",
+    ),
+  problems: z
+    .array(handbookProblemSchema)
+    .describe(
+      "Nought to two practice problems, for parts that teach coding patterns. Zero for system design, company and behavioural parts.",
+    ),
+});
+export type HandbookDeeper = z.infer<typeof handbookDeeperSchema>;
+
 /** A part's visual and hands-on material, written after its prose. */
 export const handbookLabSchema = z.object({
   scenes: z
@@ -834,6 +911,13 @@ export type HandbookPart = z.infer<typeof handbookPartStubSchema> &
   Partial<HandbookPartBody> & {
     /** Absent on handbooks written before scenes existed; they still render. */
     lab?: HandbookLab;
+    /**
+     * Set on parts written as a story. Such a part still carries a `body`:
+     * the beats flattened to markdown, which is what the exercises are written
+     * from and what marks the part as written.
+     */
+    goal?: string;
+    beats?: HandbookBeat[];
   };
 
 export type HandbookPlan = Omit<HandbookOutline, "parts"> & {

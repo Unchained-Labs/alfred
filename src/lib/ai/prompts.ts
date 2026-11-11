@@ -510,13 +510,26 @@ part's \`covers\`, copied verbatim. Group them where they share substance — fo
 sliding-window problems are one part about sliding windows, not four parts.
 A part may cover several items; an item may not be covered twice or left out.
 
-Order the parts the way they should be read:
-- What this company actually does and makes money from, in plain words, and
-  what has visibly changed about it lately. Then the role as it really is.
-- Then the substance they will be TESTED on. This is the bulk of the handbook,
-  and it is where the prep plan's technical items get taught.
-- Then this employer's hard problems, framed as an engineer would.
-- Then the interview itself and what to say.
+ONE STORY, BROAD TO DEEP
+
+The handbook is read front to back as one story, not dipped into as a set of
+articles. Start with the widest picture and zoom in, each part standing on
+what the one before it set up:
+- The big picture: what this company does and makes money from, in plain
+  words, and the one system or idea at the heart of this role. Someone who
+  reads only this part should know what the job is FOR.
+- Then the substance they will be TESTED on, zooming in one concept at a time,
+  in the order a teacher would introduce them — the idea a later part relies
+  on comes first. This is the bulk of the handbook, and it is where the prep
+  plan's technical items get taught.
+- Then this employer's hard problems, which by now the reader has the
+  vocabulary for.
+- Last, the interview itself and what to say.
+
+Each part will be written as a short sequence of animated pictures with a few
+sentences of narration each, then exercises. So plan parts around ideas that
+can be SHOWN — a mechanism, a flow, a trade-off on a graph — rather than
+around lists of facts.
 
 Five to eight parts. Each \`intent\` is instructions to whoever writes that part:
 what it must explain, and what it must leave to the others, so the finished
@@ -530,120 +543,7 @@ Do not invent facts about the company.`,
   };
 }
 
-/** One part's prose, written against the outline so parts do not repeat. */
-export function handbookPartPrompt(
-  app: Application,
-  profile: UserProfile,
-  analysis: Analysis | null,
-  part: {
-    title: string;
-    tldr: string[];
-    intent: string;
-    emphasis: string;
-    minutes: number;
-  },
-  siblings: string[],
-  covers: PrepItem[],
-) {
-  const assignment = covers.length
-    ? `\n<prep_items_this_part_must_teach>
-Each of these was assigned to the candidate. Teach the substance behind it in
-your prose — not a pointer to it, not a summary of the task. If it is a coding
-problem, explain the pattern, when it applies, how to recognise it, and the
-complexity. If it is a concept, explain the concept. If it is a design prompt,
-work through how to approach it. If it is a story, explain what a strong one
-contains and why.
-${covers
-  .map((item) => {
-    const bits = [
-      item.pattern ? `pattern: ${item.pattern}` : "",
-      item.difficulty ? `difficulty: ${item.difficulty}` : "",
-      item.detail ? `detail: ${item.detail}` : "",
-      item.rationale ? `assigned because: ${item.rationale}` : "",
-    ].filter(Boolean);
-    return `- [${item.kind}] ${item.title}${bits.length ? `\n    ${bits.join("\n    ")}` : ""}`;
-  })
-  .join("\n")}
-</prep_items_this_part_must_teach>\n`
-    : "";
-
-  return {
-    system: `${BUTLER}
-
-Your task: write ONE part of a study handbook. The handbook's other parts are
-listed so you do not cover their ground — stay inside yours.
-
-EXPLAIN. DO NOT POINT.
-
-This part is where the knowledge lives. The candidate should be able to close
-the handbook and answer questions on this topic from what they just read.
-
-- Banned: "read up on X", "research their blog", "familiarise yourself with Y",
-  "practise Z". If X is worth knowing, explain X here.
-- Teach mechanisms, not vocabulary lists. Why it works, what it costs, when it
-  breaks, what the alternative is and why you would not pick it.
-- Work at least one thing through concretely — a worked example, a sequence of
-  steps, a small schema, a short calculation.
-- Define jargon on first use. Short paragraphs. Write to someone intelligent who
-  has not done this exact job.
-- Use a pipe table when the content is genuinely tabular — a comparison, a set
-  of thresholds, a protocol list. A table carries more per line than prose.
-- Use fenced code only where code is the clearest explanation, and keep it short.
-- Tips about interview technique are a garnish. At most one, and never instead
-  of explaining the thing.
-
-DRAW IT WHEN IT HAS A SHAPE
-
-If this part explains a path something takes, layers of a system, or a loop that
-returns to its start, include a diagram. You describe it as data — nodes, edges,
-a kind — and it is drawn and animated for you. One diagram is usually right; two
-is the maximum; none is correct for a part that is genuinely a set of unrelated
-facts. A diagram of a list is decoration.
-
-NOTES THAT A LAB IS BUILT FROM
-
-Write this like the best university lecture notes: definitions, the mechanism,
-a worked example carried all the way through, the pitfalls. After you, a second
-pass reads your text and adds animated scenes, runnable Python cells and
-practice problems to the part — so give it something concrete to animate and
-run: real numbers in the worked example, the exact sequence of steps, the
-state that changes. Do not describe animations or write exercises yourself.
-
-LENGTH
-
-Four hundred to nine hundred words. Long enough to actually teach; do not pad to
-reach it.
-
-The three TL;DR lines are already written and shown above your part. Deliver on
-them; do not restate them.
-
-Where you are reasoning from the posting rather than from knowledge, say so in
-the text — "the posting implies", "worth confirming". A confident invented
-detail is the one failure that costs the candidate the room.`,
-    prompt: `${profileBlock(profile)}
-
-${jobBlock(app)}
-
-${analysisBlock(analysis)}
-
-<other_parts_do_not_cover_these>
-${siblings.map((t) => `- ${t}`).join("\n")}
-</other_parts_do_not_cover_these>
-
-<your_part>
-Title: ${part.title}
-Emphasis: ${part.emphasis}
-Reading time to aim for: ${part.minutes} minutes
-What this part must teach: ${part.intent}
-Its TL;DR, already written:
-${part.tldr.map((l) => `- ${l}`).join("\n")}
-</your_part>
-${assignment}
-Write this part.`,
-  };
-}
-
-/** How to choose a scene primitive. Shared by the lab and the ask prompt. */
+/** How to choose a scene primitive. Shared by the part, lab and ask prompts. */
 const SCENE_GUIDE = `SCENES ARE MOTION GRAPHICS, DESCRIBED AS DATA
 
 A scene is a short animated explainer, like the visual in a good explainer
@@ -673,6 +573,128 @@ what changed and why, as a teacher would while pointing. Keep labels short.
 Every id you reference must exist in \`nodes\`. Use the real example from the
 text rather than a toy when you can. Fill fields that do not apply to the
 chosen kind with empty arrays or null.`;
+
+/** One part, told as beats, written against the outline so parts do not repeat. */
+export function handbookPartPrompt(
+  app: Application,
+  profile: UserProfile,
+  analysis: Analysis | null,
+  part: {
+    title: string;
+    tldr: string[];
+    intent: string;
+    emphasis: string;
+    minutes: number;
+  },
+  siblings: string[],
+  covers: PrepItem[],
+) {
+  const assignment = covers.length
+    ? `\n<prep_items_this_part_must_teach>
+Each of these was assigned to the candidate. Teach the substance behind it in
+your beats — not a pointer to it, not a summary of the task. If it is a coding
+problem, explain the pattern, when it applies, how to recognise it, and the
+complexity. If it is a concept, explain the concept. If it is a design prompt,
+work through how to approach it. If it is a story, explain what a strong one
+contains and why.
+${covers
+  .map((item) => {
+    const bits = [
+      item.pattern ? `pattern: ${item.pattern}` : "",
+      item.difficulty ? `difficulty: ${item.difficulty}` : "",
+      item.detail ? `detail: ${item.detail}` : "",
+      item.rationale ? `assigned because: ${item.rationale}` : "",
+    ].filter(Boolean);
+    return `- [${item.kind}] ${item.title}${bits.length ? `\n    ${bits.join("\n    ")}` : ""}`;
+  })
+  .join("\n")}
+</prep_items_this_part_must_teach>\n`
+    : "";
+
+  return {
+    system: `${BUTLER}
+
+Your task: write ONE part of a study handbook. The handbook's other parts are
+listed so you do not cover their ground — stay inside yours.
+
+SHOW IT, THEN SAY IT
+
+This part is read like a good explainer video, not a textbook chapter. It is a
+short story told in BEATS. Each beat is:
+- a hook: the one question this beat answers, as the reader would ask it;
+- a picture that answers it — an animated scene or a diagram. The picture IS
+  the explanation: the steps of a scene carry the mechanism, one change at a
+  time, each narrated;
+- two to four sentences under it saying what the reader just watched and the
+  one thing to take from it. Do not walk through the picture again in words.
+
+Three to six beats, from the broad idea down to the detail. The first beat is
+the whole idea at a glance, so a reader who stops there still has it. Each
+later beat zooms in on something the previous one showed, so the part reads
+as one line of thought, not a list. Every beat has a picture; a point that
+cannot be pictured belongs in another beat's narration or nowhere.
+
+Start with the goal: one sentence, "By the end you can …", naming what the
+reader will be able to explain or do — something they could be asked to do in
+the interview.
+
+EXPLAIN. DO NOT POINT.
+
+The part is still where the knowledge lives: the reader should be able to
+close the handbook and answer questions on this topic from what they watched.
+- Banned: "read up on X", "research their blog", "familiarise yourself with Y",
+  "practise Z". If X is worth knowing, show X here.
+- Teach mechanisms: why it works, what it costs, when it breaks. Use the real
+  numbers and the real example — a scene of this company's write path beats a
+  toy.
+- Define jargon on first use, in the narration. Short sentences. Write to
+  someone intelligent who has not done this exact job.
+- The whole part is under three hundred words of narration. The pictures do
+  the rest.
+
+No exercises, no code to run, no quizzes: a second pass writes those from
+your beats and puts them after the story, so give it something concrete —
+real numbers, the exact steps, the state that changes. At most three notes
+(how to say it in the room, the trap people fall into); they sit under the
+story, not in it.
+
+${SCENE_GUIDE}
+
+DIAGRAMS, FOR SHAPES THAT DO NOT MOVE
+
+A diagram instead of a scene when the idea is a shape: \`flow\` for stages
+something passes through, \`stack\` for layers, \`cycle\` for a loop back to
+the start. Three to six short nodes, edges labelled with what crosses them.
+Exactly one of \`scene\` and \`diagram\` per beat; the other is null.
+
+The three TL;DR lines are already written and shown above your part. Deliver on
+them; do not restate them.
+
+Where you are reasoning from the posting rather than from knowledge, say so in
+the narration — "the posting implies", "worth confirming". A confident invented
+detail is the one failure that costs the candidate the room.`,
+    prompt: `${profileBlock(profile)}
+
+${jobBlock(app)}
+
+${analysisBlock(analysis)}
+
+<other_parts_do_not_cover_these>
+${siblings.map((t) => `- ${t}`).join("\n")}
+</other_parts_do_not_cover_these>
+
+<your_part>
+Title: ${part.title}
+Emphasis: ${part.emphasis}
+Reading time to aim for: ${part.minutes} minutes
+What this part must teach: ${part.intent}
+Its TL;DR, already written:
+${part.tldr.map((l) => `- ${l}`).join("\n")}
+</your_part>
+${assignment}
+Write this part as beats.`,
+  };
+}
 
 /** A part's scenes, runnable cells and practice problems, after its prose. */
 export function handbookLabPrompt(
@@ -723,6 +745,59 @@ ${body.slice(0, 9000)}
 </part_text>
 
 Write this part's scenes, cells and problems.`,
+  };
+}
+
+/**
+ * The exercises behind a part told as beats: notebook cells and problems only.
+ * The story already has its pictures, so this call writes none.
+ */
+export function handbookDeeperPrompt(
+  app: Application,
+  part: { title: string; intent: string; emphasis: string },
+  story: string,
+) {
+  return {
+    system: `${BUTLER}
+
+Your task: the "Go deeper" section of one part of a study handbook. The reader
+has just watched the part's story — a sequence of animated pictures, each
+answering one question (below). Now they practise what they saw. Nothing here
+introduces a new idea: every cell and problem works an idea a beat already
+showed, and its explanation says which one.
+
+PYTHON CELLS
+
+Plain Python 3 running in the reader's browser (Pyodide): standard library
+only, no files, no network, no input(). Short, and each one prints something
+worth reading — a simulation, a measurement, a before/after. Cells run in order
+and share variables. Say in \`explain\` which beat it works and what to change
+to see something new. Order them easiest first.
+
+PRACTICE PROBLEMS
+
+Only when the part teaches a coding pattern. A LeetCode-style function with a
+statement, starter code, a reference solution, hints that escalate, and tests
+whose \`args\` and \`expected\` are Python LITERALS — they are parsed with
+ast.literal_eval, so no expressions, names or calls. Your solution must pass
+every test; check it mentally before you answer.
+
+Match the part. Company and behavioural parts usually get nothing — empty
+lists are a correct answer. Coding parts get a cell and a problem. System
+design parts get maybe a simulation cell.`,
+    prompt: `${jobBlock(app)}
+
+<part>
+Title: ${part.title}
+Emphasis: ${part.emphasis}
+What it teaches: ${part.intent}
+</part>
+
+<part_story>
+${story.slice(0, 9000)}
+</part_story>
+
+Write this part's exercises.`,
   };
 }
 

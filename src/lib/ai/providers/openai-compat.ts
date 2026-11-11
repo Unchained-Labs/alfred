@@ -9,7 +9,7 @@ import {
   type OpenAiCompatConfig,
   type TextResult,
 } from "../types";
-import { extractJsonObject, toStrictJsonSchema } from "./json-schema";
+import { extractJsonObject, fillOmitted, toStrictJsonSchema } from "./json-schema";
 import { jobScope } from "@/lib/jobs/scope";
 
 type ChatMessage = { role: "system" | "user" | "assistant"; content: string };
@@ -188,7 +188,7 @@ export class OpenAiCompatProvider implements AiProvider {
       );
     }
 
-    const parsed = req.schema.safeParse(candidate);
+    const parsed = req.schema.safeParse(fillOmitted(candidate, jsonSchema));
     if (!parsed.success) {
       const issues = parsed.error.issues
         .slice(0, 5)

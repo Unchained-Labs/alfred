@@ -4,6 +4,7 @@ import {
   type CodeExercise,
   generateActionables,
   generateCodeExercise,
+  generateHandbookDeeper,
   generateHandbookDrills,
   generateHandbookLab,
   generateHandbookOutline,
@@ -14,6 +15,7 @@ import {
 import type { HandbookPlan } from "@/lib/ai/schemas";
 import { exerciseKindFor, type RunReport } from "@/lib/exercises";
 import { asHandbookContent, type HandbookContent } from "@/lib/handbook/render";
+import { storyMarkdown } from "@/lib/handbook/story";
 import {
   logHandbookBuilt,
   saveActionables,
@@ -274,7 +276,8 @@ export function queueHandbookSteps(
           payload: { index },
           dependsOn: prose ? [prose.id] : after,
           dedupeKey: `handbook-lab:${applicationId}:${index}`,
-          label: `Handbook scenes and lab ${index + 1} of ${parts.length}: ${p.short || p.title}`,
+          // A prose part written before stories gets scenes as well.
+          label: `Handbook ${prose || p.beats?.length ? "exercises" : "scenes and lab"} ${index + 1} of ${parts.length}: ${p.short || p.title}`,
           priority: 7,
         }),
       );
@@ -397,12 +400,21 @@ async function handbookPart(job: AiJob) {
     throw new PermanentJobError(
       "The handbook was rebuilt while this part was written.",
     );
-  parts[index] = { ...parts[index], ...run.result };
+  // The beats, flattened, are also the part's body: what its exercises are
+  // written from, and what marks it as written. A rebuilt part drops the
+  // prose-era fields so the page cannot show both.
+  parts[index] = {
+    ...parts[index],
+    ...run.result,
+    body: storyMarkdown(run.result),
+    diagrams: [],
+    cards: [],
+  };
   updateHandbookContent(userId, app.id, {
     ...latest,
     plan: { ...latest.plan, parts } as HandbookPlan,
   });
-  return { index };
+  return { index, beats: run.result.beats.length };
 }
 
 async function handbookLab(job: AiJob) {
@@ -419,12 +431,14 @@ async function handbookLab(job: AiJob) {
     );
   }
 
-  const run = await generateHandbookLab(
-    userId,
-    app,
-    { title: part.title, intent: part.intent, emphasis: part.emphasis },
-    part.body,
-  );
+  const brief = { title: part.title, intent: part.intent, emphasis: part.emphasis };
+  // A story part already has its pictures: only the exercises are missing.
+  const run = part.beats?.length
+    ? await generateHandbookDeeper(userId, app, brief, part.body).then((r) => ({
+        ...r,
+        result: { scenes: [], ...r.result },
+      }))
+    : await generateHandbookLab(userId, app, brief, part.body);
 
   const latest = handbookContentFor(userId, app.id);
   const parts = [...latest.plan.parts];
