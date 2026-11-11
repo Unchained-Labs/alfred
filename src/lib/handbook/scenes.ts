@@ -329,25 +329,56 @@ function drawTree(sc, f){
 }
 function cls(f, id){ return has(f.highlight, id) ? "hot pop" : (has(f.visited, id) ? "done" : ""); }
 
+/* Rough width of mono text at the scene font size: labels are sized to fit. */
+function textW(t, px){ return String(t == null ? "" : t).length * (px || 7.4); }
+
 function drawGraph(sc, f, directed){
-  var nodes = sc.nodes, n = nodes.length, w = 460, hgt = 320, cx = w / 2, cy = hgt / 2, rx = 180, ry = 118;
-  var svg = svgOf(w, hgt, sc.title); defs(svg); var g = el("g"), at = {};
+  var nodes = sc.nodes, n = nodes.length;
+  // Single letters stay circles (a BFS over a, b, c); anything wordier becomes
+  // a pill sized to its label, so "Recovery job" is not written over a dot.
+  var wordy = nodes.some(function(nd){ return String(nd.label).length > 3; });
+  var dims = {}, widest = 44;
+  nodes.forEach(function(nd){
+    var bw = wordy ? Math.max(48, textW(nd.label) + 20) : 42;
+    dims[nd.id] = { w: bw, h: wordy ? 30 : 42 }; widest = Math.max(widest, bw);
+  });
+  var w = wordy ? Math.max(520, widest * 2 + 260) : 460, hgt = wordy ? 340 : 320;
+  var cx = w / 2, cy = hgt / 2, rx = cx - widest / 2 - 12, ry = cy - 34;
+  var svg = svgOf(w, hgt, sc.title); defs(svg); var g = el("g"), labels = el("g"), at = {};
   nodes.forEach(function(nd, i){ var a = -Math.PI / 2 + i * 2 * Math.PI / Math.max(n, 1); at[nd.id] = { x: cx + rx * Math.cos(a), y: cy + ry * Math.sin(a) }; });
+  // How far from a node's centre an edge leaves it, along (ux, uy).
+  function reach(id, ux, uy){
+    var d = dims[id];
+    if (!wordy) return 22;
+    var tx = Math.abs(ux) > 1e-6 ? (d.w / 2) / Math.abs(ux) : 1e9, ty = Math.abs(uy) > 1e-6 ? (d.h / 2) / Math.abs(uy) : 1e9;
+    return Math.min(tx, ty) + 2;
+  }
   sc.edges.forEach(function(e){
     var a = at[e.from], b = at[e.to]; if (!a || !b) return;
     var lit = has(f.highlight, e.from) && has(f.highlight, e.to);
-    if (e.from === e.to){
-      g.appendChild(el("path", { d: "M" + (a.x - 10) + " " + (a.y - 19) + " c-26 -40 46 -40 20 0", "class": "sc-edge" + (lit ? " lit" : ""), "marker-end": directed ? "url(#sc-arr)" : "" }));
-    } else {
-      var dx = b.x - a.x, dy = b.y - a.y, L = Math.sqrt(dx * dx + dy * dy) || 1, ux = dx / L, uy = dy / L;
-      var line = el("line", { x1: a.x + ux * 22, y1: a.y + uy * 22, x2: b.x - ux * 24, y2: b.y - uy * 24, "class": "sc-edge" + (lit ? " lit" : "") });
-      if (directed) line.setAttribute("marker-end", "url(#sc-arr)");
-      g.appendChild(line);
-    }
     var t = e.label || (e.weight !== null && e.weight !== undefined ? String(e.weight) : "");
-    if (t) g.appendChild(el("text", { x: (a.x + b.x) / 2 + (e.from === e.to ? 0 : 6), y: (a.y + b.y) / 2 - (e.from === e.to ? 44 : 6), "text-anchor": "middle", "class": "sc-e" }, t));
+    if (e.from === e.to){
+      var top = a.y - dims[e.from].h / 2;
+      g.appendChild(el("path", { d: "M" + (a.x - 10) + " " + top + " c-26 -40 46 -40 20 0", "class": "sc-edge" + (lit ? " lit" : ""), "marker-end": directed ? "url(#sc-arr)" : "" }));
+      if (t) labels.appendChild(el("text", { x: a.x, y: top - 34, "text-anchor": "middle", "class": "sc-e" + (lit ? " lit" : "") }, t));
+      return;
+    }
+    var dx = b.x - a.x, dy = b.y - a.y, L = Math.sqrt(dx * dx + dy * dy) || 1, ux = dx / L, uy = dy / L;
+    var line = el("line", { x1: a.x + ux * reach(e.from, ux, uy), y1: a.y + uy * reach(e.from, ux, uy), x2: b.x - ux * (reach(e.to, ux, uy) + 2), y2: b.y - uy * (reach(e.to, ux, uy) + 2), "class": "sc-edge" + (lit ? " lit" : "") });
+    if (directed) line.setAttribute("marker-end", "url(#sc-arr)");
+    g.appendChild(line);
+    // The label sits beside its edge, not on it, and on the side away from
+    // the reverse edge, so A→B and B→A do not print over each other.
+    if (t) labels.appendChild(el("text", { x: (a.x + b.x) / 2 - uy * 10, y: (a.y + b.y) / 2 + ux * 10 + 4, "text-anchor": "middle", "class": "sc-e" + (lit ? " lit" : "") }, t));
   });
-  nodes.forEach(function(nd){ var p = at[nd.id]; node(g, p.x, p.y, nd.label, cls(f, nd.id)); });
+  nodes.forEach(function(nd){
+    var p = at[nd.id], d = dims[nd.id];
+    if (!wordy) return node(g, p.x, p.y, nd.label, cls(f, nd.id));
+    g.appendChild(el("rect", { x: p.x - d.w / 2, y: p.y - d.h / 2, width: d.w, height: d.h, rx: d.h / 2, "class": "sc-node " + cls(f, nd.id) }));
+    g.appendChild(el("text", { x: p.x, y: p.y + 4, "text-anchor": "middle", "class": "sc-t sm" }, nd.label));
+  });
+  // Labels last, so no node or edge is drawn over one.
+  g.appendChild(labels);
   svg.appendChild(g);
   return svg;
 }
@@ -355,16 +386,22 @@ function drawGraph(sc, f, directed){
 function drawGrid(sc, f){
   var rows = (sc.grid && sc.grid.rows) || [], cols = (sc.grid && sc.grid.cols) || [];
   if (!rows.length || !cols.length) return null;
-  var cw = 46, ch = 32, lx = 64, ty = 30;
-  var svg = svgOf(lx + cols.length * cw + 10, ty + rows.length * ch + 10, sc.title), g = el("g");
-  cols.forEach(function(c, j){ g.appendChild(el("text", { x: lx + j * cw + cw / 2, y: 20, "text-anchor": "middle", "class": "sc-i" }, c)); });
+  // Columns as wide as the longest thing that will ever sit in them — a DP
+  // table of digits stays tight, a table of "started" does not overflow.
+  var widest = cols.map(function(c){ return textW(c, 6.8); });
+  (sc.steps || []).forEach(function(st){ (st.cells || []).forEach(function(c){ if (c.col >= 0 && c.col < cols.length) widest[c.col] = Math.max(widest[c.col], textW(c.value)); }); });
+  var cw = widest.map(function(x){ return Math.min(150, Math.max(46, x + 16)); });
+  var cx = [], acc = 0; cw.forEach(function(x){ cx.push(acc); acc += x; });
+  var ch = 32, lx = Math.max(64, Math.min(140, Math.max.apply(null, rows.map(function(r){ return textW(r, 6.8); })) + 16)), ty = 30;
+  var svg = svgOf(lx + acc + 10, ty + rows.length * ch + 10, sc.title), g = el("g");
+  cols.forEach(function(c, j){ g.appendChild(el("text", { x: lx + cx[j] + cw[j] / 2, y: 20, "text-anchor": "middle", "class": "sc-i" }, c)); });
   rows.forEach(function(r, i){
     g.appendChild(el("text", { x: lx - 8, y: ty + i * ch + ch / 2 + 4, "text-anchor": "end", "class": "sc-i" }, r));
     cols.forEach(function(c, j){
       var k = i + "," + j, v = f.cells[k];
       var c2 = (has(f.highlight, k) ? "hot " : "") + (f.fresh[k] ? "pop" : "") + (v === undefined ? " empty" : "");
-      g.appendChild(el("rect", { x: lx + j * cw, y: ty + i * ch, width: cw - 2, height: ch - 2, rx: 4, "class": "sc-box " + c2 }));
-      if (v !== undefined) g.appendChild(el("text", { x: lx + j * cw + cw / 2 - 1, y: ty + i * ch + ch / 2 + 4, "text-anchor": "middle", "class": "sc-t sm" }, v));
+      g.appendChild(el("rect", { x: lx + cx[j], y: ty + i * ch, width: cw[j] - 2, height: ch - 2, rx: 4, "class": "sc-box " + c2 }));
+      if (v !== undefined) g.appendChild(el("text", { x: lx + cx[j] + cw[j] / 2 - 1, y: ty + i * ch + ch / 2 + 4, "text-anchor": "middle", "class": "sc-t sm" }, v));
     });
   });
   svg.appendChild(g);
