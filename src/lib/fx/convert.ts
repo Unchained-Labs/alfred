@@ -101,7 +101,7 @@ export function comparablePay(
 
 const SYMBOLS: Record<string, string> = { USD: "$", EUR: "€", GBP: "£" };
 
-/** "$125k", "€80k", "AED 420k" — compact, for tables and axes. */
+/** "$125k", "€65k", "AED 300k" — compact, for tables and axes. */
 export function formatMoney(value: number | null, currency: string): string {
   if (value == null) return "—";
   const abs = Math.abs(value);
