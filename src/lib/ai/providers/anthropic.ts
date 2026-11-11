@@ -14,6 +14,7 @@ import {
 } from "../types";
 
 import { DEFAULT_ANTHROPIC_MODEL } from "../catalog";
+import { jobScope } from "@/lib/jobs/scope";
 
 export { ANTHROPIC_MODELS, DEFAULT_ANTHROPIC_MODEL } from "../catalog";
 
@@ -82,13 +83,17 @@ export class AnthropicProvider implements AiProvider {
 
   async generateText(req: GenerateRequest): Promise<TextResult> {
     try {
-      const response = await this.client.messages.create({
-        model: this.model,
-        max_tokens: req.maxTokens ?? 16000,
-        system: req.system,
-        output_config: { effort: this.effort },
-        messages: [{ role: "user", content: req.prompt }],
-      });
+      const response = await this.client.messages.create(
+        {
+          model: this.model,
+          max_tokens: req.maxTokens ?? 16000,
+          system: req.system,
+          output_config: { effort: this.effort },
+          messages: [{ role: "user", content: req.prompt }],
+        },
+        // A queued job's Stop aborts the request too.
+        { signal: jobScope.getStore()?.signal },
+      );
 
       if (response.stop_reason === "refusal") {
         throw new AiError(
@@ -111,16 +116,20 @@ export class AnthropicProvider implements AiProvider {
     req: ObjectRequest<T>,
   ): Promise<ObjectResult<z.output<T>>> {
     try {
-      const response = await this.client.messages.parse({
-        model: this.model,
-        max_tokens: req.maxTokens ?? 16000,
-        system: req.system,
-        output_config: {
-          effort: this.effort,
-          format: zodOutputFormat(req.schema as never),
+      const response = await this.client.messages.parse(
+        {
+          model: this.model,
+          max_tokens: req.maxTokens ?? 16000,
+          system: req.system,
+          output_config: {
+            effort: this.effort,
+            format: zodOutputFormat(req.schema as never),
+          },
+          messages: [{ role: "user", content: req.prompt }],
         },
-        messages: [{ role: "user", content: req.prompt }],
-      });
+        // A queued job's Stop aborts the request too.
+        { signal: jobScope.getStore()?.signal },
+      );
 
       if (response.stop_reason === "refusal") {
         throw new AiError(
@@ -143,13 +152,17 @@ export class AnthropicProvider implements AiProvider {
 
   async *streamText(req: GenerateRequest): AsyncIterable<string> {
     try {
-      const stream = this.client.messages.stream({
-        model: this.model,
-        max_tokens: req.maxTokens ?? 16000,
-        system: req.system,
-        output_config: { effort: this.effort },
-        messages: [{ role: "user", content: req.prompt }],
-      });
+      const stream = this.client.messages.stream(
+        {
+          model: this.model,
+          max_tokens: req.maxTokens ?? 16000,
+          system: req.system,
+          output_config: { effort: this.effort },
+          messages: [{ role: "user", content: req.prompt }],
+        },
+        // A queued job's Stop aborts the request too.
+        { signal: jobScope.getStore()?.signal },
+      );
 
       for await (const event of stream) {
         if (

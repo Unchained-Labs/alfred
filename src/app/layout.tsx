@@ -3,6 +3,7 @@ import { Providers } from "@/components/providers";
 import { AppShell } from "@/components/shell/app-shell";
 import { runMigrations } from "@/db/migrate";
 import { currentUser } from "@/lib/auth";
+import { queueDepth } from "@/lib/jobs/queue";
 import { countNewJobHits, dashboardStats } from "@/lib/queries";
 import "./globals.css";
 
@@ -33,6 +34,8 @@ export default async function RootLayout({
   const stats = user ? dashboardStats(user.id) : null;
   // New discovered postings, so the badge is visible without opening Jobs.
   const newJobHits = user ? countNewJobHits(user.id) : 0;
+  // Generations waiting or running: the AI queue's badge.
+  const depth = user ? queueDepth(user.id) : { queued: 0, running: 0 };
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -45,6 +48,7 @@ export default async function RootLayout({
                 "/inbox": stats.pendingMail,
                 "/jobs": newJobHits,
                 "/prep": stats.dueSoon,
+                "/queue": depth.queued + depth.running,
               }}
             >
               {children}

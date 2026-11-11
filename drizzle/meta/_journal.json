@@ -64,6 +64,13 @@
       "when": 1794223724203,
       "tag": "0008_ai_jobs",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1794298428052,
+      "tag": "0009_ai_job_check_in",
+      "breakpoints": true
     }
   ]
 }

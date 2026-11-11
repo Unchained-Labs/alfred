@@ -88,10 +88,15 @@ export function JobQueueCard() {
               : "Everything Alfred has generated recently. Finished jobs are cleared after 30 days."}
           </p>
         </div>
-        <Button size="sm" variant="ghost" onClick={load}>
-          <RefreshCw className="size-3.5" />
-          Refresh
-        </Button>
+        <div className="flex gap-1">
+          <Button size="sm" variant="ghost" asChild>
+            <Link href="/queue">Open AI queue</Link>
+          </Button>
+          <Button size="sm" variant="ghost" onClick={load}>
+            <RefreshCw className="size-3.5" />
+            Refresh
+          </Button>
+        </div>
       </CardHeader>
       {jobs && !jobs.length ? (
         <EmptyState

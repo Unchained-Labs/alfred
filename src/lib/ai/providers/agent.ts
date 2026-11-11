@@ -10,6 +10,7 @@ import {
   type TextResult,
 } from "../types";
 import { extractJsonObject, fillOmitted, toStrictJsonSchema } from "./json-schema";
+import { jobScope } from "@/lib/jobs/scope";
 
 /**
  * The envelope Alfred POSTs to a custom agent. Documented in README so users
@@ -92,6 +93,8 @@ export class AgentProvider implements AiProvider {
           ...this.extraHeaders,
         },
         body: JSON.stringify(body),
+        // A queued job's Stop aborts the request too.
+        signal: jobScope.getStore()?.signal,
       });
     } catch (error) {
       throw new AiError(

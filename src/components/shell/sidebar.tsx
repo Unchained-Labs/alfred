@@ -5,6 +5,7 @@ import {
   Briefcase,
   CalendarDays,
   ChartColumn,
+  Cpu,
   Inbox,
   KanbanSquare,
   LayoutDashboard,
@@ -21,8 +22,8 @@ import { ThemeToggle } from "@/components/shell/theme-toggle";
 import { cn } from "@/lib/utils";
 
 /*
- * `short` is for the phone's bottom bar, where eight equal columns leave about
- * 44px each — not enough for "Dashboard" in a body face this wide. The sidebar
+ * `short` is for the phone's bottom bar, where nine equal columns leave about
+ * 40px each — not enough for "Dashboard" in a body face this wide. The sidebar
  * uses the full label; only the bar substitutes.
  */
 const NAV = [
@@ -33,6 +34,7 @@ const NAV = [
   { href: "/calendar", label: "Calendar", short: "Cal", Icon: CalendarDays },
   { href: "/inbox", label: "Inbox", Icon: Inbox },
   { href: "/analytics", label: "Analytics", short: "Stats", Icon: ChartColumn },
+  { href: "/queue", label: "AI queue", short: "AI", Icon: Cpu },
   { href: "/settings", label: "Settings", short: "More", Icon: Settings },
 ] as const;
 
@@ -131,7 +133,7 @@ export function MobileNav({ badges }: { badges?: NavBadges }) {
             aria-current={active ? "page" : undefined}
             aria-label={label}
             // min-w-0 and truncate are the guarantee: whatever the label and
-            // whatever the face, eight of these can never widen the viewport.
+            // whatever the face, nine of these can never widen the viewport.
             className="relative flex min-w-0 flex-1 flex-col items-center gap-0.5 px-0.5 py-2.5 text-[10px] font-medium"
             style={{ color: active ? "var(--brand)" : "var(--ink-muted)" }}
           >

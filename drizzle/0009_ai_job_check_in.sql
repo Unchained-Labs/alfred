@@ -1,0 +1,1 @@
+ALTER TABLE `ai_jobs` ADD `check_in_at` integer;

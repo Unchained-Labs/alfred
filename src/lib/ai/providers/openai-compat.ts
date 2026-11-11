@@ -10,6 +10,7 @@ import {
   type TextResult,
 } from "../types";
 import { extractJsonObject, fillOmitted, toStrictJsonSchema } from "./json-schema";
+import { jobScope } from "@/lib/jobs/scope";
 
 type ChatMessage = { role: "system" | "user" | "assistant"; content: string };
 
@@ -74,7 +75,8 @@ export class OpenAiCompatProvider implements AiProvider {
         method: "POST",
         headers: this.headers(),
         body: JSON.stringify(body),
-        signal,
+        // A queued job's Stop aborts the request too.
+        signal: signal ?? jobScope.getStore()?.signal,
       });
     } catch (error) {
       throw new AiError(

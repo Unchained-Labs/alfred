@@ -27,7 +27,7 @@ export async function fetchJob(id: string): Promise<AiJob | null> {
 
 export async function jobAction(
   id: string,
-  action: "retry" | "cancel",
+  action: "retry" | "cancel" | "continue",
 ): Promise<AiJob | null> {
   const response = await fetch(`/api/jobs/${id}`, {
     method: "POST",

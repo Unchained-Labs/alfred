@@ -33,6 +33,8 @@ async function main() {
   const q = await import("@/lib/jobs/queue");
   const w = await import("@/lib/jobs/worker");
   const { AiError, AiNotConfiguredError } = await import("@/lib/ai/types");
+  const { jobScope, JobStopped } = await import("@/lib/jobs/scope");
+  const { isWaitingOnYou } = await import("@/lib/jobs/status");
   const { createApplication } = await import("@/lib/mutations");
   const { queueApplicationPipeline, MIN_POSTING_CHARS } =
     await import("@/lib/jobs/pipeline");
@@ -278,6 +280,90 @@ async function main() {
   ok(
     "results are stored",
     db.select().from(aiJobs).where(eq(aiJobs.label, "one")).get()?.result !== null,
+  );
+
+  /* ---------- check-in: ask, do not kill ---------- */
+  reset();
+  const slow = job({ label: "slow" });
+  const claimedSlow = q.claim("background", at(0), 300_000);
+  ok(
+    "a claim sets the check-in",
+    claimedSlow?.checkInAt?.getTime() === at(300).getTime(),
+  );
+  ok(
+    "not waiting on you before it",
+    !isWaitingOnYou(claimedSlow!, at(299).getTime()),
+  );
+  ok("waiting on you at it", isWaitingOnYou(claimedSlow!, at(300).getTime()));
+  ok(
+    "keep going is not someone else's to press",
+    q.keepGoing("someone-else", slow.id, 300_000, at(310)) === undefined,
+  );
+  const kept = q.keepGoing(uid, slow.id, 300_000, at(310));
+  ok(
+    "keep going moves the check-in on",
+    kept?.checkInAt?.getTime() === at(610).getTime(),
+  );
+  ok("and it is no longer asking", !isWaitingOnYou(kept!, at(311).getTime()));
+  ok("it is still running", kept?.status === "running");
+  q.succeed(slow.id, null, at(400));
+  ok(
+    "keep going leaves a finished job alone",
+    q.keepGoing(uid, slow.id, 300_000, at(401))?.status === "succeeded",
+  );
+  job({ lane: "interactive", label: "spinner" });
+  ok(
+    "interactive jobs never ask: someone is already watching",
+    q.claim("interactive", at(0), 300_000)?.checkInAt === null,
+  );
+  job({ label: "no-period" });
+  ok("no period, no check-in", q.claim("background", at(0))?.checkInAt === null);
+
+  /* ---------- stop kills the call, not just the row ---------- */
+  reset();
+  let sawScope = false;
+  let sawAbort = false;
+  const stopHandlers = {
+    analysis: async () => {
+      const scope = jobScope.getStore();
+      sawScope = Boolean(scope && scope.deadline > Date.now());
+      // A provider call: waits until its signal fires.
+      await new Promise<void>((_, reject) => {
+        scope?.signal.addEventListener("abort", () => {
+          sawAbort = true;
+          reject(new JobStopped());
+        });
+      });
+    },
+  } as unknown as Parameters<typeof w.pump>[0];
+  const victim = q.enqueue({ userId: uid, kind: "analysis", runAfter: new Date() });
+  const pumping = w.pump(stopHandlers);
+  await new Promise((r) => setTimeout(r, 10));
+  ok("a running job has a scope with a deadline", sawScope);
+  q.cancel(uid, victim.id);
+  ok("stop finds the running job", w.stop(victim.id));
+  await pumping;
+  ok("the provider call sees the abort", sawAbort);
+  const victimAfter = db
+    .select()
+    .from(aiJobs)
+    .where(eq(aiJobs.id, victim.id))
+    .get();
+  ok("and the job stays cancelled", victimAfter?.status === "cancelled");
+  ok("stop on a job that is not running is a no-op", !w.stop(victim.id));
+  ok(
+    "a stopped job is not retried on its own",
+    w.classify(new JobStopped()).permanent,
+  );
+
+  /* ---------- bulk ---------- */
+  reset();
+  job({ label: "b1" });
+  job({ label: "b2" });
+  ok("bulk finds the queued jobs", q.jobIdsWithStatus(uid, "queued").length === 2);
+  ok(
+    "and none that are someone else's",
+    q.jobIdsWithStatus("someone-else", "queued").length === 0,
   );
 
   /* ---------- the automatic pipeline ---------- */

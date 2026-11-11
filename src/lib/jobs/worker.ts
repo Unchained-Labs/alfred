@@ -10,6 +10,7 @@ import {
   requeueInterrupted,
   succeed,
 } from "./queue";
+import { JobStopped, jobScope } from "./scope";
 
 /*
  * The worker: claims jobs and runs them, a bounded number at a time.
@@ -55,6 +56,12 @@ export function classify(error: unknown): { message: string; permanent: boolean 
       permanent: true,
     };
   }
+  // A job that ran to its ceiling would most likely do so again, and one that
+  // was stopped was stopped on purpose: neither goes round on its own. Retry
+  // is a button.
+  if (error instanceof JobTimeout || error instanceof JobStopped) {
+    return { message, permanent: true };
+  }
   if (
     error instanceof PermanentJobError ||
     error instanceof AiNotConfiguredError ||
@@ -80,18 +87,41 @@ export const LIMITS: Record<AiJobLane, number> = {
 };
 
 /**
- * Per job, not per call. The claude-code provider already kills one call at
- * its own timeout; this catches the job that is several calls long and stuck.
+ * How long a background job runs before it asks whether to keep going. It
+ * does not stop there: it keeps working while it waits for an answer, and
+ * "Keep going" gives it this long again before the next question. This used
+ * to be the provider's hard per-call timeout, which killed long handbook
+ * steps at five minutes and retried them, identically, twice more.
+ */
+export const CHECK_IN_MS = intFromEnv("ALFRED_AI_CHECK_IN_MS", 5 * 60_000, 10_000);
+
+/**
+ * The ceiling, per job: past it the job is stopped whether or not anyone
+ * answered. Every provider call inside the job gets the time remaining.
  */
 export const JOB_TIMEOUT_MS = intFromEnv(
   "ALFRED_AI_JOB_TIMEOUT_MS",
-  20 * 60_000,
+  30 * 60_000,
+  10_000,
+);
+
+/**
+ * Interactive jobs hold an HTTP request open, so they keep the short ceiling
+ * the provider used to impose on everything.
+ */
+export const INTERACTIVE_TIMEOUT_MS = intFromEnv(
+  "ALFRED_AI_INTERACTIVE_TIMEOUT_MS",
+  5 * 60_000,
   10_000,
 );
 
 class JobTimeout extends AiError {
   constructor(ms: number) {
-    super(`Gave up after ${Math.round(ms / 60_000)} minutes.`, undefined, true);
+    super(
+      `Still not done after ${Math.round(ms / 60_000)} minutes, so Alfred stopped it. Retry starts it again from the beginning.`,
+      undefined,
+      true,
+    );
   }
 }
 
@@ -106,6 +136,8 @@ type WorkerState = {
   waiters: Map<string, Waiter[]>;
   /** Closures for interactive jobs: they live with the request, not the DB. */
   inline: Map<string, () => Promise<unknown>>;
+  /** One per running job: Stop aborts it, which kills the provider call. */
+  controllers: Map<string, AbortController>;
   pumping: boolean;
 };
 
@@ -117,8 +149,11 @@ const state: WorkerState = (g.__alfredAiWorker ??= {
   timer: null,
   waiters: new Map(),
   inline: new Map(),
+  controllers: new Map(),
   pumping: false,
 });
+// A worker state from before this field existed (dev reloads) lacks it.
+state.controllers ??= new Map();
 
 function settle(job: AiJob | undefined, error?: unknown) {
   if (!job) return;
@@ -145,6 +180,10 @@ async function execute(job: AiJob, handlers: HandlerMap) {
   const handler = inline ? () => inline() : handlers[job.kind];
 
   let timer: ReturnType<typeof setTimeout> | undefined;
+  const limit =
+    job.lane === "interactive" ? INTERACTIVE_TIMEOUT_MS : JOB_TIMEOUT_MS;
+  const controller = new AbortController();
+  state.controllers.set(job.id, controller);
   try {
     if (!handler) {
       throw new PermanentJobError(
@@ -153,12 +192,25 @@ async function execute(job: AiJob, handlers: HandlerMap) {
           : `No handler for ${job.kind}.`,
       );
     }
+    const scope = {
+      jobId: job.id,
+      deadline: Date.now() + limit,
+      signal: controller.signal,
+    };
     const result = await Promise.race([
-      (handler as JobHandler)(job, ctx),
+      jobScope.run(scope, () => (handler as JobHandler)(job, ctx)),
       new Promise<never>((_, reject) => {
-        timer = setTimeout(
-          () => reject(new JobTimeout(JOB_TIMEOUT_MS)),
-          JOB_TIMEOUT_MS,
+        timer = setTimeout(() => {
+          reject(new JobTimeout(limit));
+          controller.abort(); // and end the call still running inside it
+        }, limit);
+      }),
+      // Stop rejects at once, whatever the handler is waiting on.
+      new Promise<never>((_, reject) => {
+        controller.signal.addEventListener(
+          "abort",
+          () => reject(new JobStopped()),
+          { once: true },
         );
       }),
     ]);
@@ -176,7 +228,21 @@ async function execute(job: AiJob, handlers: HandlerMap) {
     settle(after, error);
   } finally {
     clearTimeout(timer);
+    state.controllers.delete(job.id);
   }
+}
+
+/**
+ * Ends a running job's provider call — the CLI process is killed, the HTTP
+ * request aborted. The caller marks the job cancelled first, so the failure
+ * this causes is recorded against a job that is no longer running and changes
+ * nothing.
+ */
+export function stop(id: string): boolean {
+  const controller = state.controllers.get(id);
+  if (!controller) return false;
+  controller.abort();
+  return true;
 }
 
 /**
@@ -187,7 +253,7 @@ export async function pump(handlers: HandlerMap = state.handlers): Promise<void>
   const inflight: Promise<void>[] = [];
   for (const lane of ["interactive", "background"] as AiJobLane[]) {
     while (state.running[lane] < LIMITS[lane]) {
-      const job = claim(lane);
+      const job = claim(lane, new Date(), CHECK_IN_MS);
       if (!job) break;
       state.running[lane]++;
       inflight.push(
