@@ -9,7 +9,7 @@ import {
   type ObjectResult,
   type TextResult,
 } from "../types";
-import { extractJsonObject, toStrictJsonSchema } from "./json-schema";
+import { extractJsonObject, fillOmitted, toStrictJsonSchema } from "./json-schema";
 
 /**
  * The envelope Alfred POSTs to a custom agent. Documented in README so users
@@ -166,7 +166,9 @@ export class AgentProvider implements AiProvider {
       candidate = extractJsonObject(candidate);
     }
 
-    const parsed = req.schema.safeParse(candidate);
+    const parsed = req.schema.safeParse(
+      fillOmitted(candidate, toStrictJsonSchema(req.schema)),
+    );
     if (!parsed.success) {
       const issues = parsed.error.issues
         .slice(0, 5)

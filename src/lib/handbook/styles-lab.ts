@@ -31,7 +31,7 @@ export const LAB_CSS = `
 .sc-t{font:600 14px var(--f-mono);fill:var(--ink)}
 .sc-t.sm{font-size:12px}
 .sc-i{font:11px var(--f-mono);fill:var(--muted)}
-.sc-e{font:11px var(--f-mono);fill:var(--muted)}
+.sc-e{font:11px var(--f-mono);fill:var(--muted);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round}
 .sc-e.lit{fill:var(--rule);font-weight:600}
 .sc-edge{stroke:var(--ink-2);stroke-width:1.4;fill:none}
 .sc-edge.lit{stroke:var(--rule);stroke-width:2.4}
@@ -56,6 +56,26 @@ export const LAB_CSS = `
 @keyframes sc-pop{from{transform:scale(.6);opacity:.2}to{transform:none;opacity:1}}
 .draw{stroke-dasharray:600;animation:sc-draw .7s ease both}
 @keyframes sc-draw{from{stroke-dashoffset:600}to{stroke-dashoffset:0}}
+
+/* ---------- a part told as a story ---------- */
+.goal{display:flex;gap:10px;align-items:baseline;margin:0 0 1.4rem;padding:10px 14px;border-radius:var(--radius);
+  background:var(--brand-wash);border-left:3px solid var(--rule);font-weight:600;max-width:none}
+.goal-l{font:700 .72rem var(--f-mono);text-transform:uppercase;letter-spacing:.08em;color:var(--rule);flex:none}
+.beat{margin:0 0 2.2rem}
+.body .beat-hook{display:flex;gap:10px;align-items:baseline;margin:0 0 .2rem;font-size:1.45rem}
+.beat-n{flex:none;display:inline-grid;place-items:center;width:1.6em;height:1.6em;border-radius:999px;
+  background:var(--rule);color:var(--brand-ink);font:700 .8rem var(--f-mono);transform:translateY(-2px)}
+.beat .scene,.beat .dgm{margin:.7rem 0 .6rem}
+.beat-say{font-size:1.02rem}
+.beat-say>:first-child{margin-top:0}
+.deeper{margin:1.6rem 0 0;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface)}
+.deeper>summary{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline;padding:12px 14px;cursor:pointer;list-style:none}
+.deeper>summary::-webkit-details-marker{display:none}
+.deeper>summary::before{content:"▸";color:var(--rule);transition:transform .2s ease}
+.deeper[open]>summary::before{transform:rotate(90deg)}
+.deeper-t{font-family:var(--f-display);font-size:1.25rem;font-weight:700}
+.deeper-w{color:var(--muted);font-size:.88rem}
+.deeper-b{padding:0 14px 8px;border-top:1px solid var(--line)}
 
 /* ---------- notebook and problems ---------- */
 .lab-h{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;margin:1.8rem 0 .6rem;color:var(--muted);font-size:.9rem;max-width:none}
@@ -138,6 +158,7 @@ export const LAB_CSS = `
 @media print{
   .scene-ctl,.scene-say,.cell-bar,.ask-fab,.ask-sel,.ask-panel,.xp{display:none!important}
   .scene-steps{display:block!important}
+  .deeper-b{display:block!important}
   .scene .scene-stage{display:none}
   .prob-sol{display:block}
 }

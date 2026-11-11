@@ -10,7 +10,7 @@ import {
   type ObjectResult,
   type TextResult,
 } from "../types";
-import { extractJsonObject, toStrictJsonSchema } from "./json-schema";
+import { extractJsonObject, fillOmitted, toStrictJsonSchema } from "./json-schema";
 
 import { DEFAULT_CLAUDE_CODE_BINARY } from "../catalog";
 
@@ -301,7 +301,7 @@ ${JSON.stringify(schema)}`;
       );
     }
 
-    const parsed = req.schema.safeParse(candidate);
+    const parsed = req.schema.safeParse(fillOmitted(candidate, schema));
     if (!parsed.success) {
       const issues = parsed.error.issues
         .slice(0, 5)

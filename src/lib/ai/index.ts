@@ -6,6 +6,7 @@ import {
   chatPrompt,
   codeExercisePrompt,
   handbookAskPrompt,
+  handbookDeeperPrompt,
   handbookDrillsPrompt,
   handbookLabPrompt,
   handbookOutlinePrompt,
@@ -30,14 +31,16 @@ import {
   gradedAnswerSchema,
   type HandbookAnswer,
   handbookAnswerSchema,
+  type HandbookDeeper,
+  handbookDeeperSchema,
   type HandbookDrills,
   handbookDrillsSchema,
   type HandbookLab,
   handbookLabSchema,
   type HandbookOutline,
   handbookOutlineSchema,
-  type HandbookPartBody,
-  handbookPartBodySchema,
+  type HandbookPartStory,
+  handbookPartStorySchema,
   type JobAnalysis,
   jobAnalysisSchema,
   type MailTriage,
@@ -275,7 +278,7 @@ export async function generateHandbookPart(
   part: Parameters<typeof handbookPartPrompt>[3],
   siblings: string[],
   covers: Parameters<typeof handbookPartPrompt>[5],
-): Promise<AiRun<HandbookPartBody>> {
+): Promise<AiRun<HandbookPartStory>> {
   const provider = resolveProvider(userId);
   const { system, prompt } = handbookPartPrompt(
     app,
@@ -288,11 +291,12 @@ export async function generateHandbookPart(
   const { object, model } = await provider.generateObject({
     system,
     prompt,
-    schema: handbookPartBodySchema,
+    schema: handbookPartStorySchema,
     schemaName: "handbook_part",
     task: "generate_handbook_part",
-    // One part of prose. Bounded on purpose: see handbookOutlinePrompt.
-    maxTokens: 12000,
+    // One part's beats, pictures included. Bounded on purpose: see
+    // handbookOutlinePrompt.
+    maxTokens: 16000,
   });
   return {
     result: object,
@@ -318,6 +322,30 @@ export async function generateHandbookLab(
     // Scenes, cells and problems for ONE part — its own call so the prose
     // call stays the size it was.
     maxTokens: 16000,
+  });
+  return {
+    result: object,
+    provider: provider.kind,
+    model: model ?? provider.model,
+  };
+}
+
+/** The exercises behind a part told as beats. */
+export async function generateHandbookDeeper(
+  userId: string,
+  app: Application,
+  part: Parameters<typeof handbookDeeperPrompt>[1],
+  story: string,
+): Promise<AiRun<HandbookDeeper>> {
+  const provider = resolveProvider(userId);
+  const { system, prompt } = handbookDeeperPrompt(app, part, story);
+  const { object, model } = await provider.generateObject({
+    system,
+    prompt,
+    schema: handbookDeeperSchema,
+    schemaName: "handbook_deeper",
+    task: "generate_handbook_lab",
+    maxTokens: 12000,
   });
   return {
     result: object,

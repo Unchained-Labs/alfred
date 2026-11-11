@@ -4,6 +4,7 @@ import { LAB_JS, renderCells, renderProblems } from "./lab";
 import { escapeHtml, inlineMarkdown, renderMarkdown, slug } from "./markdown";
 import { ASK_HTML, ASK_JS, XP_JS } from "./play";
 import { renderScenes, SCENE_JS } from "./scenes";
+import { renderDeeper, renderStory } from "./story";
 import { HANDBOOK_CSS } from "./styles";
 import { LAB_CSS } from "./styles-lab";
 import { HANDBOOK_JS } from "./behaviour";
@@ -136,6 +137,9 @@ export function renderHandbook(
       <p class="hidden-note">Body hidden. Turn off “TL;DR only” to read the part.</p>`
         : "";
 
+      // A part written as beats renders as a story; one written as prose,
+      // before stories existed, keeps the layout it was written for.
+      const story = Boolean(p.beats?.length);
       const diagrams = renderDiagrams(p.diagrams);
       // The lab is optional: handbooks written before it existed have none.
       const scenes = renderScenes(p.lab?.scenes, p.anchor);
@@ -167,16 +171,20 @@ export function renderHandbook(
   ${tldr}
   <div class="body">
     ${
-      p.body?.trim()
-        ? renderMarkdown(p.body)
-        : `<p class="caveat">This part has not been written yet. Rebuild the handbook to fill it in.</p>`
-    }
+      story
+        ? `${renderStory(p, p.anchor)}${renderDeeper(p, p.anchor, notes)}`
+        : `${
+            p.body?.trim()
+              ? renderMarkdown(p.body)
+              : `<p class="caveat">This part has not been written yet. Rebuild the handbook to fill it in.</p>`
+          }
     ${scenes}
     ${diagrams}
     ${notes}
     ${cards}
     ${cells}
-    ${problems}
+    ${problems}`
+    }
   </div>
   <footer class="foot">
     <label class="gotit"><input type="checkbox" class="done" data-part="${p.anchor}"> I've got this</label>

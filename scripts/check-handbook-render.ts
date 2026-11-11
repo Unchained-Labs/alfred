@@ -21,6 +21,9 @@ import {
   type HandbookContent,
 } from "@/lib/handbook/render";
 import { cleanScene, SCENE_JS } from "@/lib/handbook/scenes";
+import { storyMarkdown } from "@/lib/handbook/story";
+import { fillOmitted, toStrictJsonSchema } from "@/lib/ai/providers/json-schema";
+import { handbookBeatSchema } from "@/lib/ai/schemas";
 
 const XSS = `<img src=x onerror="alert(1)">`;
 
@@ -793,6 +796,183 @@ if (good && wrong && sneaky) {
 } else {
   console.log("  skip harness checks: python3 not available");
 }
+/*
+ * A part written as a story: goal, beats with their pictures, and exercises
+ * folded into "Go deeper". One beat has a scene, one a diagram, one a scene
+ * the schema rejects; the hook and narration are hostile. Rendered beside a
+ * prose part, which must keep its old layout.
+ */
+const storyPart: HandbookContent["plan"]["parts"][number] = {
+  id: "retries",
+  title: "Retries, shown",
+  short: "Retries",
+  minutes: 6,
+  emphasis: "must",
+  intent: "Fixture.",
+  covers: [],
+  tldr: [
+    "A timeout is an unknown.",
+    "Retry on the same key.",
+    "The database decides.",
+  ],
+  goal: `By the end you can draw the retry path ${XSS}`,
+  beats: [
+    {
+      hook: `What happens when the answer never comes? ${XSS}`,
+      scene: LAB.scenes[1],
+      diagram: null,
+      say: `The client cannot tell a lost request from a lost reply. ${XSS}`,
+    },
+    {
+      hook: "Where does each guarantee live?",
+      scene: null,
+      diagram: content.plan.parts[1].diagrams![0],
+      say: "Push certainty down to the constraint.",
+    },
+    {
+      hook: "A beat whose scene is broken",
+      scene: { kind: "nope" } as unknown as HandbookScene,
+      diagram: null,
+      say: "The words survive without the picture.",
+    },
+  ],
+  body: "",
+  notes: [
+    {
+      tone: "trap",
+      title: "Check-then-act",
+      body: "Two racers both pass the check.",
+    },
+  ],
+  lab: { scenes: [], cells: LAB.cells, problems: [] },
+};
+const storyHtml = renderHandbook(
+  {
+    ...content,
+    plan: { ...content.plan, parts: [storyPart, content.plan.parts[3]] },
+  },
+  {
+    id: "hb-fixture-0002",
+    company: "Stripe",
+    role: "Engineer",
+    generatedAt: new Date(),
+  },
+);
+const storySection = storyHtml.slice(
+  storyHtml.indexOf('id="retries"'),
+  storyHtml.indexOf('id="interview"'),
+);
+const at = (needle: string) => storySection.indexOf(needle);
+checks.push(
+  [
+    "story: goal shown, escaped",
+    at('class="goal"') > 0 && !storySection.includes("<img src=x"),
+  ],
+  [
+    "story: three beats in order",
+    (storySection.match(/<section class="beat"/g) ?? []).length === 3,
+  ],
+  ["story: hook numbered", storySection.includes('<span class="beat-n">1</span>')],
+  [
+    "story: scene inside its beat",
+    at('<figure class="scene"') > at('class="beat-n">1<') &&
+      at('<figure class="scene"') < at('class="beat-n">2<'),
+  ],
+  [
+    "story: diagram inside its beat",
+    at('<figure class="dgm">') > at('class="beat-n">2<') &&
+      at('<figure class="dgm">') < at('class="beat-n">3<'),
+  ],
+  [
+    "story: broken scene dropped, words kept",
+    storySection.includes("The words survive"),
+  ],
+  [
+    "story: picture before its narration",
+    at('<figure class="scene"') < at("cannot tell a lost request"),
+  ],
+  [
+    "story: exercises after every beat",
+    at('<details class="deeper">') > at("The words survive"),
+  ],
+  [
+    "story: go deeper starts closed",
+    !storySection.includes('<details class="deeper" open'),
+  ],
+  [
+    "story: go deeper counts what rendered",
+    /notebook cells? · notes for the room/.test(storySection),
+  ],
+  [
+    "story: notes inside go deeper",
+    at('class="note trap"') > at('<details class="deeper">'),
+  ],
+  [
+    "story: no prose-era scene list",
+    !storySection.includes('class="scene-steps"><li>Start with'),
+  ],
+  [
+    "prose part keeps its layout",
+    !storyHtml
+      .slice(storyHtml.indexOf('id="interview"'))
+      .includes('class="deeper"'),
+  ],
+  [
+    "story: still one script element",
+    (storyHtml.match(/<script/g) ?? []).length === 1,
+  ],
+  [
+    "story: flattened body carries goal, hooks and narration",
+    (() => {
+      const md = storyMarkdown({
+        goal: "By the end you can X.",
+        beats: storyPart.beats!,
+      });
+      return (
+        md.startsWith("**By the end you can X.**") &&
+        md.includes("### Where does each guarantee live?") &&
+        md.includes("Push certainty down")
+      );
+    })(),
+  ],
+);
+
+// A model with no native schema mode drops empty fields deep in a reply. A
+// missing nullable or list is filled; a missing string still fails.
+{
+  const strict = toStrictJsonSchema(handbookBeatSchema);
+  const sloppy = {
+    hook: "Why?",
+    say: "Because.",
+    scene: {
+      ...LAB.scenes[0],
+      steps: LAB.scenes[0].steps.map(
+        ({ marker: _m, message: _g, cells: _c, ...rest }) => rest,
+      ),
+    },
+  };
+  const repaired = handbookBeatSchema.safeParse(fillOmitted(sloppy, strict));
+  const noCaption = {
+    ...sloppy,
+    scene: {
+      ...sloppy.scene,
+      steps: sloppy.scene.steps.map(({ caption: _c, ...rest }) => rest),
+    },
+  };
+  checks.push(
+    [
+      "omitted: a reply missing null and empty fields is repaired",
+      repaired.success &&
+        repaired.data.diagram === null &&
+        repaired.data.scene?.steps[0].marker === null,
+    ],
+    [
+      "omitted: a missing string still fails",
+      !handbookBeatSchema.safeParse(fillOmitted(noCaption, strict)).success,
+    ],
+  );
+}
+
 let bad = 0;
 for (const [name, pass] of checks) {
   if (!pass) bad++;

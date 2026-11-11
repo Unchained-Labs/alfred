@@ -43,6 +43,54 @@ export function toStrictJsonSchema(schema: z.ZodType): JsonSchemaNode {
   return tightened;
 }
 
+const allowsNull = (node: JsonSchemaNode): boolean =>
+  node.type === "null" ||
+  (Array.isArray(node.type) && node.type.includes("null")) ||
+  (Array.isArray(node.anyOf) &&
+    (node.anyOf as JsonSchemaNode[]).some((n) => n.type === "null"));
+
+/** The object branch of a property that may also be null, if it has one. */
+const objectBranch = (node: JsonSchemaNode): JsonSchemaNode | null =>
+  node.type === "object"
+    ? node
+    : ((node.anyOf as JsonSchemaNode[] | undefined)?.find(
+        (n) => n.type === "object",
+      ) ?? null);
+
+/**
+ * Fills in the fields a model left out when leaving them out can only mean
+ * one thing: a property that may be null becomes null, a list becomes empty.
+ *
+ * Without a native schema mode a model follows the contract from the prompt,
+ * and in a deeply nested reply — a scene's every step carries every field —
+ * it drops the empty ones: "marker" missing from a step that has no marker.
+ * That is not a disagreement about the content, and failing a five-minute
+ * generation over it, permanently, is the wrong trade. Anything else missing
+ * — a string, a number, an enum — still fails validation as before.
+ */
+export function fillOmitted(value: unknown, schema: JsonSchemaNode): unknown {
+  if (Array.isArray(value)) {
+    const items = schema.items as JsonSchemaNode | undefined;
+    return items ? value.map((v) => fillOmitted(v, items)) : value;
+  }
+  if (value === null || typeof value !== "object") return value;
+  const branch = objectBranch(schema);
+  const properties = branch?.properties as
+    Record<string, JsonSchemaNode> | undefined;
+  if (!properties) return value;
+  const out: Record<string, unknown> = { ...(value as Record<string, unknown>) };
+  for (const [key, prop] of Object.entries(properties)) {
+    if (!(key in out)) {
+      if (allowsNull(prop)) out[key] = null;
+      else if (prop.type === "array") out[key] = [];
+      continue;
+    }
+    const inner = prop.type === "array" ? prop : (objectBranch(prop) ?? undefined);
+    if (inner) out[key] = fillOmitted(out[key], inner);
+  }
+  return out;
+}
+
 /**
  * Pulls the first balanced JSON object out of a model response. Needed because
  * local models commonly wrap JSON in prose or a ```json fence even when told
