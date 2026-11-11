@@ -6,8 +6,8 @@ import { formatMoney } from "@/lib/fx/convert";
 /*
  * Jobs ranked by pay, each drawn as its salary RANGE on one shared scale with
  * the comparable midpoint marked. A bar per job would hide the thing that
- * matters most when two postings look close: one says 420–600k and the other
- * says exactly 500k, and only the range shows that the first could be either
+ * matters most when two postings look close: one says 300–450k and the other
+ * says exactly 375k, and only the range shows that the first could be either
  * the best or the worst offer on the board.
  */
 export function PayRanking({
